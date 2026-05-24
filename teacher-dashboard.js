@@ -1651,6 +1651,9 @@ function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions
         pdfType: type,
         title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
         prompt: questionRecord.prompt || visualPayload.prompt || "문항",
+        category: questionRecord.category || visualPayload.category || "",
+        categoryName: questionRecord.categoryName || visualPayload.categoryName || "",
+        scene: questionRecord.scene || visualPayload.scene || null,
         correctText,
         selectedText,
         visualHtml: visualPayload.visualHtml || "",
@@ -1665,6 +1668,9 @@ function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions
       pdfType: type,
       title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
       prompt: questionRecord.prompt || visualPayload.prompt || "문항",
+      category: questionRecord.category || visualPayload.category || "",
+      categoryName: questionRecord.categoryName || visualPayload.categoryName || "",
+      scene: questionRecord.scene || visualPayload.scene || null,
       correctText,
       selectedText,
       visualHtml: visualPayload.visualHtml || "",
@@ -1809,6 +1815,12 @@ function loadSvgImage(src, width, height) {
 
 function buildPracticeGuide(questionRecord, firstStep = "") {
   const prompt = questionRecord.prompt || "";
+  if (isPlaceValueQuestionRecord(questionRecord)) {
+    if (/더 큰 수|큰 수|비교/.test(prompt)) {
+      return "백, 십, 일 중 가장 큰 자리부터 비교하고 처음 다른 자리에 표시하세요.";
+    }
+    return "큰 자리부터 자리 이름을 붙이고 숫자가 뜻하는 값을 표시하세요.";
+  }
   if (prompt.includes("+") || prompt.includes("-")) {
     return "그림에서 같은 자리끼리 나누어 보고, 받아올림·받아내림이 생기는 자리만 다시 표시하세요.";
   }
@@ -1829,6 +1841,10 @@ function buildPracticeGuide(questionRecord, firstStep = "") {
 
 function buildQuestionExplanationSteps(questionRecord) {
   const prompt = questionRecord.prompt || "";
+  if (isPlaceValueQuestionRecord(questionRecord)) {
+    return buildPlaceValueExplanationSteps(questionRecord);
+  }
+
   const addSub = parsePdfAddSubModel(questionRecord);
   if (addSub) {
     return buildAddSubExplanationSteps(addSub);
@@ -1892,12 +1908,63 @@ function buildQuestionExplanationSteps(questionRecord) {
   return [getActionForFocus(tags[0])];
 }
 
+function isPlaceValueQuestionRecord(questionRecord) {
+  const prompt = questionRecord.prompt || "";
+  const category = questionRecord.category || "";
+  const categoryName = questionRecord.categoryName || "";
+  return category === "1-1"
+    || category === "2-1"
+    || categoryName.includes("세 자리 수")
+    || categoryName.includes("네 자리 수")
+    || /자리|1000|100이|10이|1이|몇백|더 큰 수|바로 앞|바로 뒤|나타낸 수/.test(prompt);
+}
+
+function buildPlaceValueExplanationSteps(questionRecord) {
+  const prompt = questionRecord.prompt || "";
+  const numbers = extractNumbers(prompt);
+  const correctNumber = extractFirstNumber(questionRecord.correctText);
+
+  if (/더 큰 수|중 더 큰 수|비교/.test(prompt) && numbers.length >= 2) {
+    const model = buildPlaceComparePdfModel(numbers[0], numbers[1], correctNumber);
+    const label = model.labels[model.diffIndex] || "큰 자리";
+    const leftDigit = model.leftDigits[model.diffIndex];
+    const rightDigit = model.rightDigits[model.diffIndex];
+    return [
+      `${label}의 자리부터 비교합니다. 일의 자리부터 더하거나 세지 않습니다.`,
+      `${model.left}은 ${label} ${leftDigit}, ${model.right}은 ${label} ${rightDigit}입니다.`,
+      `${Math.max(leftDigit, rightDigit)}${numberSubjectParticle(Math.max(leftDigit, rightDigit))} 더 크므로 ${model.answer}${numberSubjectParticle(model.answer)} 더 큽니다.`
+    ];
+  }
+
+  if (/작은 수부터|차례/.test(prompt) && numbers.length >= 2) {
+    const sorted = [...numbers].sort((left, right) => left - right);
+    return [
+      "모든 수의 자리 수를 맞춰 쓰고 가장 큰 자리부터 비교합니다.",
+      `작은 수부터 차례로 놓으면 ${sorted.join(" < ")}입니다.`
+    ];
+  }
+
+  const target = Number.isFinite(correctNumber) ? correctNumber : numbers[0];
+  const digits = getPdfPlaceDigits(target);
+  return [
+    `${target}${numberObjectParticle(target)} 큰 자리부터 자리집에 넣습니다.`,
+    `${digits.labels.map((label, index) => `${label} ${digits.digits[index]}`).join(", ")}처럼 자리 이름을 붙여 읽습니다.`
+  ];
+}
+
 function parsePdfAddSubModel(questionRecord) {
   const prompt = questionRecord.prompt || "";
   const correctNumber = extractFirstNumber(questionRecord.correctText);
+  const category = questionRecord.category || "";
+  const categoryName = questionRecord.categoryName || "";
+  const isAddSubCategory = category === "1-3" || categoryName.includes("덧셈") || categoryName.includes("뺄셈");
   let match = prompt.match(/(\d+)\s*([+\-])\s*(\d+)/);
   if (match && Number.isFinite(correctNumber)) {
     return { left: Number(match[1]), operator: match[2], right: Number(match[3]), result: correctNumber };
+  }
+
+  if (!isAddSubCategory) {
+    return null;
   }
 
   const numbers = extractNumbers(prompt);
@@ -2154,7 +2221,9 @@ function drawPdfQuestionBlock(ctx, block, x, y, width, height) {
     width: visualWidth - 40,
     height: visualHeight - 64
   };
-  if (block.visualImage) {
+  if (canDrawNativePdfGraphic(block)) {
+    drawNativePdfQuestionGraphic(ctx, block, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  } else if (block.visualImage) {
     drawFittedImage(ctx, block.visualImage.image, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
   } else {
     drawFallbackQuestionGraphic(ctx, block, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
@@ -2207,8 +2276,79 @@ function drawFittedImage(ctx, image, x, y, width, height) {
   ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
+function canDrawNativePdfGraphic(block) {
+  return Boolean(
+    parsePdfPlaceValueModel(block)
+    || parsePdfAddSubModel(block)
+    || parsePdfMultiplicationModel(block)
+    || parsePdfGraphModel(block)
+    || parsePdfTimeModel(block)
+    || parsePdfShapeModel(block)
+    || parsePdfLengthModel(block)
+    || parsePdfPatternModel(block)
+  );
+}
+
+function drawNativePdfQuestionGraphic(ctx, block, x, y, width, height) {
+  const place = parsePdfPlaceValueModel(block);
+  if (place) {
+    drawPdfPlaceValueGraphic(ctx, place, block, x, y, width, height);
+    return;
+  }
+
+  const addSub = parsePdfAddSubModel(block);
+  if (addSub) {
+    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height);
+    return;
+  }
+
+  const multiplication = parsePdfMultiplicationModel(block);
+  if (multiplication) {
+    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height);
+    return;
+  }
+
+  const graph = parsePdfGraphModel(block);
+  if (graph) {
+    drawPdfGraphGraphic(ctx, graph, block, x, y, width, height);
+    return;
+  }
+
+  const time = parsePdfTimeModel(block);
+  if (time) {
+    drawPdfTimeGraphic(ctx, time, block, x, y, width, height);
+    return;
+  }
+
+  const shape = parsePdfShapeModel(block);
+  if (shape) {
+    drawPdfShapeGraphic(ctx, shape, block, x, y, width, height);
+    return;
+  }
+
+  const length = parsePdfLengthModel(block);
+  if (length) {
+    drawPdfLengthGraphic(ctx, length, block, x, y, width, height);
+    return;
+  }
+
+  const pattern = parsePdfPatternModel(block);
+  if (pattern) {
+    drawPdfPatternGraphic(ctx, pattern, block, x, y, width, height);
+    return;
+  }
+
+  drawFallbackQuestionGraphic(ctx, block, x, y, width, height);
+}
+
 function drawFallbackQuestionGraphic(ctx, block, x, y, width, height) {
   const prompt = block.prompt || "";
+  const place = parsePdfPlaceValueModel(block);
+  if (place) {
+    drawPdfPlaceValueGraphic(ctx, place, block, x, y, width, height);
+    return;
+  }
+
   const addSub = parsePdfAddSubModel(block);
   if (addSub) {
     drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height);
@@ -2244,6 +2384,417 @@ function drawFallbackQuestionGraphic(ctx, block, x, y, width, height) {
   }
 }
 
+function getPdfPlaceDigits(number) {
+  const normalized = Math.max(0, Number(number) || 0);
+  const width = normalized >= 1000 ? 4 : 3;
+  return {
+    number: normalized,
+    labels: width === 4 ? ["천", "백", "십", "일"] : ["백", "십", "일"],
+    digits: String(normalized).padStart(width, "0").slice(-width).split("").map(Number)
+  };
+}
+
+function buildPlaceComparePdfModel(left, right, answer) {
+  const width = Math.max(String(left).length, String(right).length, 3);
+  const labels = width >= 4 ? ["천", "백", "십", "일"] : ["백", "십", "일"].slice(-width);
+  const leftDigits = String(left).padStart(width, "0").split("").map(Number);
+  const rightDigits = String(right).padStart(width, "0").split("").map(Number);
+  const diffIndex = Math.max(0, leftDigits.findIndex((digit, index) => digit !== rightDigits[index]));
+  const larger = Number.isFinite(answer) ? answer : Math.max(left, right);
+  return {
+    mode: "compare",
+    left,
+    right,
+    answer: larger,
+    labels,
+    leftDigits,
+    rightDigits,
+    diffIndex
+  };
+}
+
+function parsePdfPlaceValueModel(block) {
+  if (!isPlaceValueQuestionRecord(block)) {
+    return null;
+  }
+
+  const prompt = block.prompt || "";
+  const numbers = extractNumbers(prompt);
+  const correctNumber = extractFirstNumber(block.correctText);
+
+  if (/더 큰 수|중 더 큰 수|비교/.test(prompt) && numbers.length >= 2) {
+    return buildPlaceComparePdfModel(numbers[0], numbers[1], correctNumber);
+  }
+
+  if (/작은 수부터|차례/.test(prompt) && numbers.length >= 2) {
+    return {
+      mode: "order",
+      numbers: numbers.slice(0, 4),
+      sorted: [...numbers].sort((left, right) => left - right).slice(0, 4)
+    };
+  }
+
+  const target = Number.isFinite(correctNumber) ? correctNumber : numbers[0];
+  if (!Number.isFinite(target)) {
+    return null;
+  }
+
+  return {
+    mode: "decompose",
+    ...getPdfPlaceDigits(target)
+  };
+}
+
+function drawPdfPlaceValueGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x + 12, y + 12, width - 24, height - 24, 18);
+  ctx.fill();
+  ctx.strokeStyle = "#cce6f8";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (model.mode === "compare") {
+    drawPdfPlaceCompareGraphic(ctx, model, block, x, y, width, height);
+    return;
+  }
+
+  if (model.mode === "order") {
+    drawPdfPlaceOrderGraphic(ctx, model, block, x, y, width, height);
+    return;
+  }
+
+  drawPdfPlaceDecomposeGraphic(ctx, model, block, x, y, width, height);
+}
+
+function drawPdfPlaceCompareGraphic(ctx, model, block, x, y, width, height) {
+  const cardGap = 28;
+  const cardWidth = (width - 72 - cardGap) / 2;
+  const top = y + 62;
+  const cardHeight = Math.min(height - 124, 170);
+  const shouldRevealAnswer = block.pdfType === "answer";
+  drawPdfPlaceNumberCard(ctx, model.left, model.labels, model.leftDigits, x + 36, top, cardWidth, cardHeight, model.diffIndex, shouldRevealAnswer && model.answer === model.left);
+  drawPdfPlaceNumberCard(ctx, model.right, model.labels, model.rightDigits, x + 36 + cardWidth + cardGap, top, cardWidth, cardHeight, model.diffIndex, shouldRevealAnswer && model.answer === model.right);
+
+  const label = model.labels[model.diffIndex] || "큰 자리";
+  const leftDigit = model.leftDigits[model.diffIndex];
+  const rightDigit = model.rightDigits[model.diffIndex];
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("큰 자리부터 비교", x + 40, y + 42);
+  ctx.fillStyle = "#fff0b8";
+  roundRect(ctx, x + width / 2 - 190, y + height - 62, 380, 46, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  const compareText = shouldRevealAnswer
+    ? `${label}: ${leftDigit} ${leftDigit > rightDigit ? ">" : "<"} ${rightDigit} → ${model.answer}`
+    : `${label}의 자리부터 표시하기`;
+  ctx.fillText(compareText, x + width / 2 - ctx.measureText(compareText).width / 2, y + height - 31);
+}
+
+function drawPdfPlaceNumberCard(ctx, number, labels, digits, x, y, width, height, diffIndex, isAnswer) {
+  ctx.fillStyle = isAnswer ? "#e8fbdf" : "#f5fbff";
+  roundRect(ctx, x, y, width, height, 20);
+  ctx.fill();
+  ctx.strokeStyle = isAnswer ? "#68d789" : "#b7ddf6";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "800 38px Malgun Gothic, sans-serif";
+  ctx.fillText(String(number), x + 22, y + 42);
+
+  const cellWidth = (width - 34) / labels.length;
+  labels.forEach((label, index) => {
+    const cellX = x + 17 + index * cellWidth;
+    ctx.fillStyle = index === diffIndex ? "#fff2ab" : "#ffffff";
+    roundRect(ctx, cellX, y + 62, cellWidth - 8, height - 82, 15);
+    ctx.fill();
+    ctx.strokeStyle = index === diffIndex ? "#e7a91a" : "#d6eafa";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#31536d";
+    ctx.font = "700 20px Malgun Gothic, sans-serif";
+    ctx.fillText(label, cellX + (cellWidth - 8) / 2 - ctx.measureText(label).width / 2, y + 92);
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "800 42px Malgun Gothic, sans-serif";
+    const digit = String(digits[index]);
+    ctx.fillText(digit, cellX + (cellWidth - 8) / 2 - ctx.measureText(digit).width / 2, y + 138);
+  });
+}
+
+function drawPdfPlaceOrderGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("큰 자리부터 줄 세우기", x + 40, y + 48);
+  const max = Math.max(...model.numbers, 1);
+  model.numbers.forEach((number, index) => {
+    const rowY = y + 76 + index * 48;
+    ctx.fillStyle = "#e9f7ff";
+    roundRect(ctx, x + 42, rowY, width - 84, 34, 15);
+    ctx.fill();
+    ctx.fillStyle = "#2f86c8";
+    roundRect(ctx, x + 42, rowY, Math.max(70, (width - 84) * number / max), 34, 15);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 24px Malgun Gothic, sans-serif";
+    ctx.fillText(String(number), x + 54, rowY + 25);
+  });
+  ctx.fillStyle = "#fff0b8";
+  roundRect(ctx, x + 42, y + height - 62, width - 84, 44, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  const text = model.sorted.join(" < ");
+  ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height - 33);
+}
+
+function drawPdfPlaceDecomposeGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("자리집에 넣어 보기", x + 40, y + 48);
+  const cellWidth = Math.min(150, (width - 96) / model.labels.length);
+  const startX = x + width / 2 - (cellWidth * model.labels.length) / 2;
+  model.labels.forEach((label, index) => {
+    const cellX = startX + index * cellWidth;
+    ctx.fillStyle = "#f5fbff";
+    roundRect(ctx, cellX + 6, y + 82, cellWidth - 12, 132, 18);
+    ctx.fill();
+    ctx.strokeStyle = "#b7ddf6";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#31536d";
+    ctx.font = "700 24px Malgun Gothic, sans-serif";
+    ctx.fillText(label, cellX + cellWidth / 2 - ctx.measureText(label).width / 2, y + 122);
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "800 50px Malgun Gothic, sans-serif";
+    const digit = String(model.digits[index]);
+    ctx.fillText(digit, cellX + cellWidth / 2 - ctx.measureText(digit).width / 2, y + 180);
+  });
+  ctx.fillStyle = "#fff0b8";
+  roundRect(ctx, x + 42, y + height - 62, width - 84, 44, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  const text = `${model.labels.map((label, index) => `${label} ${model.digits[index]}`).join(" · ")} = ${model.number}`;
+  ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height - 33);
+}
+
+function parsePdfGraphModel(block) {
+  const prompt = block.prompt || "";
+  if (!/표|그래프|조사|명|개/.test(prompt) || /개씩|묶음/.test(prompt)) {
+    return null;
+  }
+  const sceneValues = Array.isArray(block.scene?.values) ? block.scene.values : [];
+  if (sceneValues.length) {
+    return { values: sceneValues.slice(0, 5), target: block.scene.target || "" };
+  }
+  return null;
+}
+
+function drawPdfGraphGraphic(ctx, model, block, x, y, width, height) {
+  const values = model.values;
+  const max = Math.max(...values.map((item) => Number(item.value) || 0), 1);
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("이름에서 수까지 가로로 따라가기", x + 40, y + 48);
+  values.forEach((item, index) => {
+    const rowY = y + 76 + index * 42;
+    ctx.fillStyle = item.label === model.target ? "#fff0b8" : "#e9f7ff";
+    roundRect(ctx, x + 42, rowY, width - 84, 32, 15);
+    ctx.fill();
+    ctx.fillStyle = "#2fc2a3";
+    roundRect(ctx, x + 170, rowY + 7, Math.max(32, (width - 280) * Number(item.value || 0) / max), 18, 9);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 22px Malgun Gothic, sans-serif";
+    ctx.fillText(String(item.label), x + 56, rowY + 24);
+    ctx.fillText(`${item.value}${item.unit || ""}`, x + width - 112, rowY + 24);
+  });
+}
+
+function parsePdfTimeModel(block) {
+  const prompt = block.prompt || "";
+  if (!/시|분|달력|요일|날짜/.test(prompt)) {
+    return null;
+  }
+  const times = [...prompt.matchAll(/(\d{1,2})시\s*(\d{1,2})?분?/g)]
+    .map((match) => ({ hour: Number(match[1]), minute: Number(match[2] || 0) }));
+  const minutes = extractFirstNumber(String(prompt.match(/(\d+)분\s*(뒤|후|걸린|동안|까지)/)?.[0] || ""));
+  return { times: times.slice(0, 2), minutes: Number.isFinite(minutes) ? minutes : extractFirstNumber(block.correctText) };
+}
+
+function drawPdfTimeGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("시작과 끝 사이를 세기", x + 40, y + 48);
+  const first = model.times[0] || { hour: 9, minute: 0 };
+  const second = model.times[1] || null;
+  drawPdfMiniClock(ctx, first.hour, first.minute, x + 120, y + 142, 64, "시작");
+  if (second) {
+    drawPdfMiniClock(ctx, second.hour, second.minute, x + width - 160, y + 142, 64, "끝");
+  } else {
+    ctx.fillStyle = "#e9f7ff";
+    roundRect(ctx, x + width - 228, y + 80, 136, 136, 28);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "800 42px Malgun Gothic, sans-serif";
+    ctx.fillText("?", x + width - 166, y + 158);
+  }
+  ctx.strokeStyle = "#2f86c8";
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(x + 245, y + 145);
+  ctx.lineTo(x + width - 265, y + 145);
+  ctx.stroke();
+  ctx.fillStyle = "#fff0b8";
+  roundRect(ctx, x + width / 2 - 90, y + 114, 180, 54, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  const text = Number.isFinite(model.minutes) ? `${model.minutes}분` : "몇 분";
+  ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + 149);
+}
+
+function drawPdfMiniClock(ctx, hour, minute, cx, cy, radius, label) {
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#164f76";
+  ctx.lineWidth = 7;
+  ctx.stroke();
+  ctx.fillStyle = "#164f76";
+  ctx.font = "700 16px Malgun Gothic, sans-serif";
+  ctx.fillText("12", cx - 10, cy - radius + 22);
+  ctx.fillText("6", cx - 5, cy + radius - 12);
+  ctx.fillText("3", cx + radius - 24, cy + 6);
+  ctx.fillText("9", cx - radius + 13, cy + 6);
+  const minuteDeg = minute * 6 - 90;
+  const hourDeg = ((hour % 12) * 30 + minute * 0.5) - 90;
+  drawClockHand(ctx, cx, cy, radius * 0.72, minuteDeg, "#ef6f5e", 5);
+  drawClockHand(ctx, cx, cy, radius * 0.48, hourDeg, "#164f76", 8);
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 22px Malgun Gothic, sans-serif";
+  ctx.fillText(label, cx - ctx.measureText(label).width / 2, cy + radius + 34);
+}
+
+function drawClockHand(ctx, cx, cy, length, degrees, color, lineWidth) {
+  const angle = degrees * Math.PI / 180;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+  ctx.stroke();
+}
+
+function parsePdfShapeModel(block) {
+  const prompt = block.prompt || "";
+  if (!/도형|변|꼭짓점|삼각형|사각형|원|칠교/.test(prompt)) {
+    return null;
+  }
+  return { target: block.correctText || "도형" };
+}
+
+function drawPdfShapeGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("변과 꼭짓점을 직접 세기", x + 40, y + 48);
+  const kinds = ["circle", "triangle", "square", "pentagon"];
+  kinds.forEach((kind, index) => {
+    const cx = x + 120 + index * Math.min(160, (width - 220) / 3);
+    const cy = y + 145;
+    drawPdfShape(ctx, kind, cx, cy, 48, model.target.includes(getKoreanShapeName(kind)));
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 22px Malgun Gothic, sans-serif";
+    const name = getKoreanShapeName(kind);
+    ctx.fillText(name, cx - ctx.measureText(name).width / 2, cy + 84);
+  });
+}
+
+function drawPdfShape(ctx, kind, cx, cy, size, highlight = false) {
+  ctx.fillStyle = highlight ? "#fff0b8" : "#dff2ff";
+  ctx.strokeStyle = highlight ? "#e79a18" : "#2f86c8";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  if (kind === "circle") {
+    ctx.arc(cx, cy, size, 0, Math.PI * 2);
+  } else {
+    const sides = { triangle: 3, square: 4, pentagon: 5 }[kind] || 4;
+    for (let index = 0; index < sides; index += 1) {
+      const angle = -Math.PI / 2 + index * Math.PI * 2 / sides;
+      const px = cx + Math.cos(angle) * size;
+      const py = cy + Math.sin(angle) * size;
+      if (index === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.stroke();
+}
+
+function getKoreanShapeName(kind) {
+  return { circle: "원", triangle: "삼각형", square: "사각형", pentagon: "오각형" }[kind] || "도형";
+}
+
+function parsePdfLengthModel(block) {
+  const prompt = block.prompt || "";
+  if (!/cm|m|길이|단위/.test(prompt)) {
+    return null;
+  }
+  const values = [...prompt.matchAll(/(\d+)\s*(m|cm)/g)]
+    .map((match) => ({ value: Number(match[1]), unit: match[2], cm: match[2] === "m" ? Number(match[1]) * 100 : Number(match[1]) }))
+    .slice(0, 4);
+  return values.length ? { values } : null;
+}
+
+function drawPdfLengthGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("같은 단위로 맞춰 길이 비교", x + 40, y + 48);
+  const max = Math.max(...model.values.map((item) => item.cm), 1);
+  model.values.forEach((item, index) => {
+    const rowY = y + 88 + index * 52;
+    ctx.fillStyle = "#e9f7ff";
+    roundRect(ctx, x + 50, rowY, width - 100, 34, 16);
+    ctx.fill();
+    ctx.fillStyle = "#2fc2a3";
+    roundRect(ctx, x + 50, rowY, Math.max(60, (width - 100) * item.cm / max), 34, 16);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 24px Malgun Gothic, sans-serif";
+    ctx.fillText(`${item.value}${item.unit}`, x + 64, rowY + 25);
+    ctx.fillText(`${item.cm}cm`, x + width - 134, rowY + 25);
+  });
+}
+
+function parsePdfPatternModel(block) {
+  const prompt = block.prompt || "";
+  if (!/규칙|다음|□/.test(prompt)) {
+    return null;
+  }
+  const tokens = prompt.match(/\d+|□|\?|빨강|파랑|노랑|초록|삼각형|사각형|원/g) || [];
+  return tokens.length >= 3 ? { tokens: tokens.slice(0, 7) } : null;
+}
+
+function drawPdfPatternGraphic(ctx, model, block, x, y, width, height) {
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("반복되는 가장 짧은 묶음 찾기", x + 40, y + 48);
+  const gap = Math.min(112, (width - 100) / model.tokens.length);
+  model.tokens.forEach((token, index) => {
+    const chipX = x + 54 + index * gap;
+    ctx.fillStyle = token === "□" || token === "?" ? "#fff0b8" : "#e9f7ff";
+    roundRect(ctx, chipX, y + 112, gap - 12, 58, 18);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 24px Malgun Gothic, sans-serif";
+    ctx.fillText(token, chipX + (gap - 12) / 2 - ctx.measureText(token).width / 2, y + 150);
+  });
+}
+
 function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
   const columns = model.operator === "-" ? ["처음", "바꾼 뒤", "남은 수"] : ["첫 수", "더할 수", "합친 수"];
   const cardWidth = (width - 48) / 3;
@@ -2274,11 +2825,26 @@ function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
 }
 
 function drawBaseTenValue(ctx, value, x, y, width) {
-  const tens = Math.min(9, Math.floor(Math.abs(value) / 10));
+  const hundreds = Math.min(9, Math.floor(Math.abs(value) / 100));
+  const tens = Math.min(9, Math.floor((Math.abs(value) % 100) / 10));
   const ones = Math.min(16, Math.abs(value) % 10);
+  const hundredStartX = x;
+  const tenStartX = x + Math.max(72, width * 0.32);
+  const oneStartX = x + Math.max(150, width * 0.68);
+
+  for (let index = 0; index < hundreds; index += 1) {
+    const squareX = hundredStartX + (index % 2) * 30;
+    const squareY = y + Math.floor(index / 2) * 30;
+    ctx.fillStyle = "#9fe3d0";
+    roundRect(ctx, squareX, squareY, 24, 24, 6);
+    ctx.fill();
+    ctx.strokeStyle = "#1d927d";
+    ctx.stroke();
+  }
+
   for (let index = 0; index < tens; index += 1) {
-    const rodX = x + (index % 3) * 34;
-    const rodY = y + Math.floor(index / 3) * 18;
+    const rodX = tenStartX + (index % 2) * 34;
+    const rodY = y + Math.floor(index / 2) * 18;
     ctx.fillStyle = "#2f86c8";
     roundRect(ctx, rodX, rodY, 28, 12, 6);
     ctx.fill();
@@ -2286,7 +2852,7 @@ function drawBaseTenValue(ctx, value, x, y, width) {
     ctx.stroke();
   }
   for (let index = 0; index < ones; index += 1) {
-    const dotX = x + width - 92 + (index % 4) * 20;
+    const dotX = oneStartX + (index % 4) * 20;
     const dotY = y + Math.floor(index / 4) * 20;
     ctx.fillStyle = "#ffd66e";
     ctx.beginPath();
