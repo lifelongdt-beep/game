@@ -1,8 +1,8 @@
 const GROWTH_STAGES = [
-  { name: "수학 새싹", title: "2학년 수학 감각을 깨우는 수학 새싹", threshold: 0, accent: "#7ef0c2" },
+  { name: "수학 새싹", title: "초등 수학 감각을 깨우는 수학 새싹", threshold: 0, accent: "#7ef0c2" },
   { name: "개념 점화", title: "수와 도형, 측정 감각이 켜진 개념 점화", threshold: 5, accent: "#7cc7ff" },
   { name: "문제 해결 가속", title: "조건을 읽고 식으로 옮기는 문제 해결 가속", threshold: 10, accent: "#ffd66e" },
-  { name: "전단원 마스터", title: "2학년 수학 전단원을 연결하는 황금 로켓", threshold: 15, accent: "#ff9ad2" }
+  { name: "전단원 마스터", title: "학년별 수학 전단원을 연결하는 황금 로켓", threshold: 15, accent: "#ff9ad2" }
 ];
 
 const PLAYER_RETRY_DELAY_MS = 900;
@@ -15,25 +15,17 @@ const DEFAULT_CHARACTER_PHOTO_ASPECT = 1;
 const STUDENT_CLASS_MAX = 20;
 const STUDENT_NUMBER_MAX = 50;
 const LESSON_ALL_VALUE = "all";
-const SEMESTER_UNIT_KEYS = {
-  "semester-1": ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6"],
-  "semester-2": ["2-1", "2-2", "2-3", "2-4", "2-5", "2-6"]
-};
-const SEMESTER_CATEGORY_OPTIONS = [
-  { value: "semester-1", label: "1학기 종합", description: "1학기 1~6단원 핵심 문제" },
-  { value: "semester-2", label: "2학기 종합", description: "2학기 1~6단원 핵심 문제" }
-];
-const CATEGORY_SELECTION_OPTIONS = [
-  CATEGORY_OPTIONS.find((option) => option.value === "mixed"),
-  ...SEMESTER_CATEGORY_OPTIONS,
-  ...CATEGORY_OPTIONS.filter((option) => option.value !== "mixed")
-].filter(Boolean);
+const DEFAULT_GRADE = 2;
+const GRADE_SELECTION_OPTIONS = Array.isArray(window.GRADE_OPTIONS) && window.GRADE_OPTIONS.length
+  ? window.GRADE_OPTIONS
+  : [{ value: DEFAULT_GRADE, label: "2학년", description: "2학년 전 단원 문제" }];
 const CATEGORY_NAME_OVERRIDES = {
   "semester-1": "1학기 종합",
   "semester-2": "2학기 종합"
 };
 
 const state = {
+  grade: DEFAULT_GRADE,
   category: "mixed",
   lessonKey: LESSON_ALL_VALUE,
   timer: 60,
@@ -65,6 +57,7 @@ const startScreen = document.getElementById("startScreen");
 const gameScreen = document.getElementById("gameScreen");
 const resultScreen = document.getElementById("resultScreen");
 const submitScreen = document.getElementById("submitScreen");
+const gradeChoices = document.getElementById("gradeChoices");
 const categoryChoices = document.getElementById("categoryChoices");
 const lessonChoices = document.getElementById("lessonChoices");
 const timerChoices = document.getElementById("timerChoices");
@@ -263,7 +256,16 @@ function cloneLearningRecordData(value) {
 function renderStartControls() {
   ensureValidLessonSelection();
 
-  renderChoiceButtons(categoryChoices, CATEGORY_SELECTION_OPTIONS, state.category, (value) => {
+  if (gradeChoices) {
+    renderChoiceButtons(gradeChoices, GRADE_SELECTION_OPTIONS, state.grade, (value) => {
+      state.grade = normalizeGrade(value);
+      state.category = "mixed";
+      state.lessonKey = LESSON_ALL_VALUE;
+      renderStartControls();
+    });
+  }
+
+  renderChoiceButtons(categoryChoices, getCategorySelectionOptionsForGrade(state.grade), state.category, (value) => {
     state.category = value;
     state.lessonKey = LESSON_ALL_VALUE;
     renderStartControls();
@@ -286,13 +288,114 @@ function renderStartControls() {
   });
 
   selectionSummary.innerHTML = [
+    summaryPill("학년", getGradeName(state.grade)),
     summaryPill("범위", getSelectedScopeName()),
     summaryPill("전체 시간", `${state.timer}초`),
     summaryPill("참여 인원", `${state.playerCount}명`)
   ].join("");
 }
 
+function normalizeGrade(value) {
+  const grade = Number(value);
+  return GRADE_SELECTION_OPTIONS.some((option) => Number(option.value) === grade) ? grade : DEFAULT_GRADE;
+}
+
+function getGradeName(grade) {
+  return GRADE_SELECTION_OPTIONS.find((option) => Number(option.value) === Number(grade))?.label || `${grade}학년`;
+}
+
+function getCategorySelectionOptionsForGrade(grade) {
+  const gradeValue = normalizeGrade(grade);
+  const unitOptions = CATEGORY_OPTIONS
+    .filter((option) => option.value !== "mixed" && getCategoryGrade(option) === gradeValue)
+    .sort((left, right) => (
+      (Number(left.semester || parseUnitCategory(left.value)?.semester || 0) - Number(right.semester || parseUnitCategory(right.value)?.semester || 0))
+      || (Number(left.unitNumber || parseUnitCategory(left.value)?.unitNumber || 0) - Number(right.unitNumber || parseUnitCategory(right.value)?.unitNumber || 0))
+      || String(left.label || "").localeCompare(String(right.label || ""), "ko")
+    ));
+  return [
+    {
+      value: "mixed",
+      label: `${gradeValue}학년 전단원`,
+      description: `${gradeValue}학년 전체 단원을 섞어서 출제`
+    },
+    ...getSemesterCategoryOptionsForGrade(gradeValue),
+    ...unitOptions
+  ];
+}
+
+function getSemesterCategoryOptionsForGrade(grade) {
+  return [1, 2]
+    .map((semester) => ({
+      value: getSemesterCategoryValue(grade, semester),
+      label: `${semester}학기 종합`,
+      description: `${grade}학년 ${semester}학기 핵심 문제`
+    }))
+    .filter((option) => getQuestionUnitKeys(option.value).length > 0);
+}
+
+function getSemesterCategoryValue(grade, semester) {
+  return Number(grade) === 2 ? `semester-${semester}` : `g${grade}-semester-${semester}`;
+}
+
+function parseSemesterCategory(category) {
+  const gradeTwoMatch = String(category).match(/^semester-([12])$/);
+  if (gradeTwoMatch) {
+    return { grade: 2, semester: Number(gradeTwoMatch[1]) };
+  }
+
+  const gradeMatch = String(category).match(/^g(\d+)-semester-([12])$/);
+  return gradeMatch
+    ? { grade: Number(gradeMatch[1]), semester: Number(gradeMatch[2]) }
+    : null;
+}
+
+function parseUnitCategory(category) {
+  const gradeTwoMatch = String(category).match(/^([12])-(\d+)$/);
+  if (gradeTwoMatch) {
+    return { grade: 2, semester: Number(gradeTwoMatch[1]), unitNumber: Number(gradeTwoMatch[2]) };
+  }
+
+  const gradeMatch = String(category).match(/^g(\d+)-([12])-(\d+)$/);
+  return gradeMatch
+    ? { grade: Number(gradeMatch[1]), semester: Number(gradeMatch[2]), unitNumber: Number(gradeMatch[3]) }
+    : null;
+}
+
+function getCategoryGrade(optionOrCategory) {
+  if (optionOrCategory && typeof optionOrCategory === "object") {
+    return Number(optionOrCategory.grade || parseUnitCategory(optionOrCategory.value)?.grade || parseSemesterCategory(optionOrCategory.value)?.grade || state.grade);
+  }
+
+  const text = String(optionOrCategory || "");
+  if (text === "mixed") {
+    return state.grade;
+  }
+  return Number(parseUnitCategory(text)?.grade || parseSemesterCategory(text)?.grade || state.grade);
+}
+
+function getUnitKeysForGrade(grade) {
+  const gradeValue = normalizeGrade(grade);
+  return CATEGORY_OPTIONS
+    .filter((option) => option.value !== "mixed" && getCategoryGrade(option) === gradeValue && CATEGORY_KEYS.includes(option.value))
+    .map((option) => option.value);
+}
+
+function getSemesterUnitKeysForGrade(grade, semester) {
+  return getUnitKeysForGrade(grade)
+    .filter((key) => parseUnitCategory(key)?.semester === Number(semester));
+}
+
 function getCategoryName(category) {
+  if (category === "mixed") {
+    return `${getGradeName(state.grade)} 전단원`;
+  }
+
+  const semesterCategory = parseSemesterCategory(category);
+  if (semesterCategory) {
+    return `${semesterCategory.grade}학년 ${semesterCategory.semester}학기 종합`;
+  }
+
   return CATEGORY_NAME_OVERRIDES[category] || CATEGORY_NAMES[category] || CATEGORY_NAMES.mixed;
 }
 
@@ -302,11 +405,12 @@ function isUnitCategory(category) {
 
 function getQuestionUnitKeys(category) {
   if (category === "mixed") {
-    return [...CATEGORY_KEYS];
+    return getUnitKeysForGrade(state.grade);
   }
 
-  if (SEMESTER_UNIT_KEYS[category]) {
-    return [...SEMESTER_UNIT_KEYS[category]];
+  const semesterCategory = parseSemesterCategory(category);
+  if (semesterCategory) {
+    return getSemesterUnitKeysForGrade(semesterCategory.grade, semesterCategory.semester);
   }
 
   return isUnitCategory(category) ? [category] : [...CATEGORY_KEYS];
@@ -1047,6 +1151,7 @@ function finalizeQuestionRecord(playerState, question, outcome, answeredAt) {
     questionId: question.id,
     category: question.category || state.category,
     categoryName: resolveQuestionCategory(question),
+    grade: question.grade || getCategoryGrade(question.category || state.category),
     difficulty: playerState.difficulty,
     difficultyName: DIFFICULTY_NAMES[playerState.difficulty] || "",
     lessonKey: question.lessonKey || "",
@@ -1187,6 +1292,10 @@ function renderQuestionLearningVisual(question, options = {}) {
     return renderStructuredPatternVisual(question.scene, { revealAnswer });
   }
 
+  if (sceneType === "concept") {
+    return renderStructuredConceptVisual(question.scene, { revealAnswer });
+  }
+
   if (category === "1-5" && /분류할 수 없는|기준|먹을 수 있는|운동 도구/.test(prompt) && !graphItems.length) {
     return renderMiniClassifyVisual(prompt);
   }
@@ -1226,6 +1335,113 @@ function renderQuestionLearningVisual(question, options = {}) {
   return revealAnswer
     ? renderQuestionClueVisual(question)
     : `<div class="problem-visual-card problem-visual-card--neutral"></div>`;
+}
+
+function renderStructuredConceptVisual(scene, options = {}) {
+  const revealAnswer = options.revealAnswer === true;
+  const visibleValues = revealAnswer || !scene.hideValuesUntilReveal
+    ? (scene.values || [])
+    : (scene.publicValues || []);
+  const steps = revealAnswer ? (scene.steps || []) : [scene.hint || "조건을 그림에서 먼저 확인해요."];
+  const expression = revealAnswer && scene.expression
+    ? `<div class="concept-expression">${escapeHtml(scene.expression)}</div>`
+    : "";
+
+  return `
+    <div class="problem-visual-card concept-visual concept-visual--${escapeHtml(scene.kind || "basic")} ${revealAnswer ? "is-revealed" : ""}">
+      <div class="concept-visual-head">
+        <strong>${escapeHtml(scene.title || "그림으로 조건 보기")}</strong>
+        <span>${revealAnswer ? "풀이 확인" : "힌트"}</span>
+      </div>
+      ${renderConceptModel(scene, visibleValues, revealAnswer)}
+      ${expression}
+      <div class="concept-step-strip">
+        ${steps.filter(Boolean).slice(0, 3).map((step, index) => `
+          <span><b>${index + 1}</b>${escapeHtml(step)}</span>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderConceptModel(scene, visibleValues, revealAnswer) {
+  if (scene.kind === "table" && Array.isArray(scene.table)) {
+    return `
+      <div class="concept-table">
+        ${scene.table.map((row) => `
+          <div class="concept-table-row">
+            <span>${escapeHtml(row.label)}</span>
+            <div class="concept-table-bar"><i style="width:${Math.min(100, Number(row.value || 0) * 8)}%"></i></div>
+            <strong>${escapeHtml(row.value)}${escapeHtml(row.unit || "")}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  if (scene.kind === "groups") {
+    const groups = Math.min(8, Number(scene.groups || 0));
+    const each = Math.min(10, Number(scene.each || 0));
+    const extra = Math.min(8, Number(scene.extra || 0));
+    return `
+      <div class="concept-groups">
+        ${Array.from({ length: groups }, (_, groupIndex) => `
+          <div class="concept-group" aria-label="${groupIndex + 1}묶음">
+            ${Array.from({ length: each }, () => `<i></i>`).join("")}
+          </div>
+        `).join("")}
+        ${extra ? `<div class="concept-group concept-group--extra">${Array.from({ length: extra }, () => `<i></i>`).join("")}</div>` : ""}
+      </div>
+    `;
+  }
+
+  if (scene.kind === "fraction") {
+    const cellCount = revealAnswer ? 12 : 10;
+    return `
+      <div class="concept-fraction">
+        ${Array.from({ length: cellCount }, (_, index) => `<i class="${revealAnswer && index < Math.ceil(cellCount / 2) ? "is-filled" : ""}"></i>`).join("")}
+      </div>
+      ${renderConceptValueChips(visibleValues)}
+    `;
+  }
+
+  if (scene.kind === "geometry") {
+    return `
+      <div class="concept-geometry">
+        <div class="concept-shape concept-shape--triangle"></div>
+        <div class="concept-shape concept-shape--square"></div>
+        <div class="concept-shape concept-shape--pentagon"></div>
+      </div>
+      ${renderConceptValueChips(visibleValues)}
+    `;
+  }
+
+  if (scene.kind === "array") {
+    return `
+      <div class="concept-array">
+        ${Array.from({ length: 24 }, (_, index) => `<i class="${index % 5 === 0 ? "is-guide" : ""}"></i>`).join("")}
+      </div>
+      ${renderConceptValueChips(visibleValues)}
+    `;
+  }
+
+  if (scene.kind === "numberLine" || scene.kind === "pattern") {
+    return `
+      <div class="concept-number-line">
+        ${(visibleValues || []).slice(0, 5).map((value) => `<span>${escapeHtml(value)}</span>`).join("")}
+      </div>
+    `;
+  }
+
+  return renderConceptValueChips(visibleValues);
+}
+
+function renderConceptValueChips(values) {
+  return `
+    <div class="concept-value-chips">
+      ${(values || []).filter(Boolean).slice(0, 5).map((value) => `<span>${escapeHtml(value)}</span>`).join("")}
+    </div>
+  `;
 }
 
 function isTimeLearningPrompt(prompt) {
@@ -7951,6 +8167,7 @@ function startPersonalizedPractice(playerId) {
         sourceStudentKey: entry.savedRecord.studentKey,
         classNumber: entry.savedRecord.classNumber,
         studentNumber: entry.savedRecord.studentNumber,
+        grade: entry.plan.grade || entry.savedRecord.grade || state.grade,
         focusText: entry.plan.focusText,
         mode: entry.plan.mode,
         targetTypes: entry.plan.targetTypes || []
@@ -8003,6 +8220,7 @@ function startPersonalizedPractice(playerId) {
 
 function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
   const anchorQuestions = Array.isArray(anchorRecord.questionRecords) ? anchorRecord.questionRecords : [];
+  const planGrade = Number(anchorRecord.grade || anchorQuestions.find((question) => question.grade)?.grade || getCategoryGrade(anchorRecord.category || anchorQuestions[0]?.category || state.category));
   const growth = analyzeStudentGrowthByQuestionType(studentRecords);
   const recoveredKeys = new Set(growth.recovered.map((item) => item.key));
   const ongoingKeys = growth.ongoing.map((item) => item.key);
@@ -8025,7 +8243,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
     mode = baseDifficulty === "high" ? "challenge" : "extension";
     focusText = baseDifficulty === "high" ? "3줄 이상 심화 문장제" : "새 차시·새 유형 확장";
     questions = baseDifficulty === "high"
-      ? buildAdvancedStoryChallengeQuestions(anchorRecord, studentRecords.length)
+      ? buildAdvancedStoryChallengeQuestions(anchorRecord, studentRecords.length, planGrade)
       : pickDifferentTypeQuestions({
           difficulty: targetDifficulty,
           seen,
@@ -8086,6 +8304,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
   }
 
   return {
+    grade: planGrade,
     mode,
     difficulty: targetDifficulty,
     focusText,
@@ -8220,11 +8439,14 @@ function getNextDifficulty(difficulty) {
   return "high";
 }
 
-function getAllBankQuestions(difficulty = "") {
+function getAllBankQuestions(difficulty = "", grade = state.grade) {
+  const gradeValue = Number(grade || 0);
   return Object.values(DISPLAY_QUESTION_BANK || {}).flatMap((group) => (
     Object.entries(group || {}).flatMap(([level, questions]) => (
       !difficulty || difficulty === level ? questions : []
     ))
+  )).filter((question) => (
+    !gradeValue || Number(question.grade || getCategoryGrade(question.category)) === gradeValue
   ));
 }
 
@@ -8432,7 +8654,16 @@ function cloneQuestionForPersonalizedPractice(question, index, mode) {
   };
 }
 
-function buildAdvancedStoryChallengeQuestions(anchorRecord, attemptOffset = 0) {
+function buildAdvancedStoryChallengeQuestions(anchorRecord, attemptOffset = 0, grade = state.grade) {
+  if (Number(grade) !== 2) {
+    const storyCandidates = uniqueQuestionsByPrompt(shuffle(getAllBankQuestions("high", grade))
+      .filter((question) => String(question.prompt || "").includes("\n") || String(question.prompt || "").length >= 34));
+    if (storyCandidates.length) {
+      return storyCandidates.slice(0, 8);
+    }
+    return uniqueQuestionsByPrompt(shuffle(getAllBankQuestions("high", grade))).slice(0, 8);
+  }
+
   const seed = Number(anchorRecord.studentNumber || 1) + (Number(attemptOffset) % 12);
   const specs = [
     {
@@ -8563,6 +8794,9 @@ function buildLearningRecord(player, playerState, studentInfo) {
     playerId: player.id,
     playerName: player.name,
     playerAvatar: player.avatar,
+    grade: isPersonalizedPractice
+      ? Number(questionRecords.find((record) => record.grade)?.grade || practiceMeta?.grade || state.grade)
+      : state.grade,
     category: isPersonalizedPractice ? "personalized-review" : state.category,
     categoryName: isPersonalizedPractice ? `맞춤 재도전 · ${practiceMeta.focusText}` : getSelectedScopeName(),
     lessonKey: isPersonalizedPractice ? "personalized-review" : state.lessonKey,

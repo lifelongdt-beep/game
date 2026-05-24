@@ -37,40 +37,40 @@ const RECORD_COMMENT_TONES = {
 
 const CURRICULUM_STANDARDS = [
   {
-    code: "2수01-01",
-    shortLabel: "수 이해",
-    commentLabel: "세 자리 수와 네 자리 수의 자릿값 이해",
-    text: "세 자리 수와 네 자리 수의 자릿값을 이해하고 수의 크기를 비교할 수 있다."
+    code: "초수01",
+    shortLabel: "수와 연산",
+    commentLabel: "수의 구조와 계산 원리 이해",
+    text: "학년 수준에 맞는 수의 구조를 이해하고 계산 원리를 식과 그림으로 설명할 수 있다."
   },
   {
-    code: "2수01-06",
-    shortLabel: "덧셈·뺄셈",
-    commentLabel: "덧셈과 뺄셈의 계산 원리와 문장제 해결",
-    text: "덧셈과 뺄셈의 계산 원리를 이해하고 실생활 문제를 해결할 수 있다."
+    code: "초수02",
+    shortLabel: "문장제",
+    commentLabel: "상황을 식으로 바꾸고 풀이 과정 설명",
+    text: "문제 상황에서 처음 수, 변화, 묻는 말을 찾아 식으로 나타내고 풀이 과정을 설명할 수 있다."
   },
   {
-    code: "2수01-10",
-    shortLabel: "곱셈",
-    commentLabel: "묶어 세기와 곱셈구구 활용",
-    text: "몇씩 몇 묶음 상황을 곱셈식으로 나타내고 곱셈구구를 활용할 수 있다."
+    code: "초수03",
+    shortLabel: "도형·측정",
+    commentLabel: "도형의 특징과 단위의 의미 활용",
+    text: "도형의 구성 요소를 관찰하고 길이, 시간, 넓이, 부피 등 단위의 의미를 활용할 수 있다."
   },
   {
-    code: "2수02-03",
-    shortLabel: "도형",
-    commentLabel: "평면도형의 특징 찾기",
-    text: "여러 가지 평면도형의 모양과 구성 요소를 관찰하고 분류할 수 있다."
+    code: "초수04",
+    shortLabel: "자료",
+    commentLabel: "표와 그래프에서 근거 찾기",
+    text: "자료를 표나 그래프로 나타내고 항목과 수를 연결하여 비교, 합, 차이를 해석할 수 있다."
   },
   {
-    code: "2수03-01",
-    shortLabel: "측정",
-    commentLabel: "길이, 시각, 시간의 양감과 계산",
-    text: "길이, 시각, 시간을 읽고 비교하며 실생활 상황에서 활용할 수 있다."
+    code: "초수05",
+    shortLabel: "규칙·관계",
+    commentLabel: "변화와 대응 관계 설명",
+    text: "수, 도형, 상황 속 반복과 변화 규칙을 찾아 다음 값을 예측하고 관계를 설명할 수 있다."
   },
   {
-    code: "2수04-01",
-    shortLabel: "자료와 규칙",
-    commentLabel: "분류, 표와 그래프, 규칙 찾기",
-    text: "자료를 기준에 따라 분류하고 표나 그래프로 나타내며 반복·증감 규칙을 찾을 수 있다."
+    code: "초수06",
+    shortLabel: "태도",
+    commentLabel: "오답 후 재도전과 성장",
+    text: "오답을 근거로 다시 도전하며 같은 유형을 개선하고 새로운 문제에 적용할 수 있다."
   }
 ];
 
@@ -1544,7 +1544,7 @@ function buildPraiseStudentRecordComment(summary, level) {
     return [
       `${strongText} 영역을 비교적 안정적으로 이해하고, 주어진 식을 차근차근 계산하여 정답을 찾아가는 모습이 좋음.`,
       `${attitudeText}`,
-      `앞으로 ${focusText}을 꾸준히 더해 가면 2학년 수학 전단원 문제 해결력이 더욱 탄탄해질 것으로 기대됨.`
+      `앞으로 ${focusText}을 꾸준히 더해 가면 선택한 학년의 수학 전단원 문제 해결력이 더욱 탄탄해질 것으로 기대됨.`
     ].join(" ");
   }
 
@@ -1558,7 +1558,7 @@ function buildPraiseStudentRecordComment(summary, level) {
 
   if (level === "support") {
     return [
-      `현재는 2학년 수학의 핵심 개념에서 조건 읽기와 풀이 순서를 교사의 안내와 함께 차분히 확인해 가는 과정에 있으며, 그림·표·수직선 등으로 문제 상황을 나누어 보는 활동에서 배움의 실마리를 만들어 가고 있음.`,
+      `현재는 선택한 학년의 수학 핵심 개념에서 조건 읽기와 풀이 순서를 교사의 안내와 함께 차분히 확인해 가는 과정에 있으며, 그림·표·수직선 등으로 문제 상황을 나누어 보는 활동에서 배움의 실마리를 만들어 가고 있음.`,
       `작은 수의 단순 계산과 기본 개념부터 성공 경험을 쌓고 설명을 따라 다시 풀어 보는 기회를 이어가면 수와 연산, 도형, 측정, 자료와 규칙을 점차 안정적으로 익혀 갈 것으로 기대됨.`
     ].join(" ");
   }
@@ -1568,7 +1568,7 @@ function buildPraiseStudentRecordComment(summary, level) {
   }
 
   return [
-    `2학년 수학의 기초 문제 해결에 참여하며 문제 상황을 식, 그림, 표와 연결해 보려는 모습을 보임.`,
+    `선택한 학년의 수학 기초 문제 해결에 참여하며 문제 상황을 식, 그림, 표와 연결해 보려는 모습을 보임.`,
     `앞으로 ${focusText}을 수막대, 그림, 말로 설명하는 활동과 함께 연습하면 계산 과정에 대한 자신감이 조금씩 커질 것으로 기대됨.`
   ].join(" ");
 }
@@ -1581,7 +1581,7 @@ function buildAnalyticalStudentRecordComment(summary, level) {
 
   if (level === "advanced" || level === "strong") {
     return [
-      `${strongText}에서 정확도와 문제 해결 속도가 안정적이며, 현재 학습한 2학년 수학 개념을 대체로 신뢰할 수 있게 적용함.`,
+      `${strongText}에서 정확도와 문제 해결 속도가 안정적이며, 현재 학습한 학년 수준의 수학 개념을 대체로 신뢰할 수 있게 적용함.`,
       `${attitudeText}`,
       `앞으로는 풀이 과정을 말이나 식으로 더 명확히 설명하고 ${focusText}까지 확장하면 심화 문제에서도 강점이 유지될 것으로 보임.`
     ].join(" ");
@@ -1645,7 +1645,7 @@ function getStrongStandardText(summary) {
     : attempted.sort((a, b) => getStandardAccuracy(b) - getStandardAccuracy(a)).slice(0, 2);
 
   if (selectedStandards.length === 0) {
-    return "2학년 수학 핵심 개념과 문제 해결 과정";
+    return "학년 수준의 수학 핵심 개념과 문제 해결 과정";
   }
 
   return selectedStandards.map((standard) => standard.commentLabel).join(" 및 ");
@@ -3535,6 +3535,7 @@ async function exportTeacherLearningRecords() {
 
   const headers = [
     "저장시각",
+    "학년",
     "반",
     "번호",
     "문제유형",
@@ -3551,6 +3552,7 @@ async function exportTeacherLearningRecords() {
   ];
   const rows = records.map((record) => [
     formatDateTime(record.savedAt),
+    record.grade || "",
     record.classNumber,
     record.studentNumber,
     record.categoryName,
@@ -3571,7 +3573,7 @@ async function exportTeacherLearningRecords() {
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `2학년_수학_전단원_평가결과_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `초등수학_전학년_평가결과_${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
