@@ -1655,6 +1655,37 @@ function renderLengthBarRow(item, max) {
 
 function renderMiniPlaceValueVisual(prompt, options = {}) {
   const revealAnswer = options.revealAnswer === true;
+  if (/바로 앞|바로 뒤/.test(prompt)) {
+    const number = extractFirstNumber(prompt);
+    if (Number.isFinite(number)) {
+      const before = number - 1;
+      const after = number + 1;
+      const leftValue = revealAnswer ? before : "?";
+      const rightValue = revealAnswer ? after : "?";
+      return `
+        <div class="problem-visual-card problem-neighbor-hint ${revealAnswer ? "is-revealed" : ""}">
+          <p>기준 수에서 한 칸만 움직여요</p>
+          <div class="neighbor-hint-line">
+            <span class="neighbor-slot ${revealAnswer ? "is-revealed-slot" : "is-unknown"}">
+              <em>바로 앞</em>
+              <strong>${leftValue}</strong>
+            </span>
+            <i aria-hidden="true">-1</i>
+            <span class="neighbor-slot is-center">
+              <em>기준 수</em>
+              <strong>${number}</strong>
+            </span>
+            <i aria-hidden="true">+1</i>
+            <span class="neighbor-slot ${revealAnswer ? "is-revealed-slot" : "is-unknown"}">
+              <em>바로 뒤</em>
+              <strong>${rightValue}</strong>
+            </span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
   if (/□/.test(prompt) && /\+/.test(prompt)) {
     const leftSide = String(prompt || "").split("=")[0];
     const tokens = leftSide.split("+").map((token) => token.trim()).filter(Boolean);
