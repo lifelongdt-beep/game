@@ -326,6 +326,7 @@ function renderTeacherStudentDetail(summary) {
         ${teacherStatCard("설명 확인", `${summary.feedbackConfirmed || 0}회`, plan.metacognition)}
       </section>
 
+      ${renderStudentGrowthAnalysis(summary)}
       ${renderStudentExpertFeedback(summary, plan, trend)}
       ${renderStudentStandardBars(summary)}
       ${renderStudentSessionTimeline(summary)}
@@ -354,6 +355,65 @@ function renderStudentExpertFeedback(summary, plan, trend) {
         <p>${escapeHtml(plan.quickSupport)}</p>
       </article>
     </section>
+  `;
+}
+
+function renderStudentGrowthAnalysis(summary) {
+  const growth = summary.growthAnalysis || { recovered: [], ongoing: [] };
+  const recovered = growth.recovered.slice(0, 3);
+  const ongoing = growth.ongoing.slice(0, 3);
+  const hasEvidence = recovered.length || ongoing.length;
+
+  if (!hasEvidence) {
+    return `
+      <section class="student-growth-panel">
+        <div class="teacher-section-title">
+          <span>학습 성장 추적</span>
+          <strong>같은 유형 재도전 기록을 더 모으는 중</strong>
+        </div>
+        <p>아직 피드백 뒤 같은 유형을 다시 푼 기록이 충분하지 않습니다. 다음 맞춤 재도전 후 성장 여부가 자동으로 비교됩니다.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="student-growth-panel">
+      <div class="teacher-section-title">
+        <span>학습 성장 추적</span>
+        <strong>피드백 뒤 같은 유형을 다시 맞혔는지 확인</strong>
+      </div>
+      <div class="student-growth-grid">
+        <article class="student-growth-card student-growth-card--recovered">
+          <span>성장 확인</span>
+          <strong>${recovered.length}유형</strong>
+          <p>${recovered.length ? "이 유형은 다시 공부할 문제에서 제외합니다." : "아직 제외할 만큼 회복된 유형은 없습니다."}</p>
+          ${renderGrowthTypeList(recovered)}
+        </article>
+        <article class="student-growth-card student-growth-card--ongoing">
+          <span>계속 관찰</span>
+          <strong>${ongoing.length}유형</strong>
+          <p>${ongoing.length ? "피드백 뒤에도 흔들려 교사 개입이 필요합니다." : "현재 계속 흔들리는 같은 유형은 없습니다."}</p>
+          ${renderGrowthTypeList(ongoing)}
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+function renderGrowthTypeList(items) {
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <ul class="student-growth-list">
+      ${items.map((item) => `
+        <li>
+          <b>${escapeHtml(item.label)}</b>
+          <span>${item.supportCount}회 보충 · ${item.cleanAfterSupportCount || 0}회 회복</span>
+        </li>
+      `).join("")}
+    </ul>
   `;
 }
 
@@ -1120,6 +1180,7 @@ function buildStudentReportSummaries(records) {
       summary.feedbackConfirmed = studentRecords.reduce((sum, record) => sum + (record.feedbackConfirmed || 0), 0);
       summary.focusTags = getSummaryNeedTags(studentRecords);
       summary.standardStats = analyzeStandardPerformance(studentRecords);
+      summary.growthAnalysis = analyzeStudentGrowthByQuestionType(studentRecords);
       return summary;
     })
     .sort((a, b) => Number(a.classNumber) - Number(b.classNumber) || Number(a.studentNumber) - Number(b.studentNumber));
@@ -1185,6 +1246,111 @@ function analyzeStandardPerformance(records) {
   });
 
   return Array.from(stats.values());
+}
+
+function analyzeStudentGrowthByQuestionType(records) {
+  const states = new Map();
+  const events = [...(records || [])]
+    .sort((left, right) => new Date(left.savedAt || left.endedAt || 0) - new Date(right.savedAt || right.endedAt || 0))
+    .flatMap((record) => (
+      (Array.isArray(record.questionRecords) ? record.questionRecords : []).map((questionRecord) => ({
+        record,
+        questionRecord
+      }))
+    ));
+
+  events.forEach(({ record, questionRecord }) => {
+    const key = getQuestionTypeKey(questionRecord);
+    if (!key) {
+      return;
+    }
+
+    if (!states.has(key)) {
+      states.set(key, {
+        key,
+        label: getQuestionTypeLabel(questionRecord, record),
+        supportCount: 0,
+        cleanAfterSupportCount: 0,
+        supportOpen: false,
+        lastSupportPrompt: "",
+        lastSeenAt: ""
+      });
+    }
+
+    const item = states.get(key);
+    item.label = item.label || getQuestionTypeLabel(questionRecord, record);
+    item.lastSeenAt = record.savedAt || record.endedAt || "";
+
+    if (isQuestionRecordNeedingSupport(questionRecord)) {
+      item.supportCount += 1;
+      item.supportOpen = true;
+      item.lastSupportPrompt = questionRecord.prompt || "";
+      return;
+    }
+
+    if (item.supportOpen && isQuestionRecordCleanCorrect(questionRecord)) {
+      item.cleanAfterSupportCount += 1;
+      item.supportOpen = false;
+    }
+  });
+
+  const supported = Array.from(states.values()).filter((item) => item.supportCount > 0);
+  return {
+    recovered: supported
+      .filter((item) => !item.supportOpen && item.cleanAfterSupportCount > 0)
+      .sort((a, b) => b.cleanAfterSupportCount - a.cleanAfterSupportCount || b.supportCount - a.supportCount),
+    ongoing: supported
+      .filter((item) => item.supportOpen)
+      .sort((a, b) => b.supportCount - a.supportCount || a.label.localeCompare(b.label, "ko-KR"))
+  };
+}
+
+function isQuestionRecordNeedingSupport(questionRecord) {
+  return Boolean(questionRecord && (!questionRecord.finalCorrect || (questionRecord.attemptCount || 0) > 1));
+}
+
+function isQuestionRecordCleanCorrect(questionRecord) {
+  return Boolean(questionRecord && questionRecord.finalCorrect && (questionRecord.attemptCount || 0) <= 1);
+}
+
+function getQuestionTypeKey(questionRecord) {
+  if (!questionRecord) {
+    return "";
+  }
+
+  return questionRecord.variantKey
+    || [questionRecord.category, questionRecord.lessonKey, normalizePromptType(questionRecord.prompt)].filter(Boolean).join(":");
+}
+
+function normalizePromptType(prompt) {
+  return String(prompt || "")
+    .replace(/\d+/g, "#")
+    .replace(/\s+/g, " ")
+    .slice(0, 48);
+}
+
+function getQuestionTypeLabel(questionRecord, record = {}) {
+  if (!questionRecord) {
+    return "";
+  }
+
+  const category = questionRecord.categoryName || record.categoryName || resolveQuestionCategoryLabel(questionRecord.category || record.category);
+  const lesson = resolveLessonLabel(questionRecord.category || record.category, questionRecord.lessonKey || record.lessonKey);
+  return [category, lesson].filter(Boolean).join(" · ") || "맞춤 유형";
+}
+
+function resolveQuestionCategoryLabel(category) {
+  const bankCategories = window.Math2GameBank?.CATEGORY_NAMES || {};
+  return bankCategories[category] || category || "전단원";
+}
+
+function resolveLessonLabel(category, lessonKey) {
+  if (!category || !lessonKey) {
+    return "";
+  }
+
+  return (window.Math2GameBank?.LESSON_OPTIONS_BY_CATEGORY?.[category] || [])
+    .find((lesson) => lesson.value === lessonKey)?.label || "";
 }
 
 function resolveStandardsForQuestion(questionRecord, record = {}) {
@@ -1657,8 +1823,10 @@ function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions
 
 function getStudentPdfQuestions(summary) {
   const questions = [...(summary.questionRecords || [])];
+  const recoveredKeys = new Set((summary.growthAnalysis?.recovered || []).map((item) => item.key));
   const priorityQuestions = questions.filter((questionRecord) => (
-    !questionRecord.finalCorrect || (questionRecord.attemptCount || 0) > 1 || (questionRecord.elapsedMs || 0) >= 12000
+    (!questionRecord.finalCorrect || (questionRecord.attemptCount || 0) > 1 || (questionRecord.elapsedMs || 0) >= 12000)
+    && !recoveredKeys.has(getQuestionTypeKey(questionRecord))
   ));
   const selected = priorityQuestions.length > 0 ? priorityQuestions : questions;
   return selected.slice(0, 8);

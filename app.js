@@ -49,6 +49,9 @@ const state = {
   startedAt: null,
   endedAt: null,
   submissionSaved: false,
+  savedSubmissionRecordsByPlayer: {},
+  personalizedPracticePlansByPlayer: {},
+  practiceMode: null,
   totalCorrect: 0,
   totalAnswered: 0,
   characterPhotoUrl: CHARACTER_PHOTO_PATH,
@@ -113,6 +116,7 @@ function init() {
   showResultButton.addEventListener("click", showResults);
   submitBackToHomeButton.addEventListener("click", goHome);
   studentResultForms.addEventListener("change", handleStudentSelectionChange);
+  studentResultForms.addEventListener("click", handleStudentSubmitAction);
   document.addEventListener("fullscreenchange", syncFullscreenButton);
   window.addEventListener("beforeunload", releaseCharacterPhotoUrl);
 
@@ -456,12 +460,18 @@ function renderCharacterPhotoStatus() {
 
 function startGame() {
   primeAudio();
+  if (state.practiceMode?.previousTimer) {
+    state.timer = state.practiceMode.previousTimer;
+  }
   state.sessionToken += 1;
   state.gameEnded = false;
   state.sessionId = createSessionId();
   state.startedAt = Date.now();
   state.endedAt = null;
   state.submissionSaved = false;
+  state.savedSubmissionRecordsByPlayer = {};
+  state.personalizedPracticePlansByPlayer = {};
+  state.practiceMode = null;
   state.totalCorrect = 0;
   state.totalAnswered = 0;
 
@@ -482,6 +492,10 @@ function startGame() {
 function goHome() {
   state.sessionToken += 1;
   state.gameEnded = false;
+  if (state.practiceMode?.previousTimer) {
+    state.timer = state.practiceMode.previousTimer;
+  }
+  state.practiceMode = null;
   clearTimers();
   clearPlayerDelays();
   resetCelebration();
@@ -7472,9 +7486,14 @@ function renderStudentSubmitScreen() {
   studentResultForms.style.setProperty("--student-submit-columns", String(Math.min(state.players.length, 5)));
   studentResultForms.innerHTML = state.players.map((player) => {
     const playerState = state.scores[player.id];
+    const savedRecord = state.savedSubmissionRecordsByPlayer[player.id] || null;
+    const practicePlan = state.personalizedPracticePlansByPlayer[player.id] || null;
     const questionCount = playerState.questionRecords.length;
     const avgMs = questionCount ? Math.round(playerState.totalQuestionTimeMs / questionCount) : 0;
     const accuracy = getRecordAccuracyPercent(playerState.questionRecords);
+    const cardHelp = savedRecord
+      ? `${savedRecord.studentKey}으로 저장 완료 · 맞춤 재도전 문제 ${practicePlan?.questions?.length || 0}문항 준비`
+      : "입력 후 저장하면 선생님 전용 관리 파일에 풀이 기록이 누적됩니다.";
     return `
       <article class="student-submit-card" data-player="${player.id}">
         <div class="student-submit-head">
@@ -7506,11 +7525,54 @@ function renderStudentSubmitScreen() {
             </select>
           </label>
         </div>
-        <p class="student-submit-help">입력 후 저장하면 선생님 전용 관리 파일에 풀이 기록이 누적됩니다.</p>
+        <p class="student-submit-help">${escapeHtml(cardHelp)}</p>
+        ${savedRecord ? renderPersonalizedPracticeLauncher(player, savedRecord, practicePlan) : ""}
       </article>
     `;
   }).join("");
   syncStudentSubmitSelections();
+  applySavedStudentSubmitState();
+}
+
+function renderPersonalizedPracticeLauncher(player, savedRecord, practicePlan) {
+  const focusText = practicePlan?.focusText || "맞춤 복습";
+  const modeText = practicePlan?.mode === "challenge"
+    ? "심화 문장제 도전"
+    : practicePlan?.mode === "extension"
+      ? "새 유형 확장"
+      : "부담 낮춘 재도전";
+  return `
+    <div class="student-practice-launch">
+      <div>
+        <span>${escapeHtml(modeText)}</span>
+        <strong>${escapeHtml(focusText)}</strong>
+      </div>
+      <button class="primary-button student-practice-button" type="button" data-personalized-practice data-player="${player.id}">
+        맞춤 다시 풀기
+      </button>
+    </div>
+  `;
+}
+
+function applySavedStudentSubmitState() {
+  Object.entries(state.savedSubmissionRecordsByPlayer || {}).forEach(([playerId, record]) => {
+    const card = studentResultForms.querySelector(`.student-submit-card[data-player="${playerId}"]`);
+    if (!card) {
+      return;
+    }
+
+    const classSelect = card.querySelector('[data-field="classNumber"]');
+    const numberSelect = card.querySelector('[data-field="studentNumber"]');
+    if (classSelect) {
+      classSelect.value = record.classNumber || "";
+      classSelect.disabled = true;
+    }
+    if (numberSelect) {
+      numberSelect.value = record.studentNumber || "";
+      numberSelect.disabled = true;
+    }
+    card.classList.add("is-saved");
+  });
 }
 
 function renderNumberSelectOptions(start, end, suffix) {
@@ -7531,6 +7593,16 @@ function handleStudentSelectionChange(event) {
   }
 
   syncStudentSubmitSelections(select);
+}
+
+function handleStudentSubmitAction(event) {
+  const practiceButton = event.target.closest("[data-personalized-practice]");
+  if (!practiceButton) {
+    return;
+  }
+
+  const playerId = practiceButton.dataset.player;
+  startPersonalizedPractice(playerId);
 }
 
 function syncAllStudentClassSelections(classNumber) {
@@ -7627,11 +7699,462 @@ function saveLearningDataFromSubmit() {
     buildLearningRecord(player, state.scores[player.id], studentInfoByPlayer[player.id])
   ));
   const savedRecords = loadLearningRecords();
-  saveLearningRecords([...savedRecords, ...newRecords]);
+  const allRecords = [...savedRecords, ...newRecords];
+  saveLearningRecords(allRecords);
   state.submissionSaved = true;
-  studentSubmitSummary.textContent = `${newRecords.length}명의 평가 결과를 저장했습니다. 선생님은 교사용 파일에서 누적 결과를 확인할 수 있습니다.`;
+  state.savedSubmissionRecordsByPlayer = Object.fromEntries(newRecords.map((record) => [record.playerId, record]));
+  state.personalizedPracticePlansByPlayer = Object.fromEntries(newRecords.map((record) => [
+    record.playerId,
+    buildPersonalizedPracticePlan(
+      allRecords.filter((item) => item.studentKey === record.studentKey),
+      record
+    )
+  ]));
   saveLearningDataButton.disabled = true;
   saveLearningDataButton.textContent = "저장 완료";
+  renderStudentSubmitScreen();
+  studentSubmitSummary.textContent = `${newRecords.length}명의 평가 결과를 저장했습니다. 학생별 맞춤 다시 풀기 버튼이 준비되었습니다.`;
+}
+
+function startPersonalizedPractice(playerId) {
+  const savedRecord = state.savedSubmissionRecordsByPlayer[playerId];
+  if (!savedRecord) {
+    window.alert("먼저 반과 번호를 저장한 뒤 맞춤 다시 풀기를 시작할 수 있어요.");
+    return;
+  }
+
+  const allRecords = loadLearningRecords();
+  const studentRecords = allRecords.filter((record) => record.studentKey === savedRecord.studentKey);
+  const plan = state.personalizedPracticePlansByPlayer[playerId]
+    || buildPersonalizedPracticePlan(studentRecords, savedRecord);
+
+  if (!plan.questions.length) {
+    window.alert("맞춤 재도전 문제를 만들 기록이 아직 충분하지 않아요.");
+    return;
+  }
+
+  primeAudio();
+  state.sessionToken += 1;
+  state.gameEnded = false;
+  state.sessionId = createSessionId();
+  state.startedAt = Date.now();
+  state.endedAt = null;
+  state.submissionSaved = false;
+  state.savedSubmissionRecordsByPlayer = {};
+  state.personalizedPracticePlansByPlayer = {};
+  state.practiceMode = {
+    active: true,
+    sourceRecordId: savedRecord.id,
+    sourceStudentKey: savedRecord.studentKey,
+    focusText: plan.focusText,
+    mode: plan.mode,
+    targetTypes: plan.targetTypes,
+    previousTimer: state.timer
+  };
+  state.totalCorrect = 0;
+  state.totalAnswered = 0;
+
+  clearTimers();
+  clearPlayerDelays();
+  resetCelebration();
+
+  const practicePlayer = {
+    ...createPlayers(1)[0],
+    id: "player-1",
+    name: savedRecord.studentKey,
+    avatar: savedRecord.playerAvatar || createPlayers(1)[0].avatar,
+    animal: savedRecord.playerAvatar || createPlayers(1)[0].animal,
+    soundText: "좋아요"
+  };
+  state.players = [practicePlayer];
+  state.scores = createScoreState(state.players);
+  state.timer = plan.mode === "challenge" ? Math.max(state.timer, 180) : Math.max(state.timer, 120);
+  state.timerLeft = state.timer;
+
+  const playerState = state.scores[practicePlayer.id];
+  playerState.difficulty = plan.difficulty;
+  playerState.questionPool = arrangeDiverseQuestionPool(plan.questions);
+  playerState.status = plan.mode === "challenge" ? "심화 문장제 도전" : "맞춤 재도전";
+
+  switchScreen("game");
+  assignNextQuestion(practicePlayer.id);
+  maybeStartTimer();
+  updateGameStatus();
+  renderGrowthPanel();
+  renderPlayerBoard();
+}
+
+function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
+  const anchorQuestions = Array.isArray(anchorRecord.questionRecords) ? anchorRecord.questionRecords : [];
+  const growth = analyzeStudentGrowthByQuestionType(studentRecords);
+  const recoveredKeys = new Set(growth.recovered.map((item) => item.key));
+  const ongoingKeys = growth.ongoing.map((item) => item.key);
+  const anchorSupportKeys = uniqueStrings(anchorQuestions
+    .filter(isQuestionRecordNeedingSupport)
+    .map(getQuestionTypeKey)
+    .filter(Boolean)
+    .filter((key) => !recoveredKeys.has(key)));
+  const targetKeys = uniqueStrings([...anchorSupportKeys, ...ongoingKeys].filter((key) => !recoveredKeys.has(key)));
+  const cleanCorrectQuestions = anchorQuestions.filter(isQuestionRecordCleanCorrect);
+  const seen = buildSeenQuestionSet(studentRecords);
+  const allCleanCorrect = anchorQuestions.length > 0 && anchorQuestions.every(isQuestionRecordCleanCorrect);
+  const baseDifficulty = anchorRecord.difficulty || "mid";
+  const targetDifficulty = allCleanCorrect ? getNextDifficulty(baseDifficulty) : baseDifficulty;
+  let questions = [];
+  let mode = "review";
+  let focusText = "오답 유형 중심 + 자신 있게 맞힌 유형 섞기";
+
+  if (allCleanCorrect) {
+    mode = baseDifficulty === "high" ? "challenge" : "extension";
+    focusText = baseDifficulty === "high" ? "3줄 이상 심화 문장제" : "새 차시·새 유형 확장";
+    questions = baseDifficulty === "high"
+      ? buildAdvancedStoryChallengeQuestions(anchorRecord)
+      : pickDifferentTypeQuestions({
+          difficulty: targetDifficulty,
+          seen,
+          excludeKeys: new Set(anchorQuestions.map(getQuestionTypeKey).filter(Boolean)),
+          limit: 8
+        });
+  } else {
+    const focusQuestions = pickQuestionsForTypeKeys(targetKeys, baseDifficulty, seen, 5);
+    const warmupQuestions = pickWarmupQuestions(cleanCorrectQuestions, baseDifficulty, seen, 2);
+    const extensionQuestions = pickDifferentTypeQuestions({
+      difficulty: baseDifficulty,
+      seen,
+      excludeKeys: new Set([...targetKeys, ...cleanCorrectQuestions.map(getQuestionTypeKey).filter(Boolean)]),
+      limit: 1
+    });
+    questions = interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions).slice(0, 8);
+    if (!focusQuestions.length) {
+      focusText = "가볍게 성공 경험을 쌓는 확인 문제";
+    } else {
+      const label = growth.ongoing.find((item) => targetKeys.includes(item.key))?.label
+        || getQuestionTypeLabel(anchorQuestions.find((question) => targetKeys.includes(getQuestionTypeKey(question))))
+        || "보충 유형";
+      focusText = `${label} 중심 + 쉬운 성공 문제 섞기`;
+    }
+  }
+
+  if (!questions.length) {
+    questions = pickDifferentTypeQuestions({ difficulty: targetDifficulty, seen, excludeKeys: new Set(), limit: 8 });
+  }
+
+  return {
+    mode,
+    difficulty: targetDifficulty,
+    focusText,
+    targetTypes: targetKeys.map((key) => ({
+      key,
+      label: growth.ongoing.find((item) => item.key === key)?.label || key
+    })),
+    questions: questions.map((question, index) => cloneQuestionForPersonalizedPractice(question, index, mode))
+  };
+}
+
+function analyzeStudentGrowthByQuestionType(records) {
+  const states = new Map();
+  const sortedEvents = [...(records || [])]
+    .sort((left, right) => new Date(left.savedAt || left.endedAt || 0) - new Date(right.savedAt || right.endedAt || 0))
+    .flatMap((record, recordIndex) => (
+      (Array.isArray(record.questionRecords) ? record.questionRecords : []).map((questionRecord, questionIndex) => ({
+        record,
+        recordIndex,
+        questionIndex,
+        questionRecord
+      }))
+    ));
+
+  sortedEvents.forEach((event) => {
+    const key = getQuestionTypeKey(event.questionRecord);
+    if (!key) {
+      return;
+    }
+
+    if (!states.has(key)) {
+      states.set(key, {
+        key,
+        label: getQuestionTypeLabel(event.questionRecord, event.record),
+        supportCount: 0,
+        cleanAfterSupportCount: 0,
+        supportOpen: false,
+        lastSupportPrompt: "",
+        lastSeenAt: ""
+      });
+    }
+
+    const stateForType = states.get(key);
+    stateForType.label = stateForType.label || getQuestionTypeLabel(event.questionRecord, event.record);
+    stateForType.lastSeenAt = event.record.savedAt || event.record.endedAt || "";
+
+    if (isQuestionRecordNeedingSupport(event.questionRecord)) {
+      stateForType.supportCount += 1;
+      stateForType.supportOpen = true;
+      stateForType.lastSupportPrompt = event.questionRecord.prompt || "";
+      return;
+    }
+
+    if (stateForType.supportOpen && isQuestionRecordCleanCorrect(event.questionRecord)) {
+      stateForType.cleanAfterSupportCount += 1;
+      stateForType.supportOpen = false;
+    }
+  });
+
+  const supported = Array.from(states.values()).filter((item) => item.supportCount > 0);
+  return {
+    recovered: supported.filter((item) => !item.supportOpen && item.cleanAfterSupportCount > 0),
+    ongoing: supported.filter((item) => item.supportOpen)
+  };
+}
+
+function isQuestionRecordNeedingSupport(questionRecord) {
+  return Boolean(questionRecord && (!questionRecord.finalCorrect || (questionRecord.attemptCount || 0) > 1));
+}
+
+function isQuestionRecordCleanCorrect(questionRecord) {
+  return Boolean(questionRecord && questionRecord.finalCorrect && (questionRecord.attemptCount || 0) <= 1);
+}
+
+function getQuestionTypeKey(questionRecord) {
+  if (!questionRecord) {
+    return "";
+  }
+  return questionRecord.variantKey
+    || [questionRecord.category, questionRecord.lessonKey, normalizePromptType(questionRecord.prompt)].filter(Boolean).join(":");
+}
+
+function normalizePromptType(prompt) {
+  return String(prompt || "")
+    .replace(/\d+/g, "#")
+    .replace(/\s+/g, " ")
+    .slice(0, 48);
+}
+
+function getQuestionTypeLabel(questionRecord, parentRecord = {}) {
+  if (!questionRecord) {
+    return "";
+  }
+  const category = questionRecord.categoryName || parentRecord.categoryName || getCategoryName(questionRecord.category || parentRecord.category);
+  const lesson = getLessonLabel(questionRecord.category || parentRecord.category, questionRecord.lessonKey || parentRecord.lessonKey);
+  return [category, lesson].filter(Boolean).join(" · ") || "맞춤 유형";
+}
+
+function getLessonLabel(category, lessonKey) {
+  if (!category || !lessonKey || lessonKey === LESSON_ALL_VALUE) {
+    return "";
+  }
+  return (LESSON_OPTIONS_BY_CATEGORY[category] || []).find((lesson) => lesson.value === lessonKey)?.label || "";
+}
+
+function uniqueStrings(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function buildSeenQuestionSet(records) {
+  const questionRecords = (records || []).flatMap((record) => (
+    Array.isArray(record.questionRecords) ? record.questionRecords : []
+  ));
+  return {
+    ids: new Set(questionRecords.map((question) => question.questionId).filter(Boolean)),
+    prompts: new Set(questionRecords.map((question) => question.prompt).filter(Boolean)),
+    typeKeys: new Set(questionRecords.map(getQuestionTypeKey).filter(Boolean)),
+    lessonKeys: new Set(questionRecords.map((question) => question.lessonKey).filter(Boolean))
+  };
+}
+
+function getNextDifficulty(difficulty) {
+  if (difficulty === "low") return "mid";
+  if (difficulty === "mid") return "high";
+  return "high";
+}
+
+function getAllBankQuestions(difficulty = "") {
+  return Object.values(DISPLAY_QUESTION_BANK || {}).flatMap((group) => (
+    Object.entries(group || {}).flatMap(([level, questions]) => (
+      !difficulty || difficulty === level ? questions : []
+    ))
+  ));
+}
+
+function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
+  const picked = [];
+  const usedIds = new Set();
+
+  typeKeys.forEach((key) => {
+    if (picked.length >= limit) {
+      return;
+    }
+
+    const sameDifficulty = getAllBankQuestions(difficulty).filter((question) => getQuestionTypeKey(question) === key);
+    const anyDifficulty = getAllBankQuestions().filter((question) => getQuestionTypeKey(question) === key);
+    const candidates = preferUnseenQuestions(sameDifficulty.length ? sameDifficulty : anyDifficulty, seen, usedIds);
+    if (candidates[0]) {
+      picked.push(candidates[0]);
+      usedIds.add(candidates[0].id);
+    }
+  });
+
+  if (picked.length < limit) {
+    typeKeys.forEach((key) => {
+      if (picked.length >= limit) {
+        return;
+      }
+      const lessonKey = key.split(":")[0];
+      const lessonCandidates = getAllBankQuestions(difficulty).filter((question) => question.lessonKey && key.includes(question.lessonKey));
+      preferUnseenQuestions(lessonCandidates, seen, usedIds).slice(0, limit - picked.length).forEach((question) => {
+        picked.push(question);
+        usedIds.add(question.id);
+      });
+    });
+  }
+
+  return picked;
+}
+
+function pickWarmupQuestions(cleanCorrectQuestions, difficulty, seen, limit) {
+  const keys = uniqueStrings(cleanCorrectQuestions.map(getQuestionTypeKey));
+  return pickQuestionsForTypeKeys(keys, difficulty, seen, limit);
+}
+
+function pickDifferentTypeQuestions({ difficulty, seen, excludeKeys = new Set(), limit = 8 }) {
+  const candidates = getAllBankQuestions(difficulty)
+    .filter((question) => !excludeKeys.has(getQuestionTypeKey(question)))
+    .filter((question) => !seen.typeKeys.has(getQuestionTypeKey(question)) || !seen.lessonKeys.has(question.lessonKey));
+  const fallback = getAllBankQuestions(difficulty).filter((question) => !excludeKeys.has(getQuestionTypeKey(question)));
+  return preferUnseenQuestions(candidates.length ? candidates : fallback, seen, new Set()).slice(0, limit);
+}
+
+function preferUnseenQuestions(candidates, seen, usedIds = new Set()) {
+  const shuffled = shuffle([...candidates]).filter((question) => !usedIds.has(question.id));
+  const unseen = shuffled.filter((question) => !seen.ids.has(question.id) && !seen.prompts.has(question.prompt));
+  return unseen.length ? unseen : shuffled;
+}
+
+function interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions) {
+  const result = [];
+  const sources = [warmupQuestions, focusQuestions, focusQuestions.slice(1), extensionQuestions, focusQuestions.slice(2), warmupQuestions.slice(1)];
+  sources.forEach((source) => {
+    source.forEach((question) => {
+      if (!result.some((item) => item.id === question.id)) {
+        result.push(question);
+      }
+    });
+  });
+  return result;
+}
+
+function cloneQuestionForPersonalizedPractice(question, index, mode) {
+  return {
+    ...question,
+    id: `${question.id || "personalized"}-review-${Date.now()}-${index}`,
+    difficulty: question.difficulty || "mid",
+    practiceMode: mode,
+    variantKey: question.variantKey || getQuestionTypeKey(question) || `personalized:${index}`
+  };
+}
+
+function buildAdvancedStoryChallengeQuestions(anchorRecord) {
+  const seed = Number(anchorRecord.studentNumber || 1);
+  const specs = [
+    {
+      category: "1-3",
+      lessonKey: "1-3-core",
+      variantKey: "advanced-story:add-sub-two-step",
+      prompt: `하린이는 스티커 ${48 + seed}장을 가지고 있었습니다.\n친구에게 ${17 + seed % 4}장을 더 받고, 꾸미기에 ${26 + seed % 5}장을 썼습니다.\n하린이에게 남은 스티커는 모두 몇 장인가요?`,
+      answer: `${48 + seed + 17 + seed % 4 - (26 + seed % 5)}장`,
+      unit: "장",
+      explanation: "처음 수에 더 받은 수를 더한 뒤, 쓴 수를 빼요."
+    },
+    {
+      category: "2-4",
+      lessonKey: "time-add-minutes",
+      variantKey: "advanced-story:elapsed-time-two-step",
+      prompt: "도서관 수업은 9시 35분에 시작했습니다.\n책 읽기를 25분 하고, 기록 쓰기를 15분 더 했습니다.\n수업이 끝난 시각은 몇 시 몇 분인가요?",
+      answer: "10시 15분",
+      distractors: ["10시 5분", "10시 10분", "9시 75분", "10시 25분"],
+      explanation: "25분과 15분을 합쳐 40분 뒤 시각을 구해요."
+    },
+    {
+      category: "2-2",
+      lessonKey: "array-multiplication",
+      variantKey: "advanced-story:multiply-plus",
+      prompt: "한 모둠에 학생이 4명씩 앉았습니다.\n그런 모둠이 6개 있고, 발표 도우미 3명이 더 왔습니다.\n교실에 있는 학생은 모두 몇 명인가요?",
+      answer: "27명",
+      unit: "명",
+      explanation: "4명씩 6모둠을 먼저 곱하고 3명을 더해요."
+    },
+    {
+      category: "2-3",
+      lessonKey: "meter-centimeter-convert",
+      variantKey: "advanced-story:length-convert-two-step",
+      prompt: "민지는 1m 20cm 리본을 가지고 있습니다.\n선물 포장에 45cm를 쓰고, 30cm를 더 이어 붙였습니다.\n리본은 이제 몇 cm인가요?",
+      answer: "105cm",
+      unit: "cm",
+      explanation: "1m 20cm를 120cm로 바꾸고, 45cm를 뺀 뒤 30cm를 더해요."
+    }
+  ];
+
+  return specs.map((spec, index) => makePersonalizedQuestion(spec, index));
+}
+
+function makePersonalizedQuestion(spec, index) {
+  const answerText = String(spec.answer);
+  const options = buildPersonalizedChoiceSet(answerText, spec.distractors, spec.unit);
+  return {
+    id: `personalized-${spec.variantKey}-${index}`,
+    category: spec.category,
+    unitId: spec.category,
+    unitLabel: getCategoryName(spec.category),
+    difficulty: "high",
+    lessonKey: spec.lessonKey,
+    variantKey: spec.variantKey,
+    prompt: spec.prompt,
+    sceneLines: spec.prompt.split("\n"),
+    options,
+    answer: options.indexOf(answerText),
+    explanation: spec.explanation,
+    feedback: {
+      title: "문장을 줄별로 나누어 봐요.",
+      diagnosis: "심화 문장제는 행동이 여러 번 나오므로 한 번에 계산하면 헷갈릴 수 있어요.",
+      steps: [spec.explanation, "문장 한 줄마다 식을 하나씩 세우면 안정적으로 풀 수 있어요."],
+      nextAction: "처음, 변화, 묻는 말을 줄마다 표시하세요."
+    }
+  };
+}
+
+function buildPersonalizedChoiceSet(answerText, distractors = [], unit = "") {
+  const seen = new Set([answerText]);
+  const choices = [answerText];
+  (distractors || []).forEach((item) => {
+    const text = String(item);
+    if (choices.length < 5 && !seen.has(text)) {
+      seen.add(text);
+      choices.push(text);
+    }
+  });
+
+  const parsed = answerText.match(/^(\d+)(.*)$/);
+  if (parsed) {
+    const base = Number(parsed[1]);
+    const suffix = parsed[2] || unit || "";
+    [1, -1, 5, -5, 10, -10, 15, -15].forEach((delta) => {
+      const value = base + delta;
+      const text = `${value}${suffix}`;
+      if (value >= 0 && choices.length < 5 && !seen.has(text)) {
+        seen.add(text);
+        choices.push(text);
+      }
+    });
+  }
+
+  while (choices.length < 5) {
+    const text = `${choices.length + 1}${unit}`;
+    if (!seen.has(text)) {
+      seen.add(text);
+      choices.push(text);
+    }
+  }
+
+  return shuffle(choices);
 }
 
 function buildLearningRecord(player, playerState, studentInfo) {
@@ -7651,13 +8174,16 @@ function buildLearningRecord(player, playerState, studentInfo) {
     classNumber: studentInfo.classNumber,
     studentNumber: studentInfo.studentNumber,
     studentKey: `${studentInfo.classNumber}반 ${studentInfo.studentNumber}번`,
+    playerId: player.id,
     playerName: player.name,
     playerAvatar: player.avatar,
-    category: state.category,
-    categoryName: getSelectedScopeName(),
-    lessonKey: state.lessonKey,
-    lessonName: getSelectedLessonOption()?.label || "",
-    unitKeys: getQuestionUnitKeys(state.category),
+    category: state.practiceMode?.active ? "personalized-review" : state.category,
+    categoryName: state.practiceMode?.active ? `맞춤 재도전 · ${state.practiceMode.focusText}` : getSelectedScopeName(),
+    lessonKey: state.practiceMode?.active ? "personalized-review" : state.lessonKey,
+    lessonName: state.practiceMode?.active ? state.practiceMode.focusText : getSelectedLessonOption()?.label || "",
+    unitKeys: state.practiceMode?.active
+      ? uniqueStrings(questionRecords.map((record) => record.category).filter(Boolean))
+      : getQuestionUnitKeys(state.category),
     difficulty: playerState.difficulty,
     difficultyName: DIFFICULTY_NAMES[playerState.difficulty] || "",
     timer: state.timer,
@@ -7672,6 +8198,11 @@ function buildLearningRecord(player, playerState, studentInfo) {
     finalWrong: playerState.finalWrong,
     feedbackShown: playerState.feedbackShown,
     feedbackConfirmed: playerState.feedbackConfirmed,
+    practiceMode: state.practiceMode?.active ? "personalized-review" : "regular",
+    practiceSourceRecordId: state.practiceMode?.sourceRecordId || "",
+    practiceFocusText: state.practiceMode?.focusText || "",
+    practicePlanMode: state.practiceMode?.mode || "",
+    practiceTargetTypes: cloneLearningRecordData(state.practiceMode?.targetTypes || []),
     weakCategories: getWeakCategories(questionRecords),
     questionRecords
   };
