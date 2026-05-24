@@ -221,7 +221,22 @@ function selectTeacherStudent(event) {
 async function copyTeacherFeedbackSnippet(event) {
   const pdfButton = event.target.closest("[data-student-pdf]");
   if (pdfButton) {
-    await downloadStudentFeedbackPdf(pdfButton.dataset.studentKey || "", pdfButton.dataset.studentPdf || "practice");
+    const originalText = pdfButton.textContent;
+    pdfButton.disabled = true;
+    pdfButton.textContent = "최신 기록으로 생성 중";
+    try {
+      await downloadStudentFeedbackPdf(pdfButton.dataset.studentKey || "", pdfButton.dataset.studentPdf || "practice");
+      pdfButton.textContent = "PDF 생성 완료";
+      window.setTimeout(() => {
+        pdfButton.textContent = originalText;
+      }, 1200);
+    } catch (error) {
+      console.error("학생 PDF 생성 실패", error);
+      window.alert("PDF를 만드는 중 문제가 생겼어요. 새로고침 후 다시 시도해 주세요.");
+      pdfButton.textContent = originalText;
+    } finally {
+      pdfButton.disabled = false;
+    }
     return;
   }
 
@@ -296,6 +311,7 @@ function renderTeacherStudentDetail(summary) {
         <div>
           <span>첨부 자료</span>
           <strong>다시 공부할 문제와 정답·설명 PDF</strong>
+          <p>누를 때마다 현재까지 누적된 최신 기록과 게임 속 그림 풀이로 다시 생성됩니다.</p>
         </div>
         <div class="student-pdf-actions">
           <button class="record-copy-button" type="button" data-student-key="${escapeHtml(summary.studentKey)}" data-student-pdf="practice">다시 공부할 문제 PDF</button>
@@ -1577,41 +1593,45 @@ async function downloadStudentFeedbackPdf(studentKey, type = "practice") {
     return;
   }
 
-  const pdfBlob = createStudentFeedbackPdf(summary, type);
+  const pdfBlob = await createStudentFeedbackPdf(summary, type);
   const fileType = type === "answer" ? "정답_설명자료" : "다시공부할문제";
-  downloadBlob(pdfBlob, `${sanitizeFileName(summary.studentKey)}_${fileType}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  const latestStamp = getPdfLatestRecordStamp(summary);
+  downloadBlob(pdfBlob, `${sanitizeFileName(summary.studentKey)}_${fileType}_${latestStamp}.pdf`);
 }
 
-function createStudentFeedbackPdf(summary, type = "practice") {
-  const blocks = buildStudentPdfBlocks(summary, type);
+async function createStudentFeedbackPdf(summary, type = "practice") {
+  const questions = getStudentPdfQuestions(summary);
+  const visualPayloads = await getStudentPdfVisualPayloads(questions, type);
+  const blocks = buildStudentPdfBlocks(summary, type, questions, visualPayloads);
+  await prepareStudentPdfVisuals(blocks);
   const pages = paginatePdfBlocks(blocks);
   const images = pages.map((pageBlocks, index) => drawStudentPdfCanvas(summary, type, pageBlocks, index + 1, pages.length));
   return buildImagePdf(images);
 }
 
-function buildStudentPdfBlocks(summary, type) {
+function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions(summary), visualPayloads = []) {
   const level = resolveStudentRecordLevel(summary);
   const plan = buildStudentFeedbackPlan(summary, level);
-  const questions = getStudentPdfQuestions(summary);
   const focus = getShortFocusName(summary.focusTags?.[0] || summary.weakText || "");
+  const latestText = summary.lastSavedAt ? formatDateTime(summary.lastSavedAt) : "저장 기록 없음";
   const headerBlocks = type === "answer"
     ? [
       {
         kind: "note",
         title: "교사용 안내",
-        body: `${summary.studentKey} 학생의 정답과 설명 자료입니다. 설명은 한 번에 길게 읽히기보다, 학생이 다시 푼 뒤 필요한 부분만 짧게 제시하는 용도로 사용하세요.`
+        body: `${summary.studentKey} 학생의 정답과 설명 자료입니다. 다운로드하는 순간의 누적 기록으로 다시 만들었습니다. 설명은 학생이 다시 푼 뒤 필요한 부분만 짧게 제시하는 용도로 사용하세요.`
       },
       {
         kind: "note",
         title: "오늘의 핵심",
-        body: plan.diagnosis
+        body: `${plan.diagnosis}\n최근 반영: ${latestText} · 누적 ${summary.sessions}회, ${summary.questionCount}문항`
       }
     ]
     : [
       {
         kind: "note",
         title: "다시 공부할 때 먼저 보기",
-        body: `${focus}을 먼저 확인합니다. 답을 바로 고르지 말고 문제에서 필요한 말과 수를 표시한 뒤 풀어 보세요.`
+        body: `${focus}을 먼저 확인합니다. 답을 바로 고르지 말고 문제에서 필요한 말과 수를 표시한 뒤 풀어 보세요.\n최근 반영: ${latestText} · 누적 ${summary.sessions}회, ${summary.questionCount}문항`
       },
       {
         kind: "note",
@@ -1621,19 +1641,36 @@ function buildStudentPdfBlocks(summary, type) {
     ];
 
   const questionBlocks = questions.map((questionRecord, index) => {
-    const explanation = buildQuestionExplanation(questionRecord);
+    const visualPayload = visualPayloads[index] || buildFallbackQuestionVisualPayload(questionRecord, type);
+    const explanationSteps = buildQuestionExplanationSteps(questionRecord);
+    const selectedText = getQuestionRecordSelectedText(questionRecord);
+    const correctText = questionRecord.correctText || visualPayload.correctText || "-";
     if (type === "answer") {
       return {
         kind: "question",
+        pdfType: type,
         title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
-        body: `정답: ${questionRecord.correctText || "-"}\n설명: ${explanation}`
+        prompt: questionRecord.prompt || visualPayload.prompt || "문항",
+        correctText,
+        selectedText,
+        visualHtml: visualPayload.visualHtml || "",
+        visualTitle: "게임 속 자세한 그림 설명",
+        explanationSteps,
+        body: `정답: ${correctText}\n${explanationSteps.join("\n")}`
       };
     }
 
     return {
       kind: "question",
+      pdfType: type,
       title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
-      body: `내 풀이: ________________________________\n답: __________\n확인할 점: ${explanation}`
+      prompt: questionRecord.prompt || visualPayload.prompt || "문항",
+      correctText,
+      selectedText,
+      visualHtml: visualPayload.visualHtml || "",
+      visualTitle: "게임에서 보던 문제 그림",
+      explanationSteps: [buildPracticeGuide(questionRecord, explanationSteps[0])],
+      body: `내 풀이: ________________________________\n답: __________\n확인할 점: ${buildPracticeGuide(questionRecord, explanationSteps[0])}`
     };
   });
 
@@ -1650,12 +1687,302 @@ function getStudentPdfQuestions(summary) {
 }
 
 function buildQuestionExplanation(questionRecord) {
-  const tags = analyzeQuestionRecordNeed(questionRecord);
-  if (tags.length === 0) {
-    return "문제에서 묻는 말과 필요한 수를 확인하면 안정적으로 풀 수 있습니다.";
+  return buildQuestionExplanationSteps(questionRecord)[0] || "문제에서 묻는 말과 필요한 수를 확인하면 안정적으로 풀 수 있습니다.";
+}
+
+async function getStudentPdfVisualPayloads(questions, type) {
+  return Promise.all(questions.map((questionRecord) => requestQuestionVisualPayload(questionRecord, type)));
+}
+
+async function requestQuestionVisualPayload(questionRecord, type) {
+  const response = await requestStorageBridge("question-visual-render", {
+    questionRecord,
+    revealAnswer: type === "answer"
+  });
+
+  if (response && response.visualHtml) {
+    return response;
   }
 
-  return getActionForFocus(tags[0]);
+  return buildFallbackQuestionVisualPayload(questionRecord, type);
+}
+
+function buildFallbackQuestionVisualPayload(questionRecord) {
+  const correctText = questionRecord.correctText || "";
+  return {
+    visualHtml: "",
+    prompt: questionRecord.prompt || "문항",
+    correctText,
+    category: questionRecord.category || "",
+    categoryName: questionRecord.categoryName || "",
+    scene: questionRecord.scene || null
+  };
+}
+
+async function prepareStudentPdfVisuals(blocks) {
+  const visualBlocks = blocks.filter((block) => block.kind === "question" && block.visualHtml);
+  await Promise.all(visualBlocks.map(async (block) => {
+    block.visualImage = await renderHtmlVisualToImage(block.visualHtml, block.pdfType);
+  }));
+}
+
+async function renderHtmlVisualToImage(visualHtml, type) {
+  const capture = document.createElement("div");
+  capture.className = `pdf-visual-capture player-panel teacher-board-canvas ${type === "answer" ? "is-answer" : "is-practice"}`;
+  capture.setAttribute("aria-hidden", "true");
+  Object.assign(capture.style, {
+    position: "fixed",
+    left: "-12000px",
+    top: "0",
+    width: type === "answer" ? "900px" : "760px",
+    minHeight: "220px",
+    padding: "18px",
+    background: "#f5fbff",
+    boxSizing: "border-box",
+    overflow: "visible",
+    zIndex: "-1"
+  });
+  capture.innerHTML = visualHtml;
+  document.body.appendChild(capture);
+
+  await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+  const width = Math.ceil(capture.scrollWidth || capture.getBoundingClientRect().width || 760);
+  const height = Math.ceil(capture.scrollHeight || capture.getBoundingClientRect().height || 260);
+  const exportRoot = document.createElement("div");
+  exportRoot.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  exportRoot.className = `pdf-visual-export player-panel teacher-board-canvas ${type === "answer" ? "is-answer" : "is-practice"}`;
+  exportRoot.setAttribute("style", `width:${width}px;min-height:${height}px;background:#f5fbff;box-sizing:border-box;padding:18px;font-family:'Malgun Gothic',Arial,sans-serif;`);
+  const style = document.createElement("style");
+  style.textContent = getPdfVisualCssText();
+  exportRoot.appendChild(style);
+  Array.from(capture.childNodes).forEach((node) => exportRoot.appendChild(node.cloneNode(true)));
+  const serialized = new XMLSerializer().serializeToString(exportRoot);
+  capture.remove();
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject x="0" y="0" width="100%" height="100%">${serialized}</foreignObject></svg>`;
+  try {
+    return await loadSvgImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, width, height);
+  } catch (error) {
+    console.warn("PDF 그림 캡처 실패, 간단 그림으로 대체합니다.", error);
+    return null;
+  }
+}
+
+let cachedPdfVisualCssText = "";
+
+function getPdfVisualCssText() {
+  if (cachedPdfVisualCssText) {
+    return cachedPdfVisualCssText;
+  }
+
+  const rules = [];
+  Array.from(document.styleSheets).forEach((sheet) => {
+    try {
+      Array.from(sheet.cssRules || []).forEach((rule) => {
+        rules.push(rule.cssText);
+      });
+    } catch (error) {
+      // Same-origin CSS is available in normal use; keep a small fallback if the browser blocks it.
+    }
+  });
+  rules.push(`
+    .pdf-visual-export, .pdf-visual-export * { box-sizing: border-box; }
+    .pdf-visual-export { color: #12324b; letter-spacing: 0; }
+    .pdf-visual-export .feedback-visual-first,
+    .pdf-visual-export .feedback-concept-visual { width: 100%; margin: 0; }
+    .pdf-visual-export .concept-card,
+    .pdf-visual-export .problem-visual-card { max-width: 100%; box-shadow: none !important; }
+    .pdf-visual-export .student-think-prompt { font-size: 1.05rem; line-height: 1.32; }
+  `);
+  cachedPdfVisualCssText = rules.join("\n");
+  return cachedPdfVisualCssText;
+}
+
+function loadSvgImage(src, width, height) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve({ image, width, height });
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function buildPracticeGuide(questionRecord, firstStep = "") {
+  const prompt = questionRecord.prompt || "";
+  if (prompt.includes("+") || prompt.includes("-")) {
+    return "그림에서 같은 자리끼리 나누어 보고, 받아올림·받아내림이 생기는 자리만 다시 표시하세요.";
+  }
+  if (prompt.includes("묶음") || prompt.includes("×")) {
+    return "한 묶음의 수와 묶음 수를 먼저 표시한 뒤 뛰어 세어 보세요.";
+  }
+  if (prompt.includes("표") || prompt.includes("그래프")) {
+    return "항목 이름에서 수까지 같은 줄을 손가락으로 따라가며 표시하세요.";
+  }
+  if (prompt.includes("시") || prompt.includes("분") || prompt.includes("달력")) {
+    return "시각인지 시간인지 먼저 말하고, 시작과 끝 사이를 그림에서 세어 보세요.";
+  }
+  if (prompt.includes("도형") || prompt.includes("변") || prompt.includes("꼭짓점")) {
+    return "이름을 외우기보다 바깥 선을 따라가며 변과 꼭짓점을 직접 세어 보세요.";
+  }
+  return firstStep || "문제에서 묻는 말과 필요한 수를 표시한 뒤 다시 풀어 보세요.";
+}
+
+function buildQuestionExplanationSteps(questionRecord) {
+  const prompt = questionRecord.prompt || "";
+  const addSub = parsePdfAddSubModel(questionRecord);
+  if (addSub) {
+    return buildAddSubExplanationSteps(addSub);
+  }
+
+  const multiplication = parsePdfMultiplicationModel(questionRecord);
+  if (multiplication) {
+    if (multiplication.mode === "divide-groups") {
+      return [
+        `전체 ${multiplication.total}개를 한 줄로 늘어놓지 말고 ${multiplication.groups}묶음으로 나누어 봅니다.`,
+        `${multiplication.each}개씩 들어가면 ${multiplication.each}×${multiplication.groups}=${multiplication.total}이므로 한 묶음은 ${multiplication.each}개입니다.`
+      ];
+    }
+    if (multiplication.mode === "target") {
+      return [
+        `목표 ${multiplication.product}개가 되도록 같은 크기 묶음을 만듭니다.`,
+        `${multiplication.each}개씩 ${multiplication.groups}묶음이면 ${multiplication.each}×${multiplication.groups}=${multiplication.product}입니다.`
+      ];
+    }
+    return [
+      `${multiplication.each}개씩 있는 같은 묶음이 ${multiplication.groups}개입니다.`,
+      `${multiplication.each}를 ${multiplication.groups}번 뛰어 세면 ${multiplication.product}이므로 답은 ${questionRecord.correctText || multiplication.product}입니다.`
+    ];
+  }
+
+  if (prompt.includes("표") || prompt.includes("그래프")) {
+    return [
+      "표와 그래프는 항목 이름을 먼저 찾고, 같은 줄을 가로로 따라가 수를 읽습니다.",
+      `문제에서 묻는 항목만 표시하면 답은 ${questionRecord.correctText || "정답"}입니다.`
+    ];
+  }
+  if (prompt.includes("시") || prompt.includes("분") || prompt.includes("달력")) {
+    return [
+      "시각은 한 순간이고 시간은 두 시각 사이의 양입니다. 시작과 끝을 먼저 나누어 봅니다.",
+      `그림에서 이동한 칸이나 분을 세면 답은 ${questionRecord.correctText || "정답"}입니다.`
+    ];
+  }
+  if (prompt.includes("도형") || prompt.includes("변") || prompt.includes("꼭짓점")) {
+    return [
+      "도형은 이름보다 바깥 선을 따라가며 변, 꼭짓점, 굽은 선을 직접 확인합니다.",
+      `조건과 맞는 특징을 끝까지 세면 답은 ${questionRecord.correctText || "정답"}입니다.`
+    ];
+  }
+  if (prompt.includes("자리") || prompt.includes("1000") || prompt.includes("100이")) {
+    return [
+      "큰 자리부터 자리집에 숫자를 넣고, 각 숫자가 몇을 뜻하는지 읽습니다.",
+      `자리 이름과 숫자를 맞추면 답은 ${questionRecord.correctText || "정답"}입니다.`
+    ];
+  }
+  if (prompt.includes("규칙")) {
+    return [
+      "앞의 두 칸 사이가 어떻게 변하는지 먼저 표시하고, 같은 변화가 반복되는지 확인합니다.",
+      `같은 변화를 한 번 더 적용하면 답은 ${questionRecord.correctText || "정답"}입니다.`
+    ];
+  }
+
+  const tags = analyzeQuestionRecordNeed(questionRecord);
+  if (tags.length === 0) {
+    return ["문제에서 묻는 말과 필요한 수를 확인하면 안정적으로 풀 수 있습니다."];
+  }
+  return [getActionForFocus(tags[0])];
+}
+
+function parsePdfAddSubModel(questionRecord) {
+  const prompt = questionRecord.prompt || "";
+  const correctNumber = extractFirstNumber(questionRecord.correctText);
+  let match = prompt.match(/(\d+)\s*([+\-])\s*(\d+)/);
+  if (match && Number.isFinite(correctNumber)) {
+    return { left: Number(match[1]), operator: match[2], right: Number(match[3]), result: correctNumber };
+  }
+
+  const numbers = extractNumbers(prompt);
+  if (numbers.length >= 2 && Number.isFinite(correctNumber)) {
+    const isSub = /썼|남|빼|차이|덜|줄|잃|꺼냈|가져갔/.test(prompt);
+    return { left: numbers[0], operator: isSub ? "-" : "+", right: numbers[1], result: correctNumber };
+  }
+
+  return null;
+}
+
+function buildAddSubExplanationSteps(model) {
+  const left = model.left;
+  const right = model.right;
+  const result = model.result;
+  if (model.operator === "+") {
+    const onesSum = left % 10 + right % 10;
+    if (onesSum >= 10) {
+      return [
+        `일의 자리 ${left % 10}과 ${right % 10}을 더해 정확히 10개를 먼저 묶습니다.`,
+        `10개는 십 1개로 올리고, 남은 일 ${onesSum % 10}개를 적습니다.`,
+        `십의 자리까지 더하면 ${result}${numberSubjectParticle(result)} 됩니다.`
+      ];
+    }
+    return [
+      `일의 자리끼리 ${left % 10}+${right % 10}을 먼저 더합니다.`,
+      `십의 자리끼리 ${Math.floor(left / 10)}십과 ${Math.floor(right / 10)}십을 더해 ${result}${numberDirectionParticle(result)} 읽습니다.`
+    ];
+  }
+
+  const leftOnes = left % 10;
+  const rightOnes = right % 10;
+  if (leftOnes < rightOnes) {
+    const splitMain = Math.floor(left / 10) * 10 - 10;
+    const splitOnes = leftOnes + 10;
+    const rightMain = Math.floor(right / 10) * 10;
+    const resultMain = splitMain - rightMain;
+    const resultOnes = splitOnes - rightOnes;
+    return [
+      `${left}${numberObjectParticle(left)} ${splitMain}과 ${splitOnes}${numberDirectionParticle(splitOnes)} 바꿔요.`,
+      `${splitMain}에서 ${rightMain}${numberObjectParticle(rightMain)} 빼고 ${splitOnes}에서 ${rightOnes}${numberObjectParticle(rightOnes)} 빼요.`,
+      `${resultMain}과 ${resultOnes}${numberObjectParticle(resultOnes)} 합치면 ${result}${numberSubjectParticle(result)} 남습니다.`
+    ];
+  }
+
+  return [
+    `일의 자리끼리 ${leftOnes}-${rightOnes}을 먼저 뺍니다.`,
+    `십의 자리끼리 ${Math.floor(left / 10)}십에서 ${Math.floor(right / 10)}십을 빼면 ${result}${numberSubjectParticle(result)} 남습니다.`
+  ];
+}
+
+function parsePdfMultiplicationModel(questionRecord) {
+  const prompt = questionRecord.prompt || "";
+  const correctNumber = extractFirstNumber(questionRecord.correctText);
+  let match = prompt.match(/모두\s*(\d+)개를\s*(\d+)묶음으로/);
+  if (match && Number.isFinite(correctNumber)) {
+    return { mode: "divide-groups", total: Number(match[1]), groups: Number(match[2]), each: correctNumber, product: Number(match[1]) };
+  }
+
+  match = prompt.match(/모두\s*(\d+)개를\s*(\d+)개씩/);
+  if (match && Number.isFinite(correctNumber)) {
+    return { mode: "group-count", total: Number(match[1]), each: Number(match[2]), groups: correctNumber, product: Number(match[1]) };
+  }
+
+  match = prompt.match(/(\d+)개를 만들 수 있는 묶음/);
+  if (match) {
+    const answerMatch = String(questionRecord.correctText || "").match(/(\d+)개씩\s*(\d+)묶음/);
+    if (answerMatch) {
+      return { mode: "target", product: Number(match[1]), each: Number(answerMatch[1]), groups: Number(answerMatch[2]) };
+    }
+  }
+
+  match = prompt.match(/(\d+)\s*×\s*(\d+)/);
+  if (match) {
+    return { mode: "array", each: Number(match[1]), groups: Number(match[2]), product: Number(match[1]) * Number(match[2]) };
+  }
+
+  match = prompt.match(/(\d+)개씩\s*(\d+)묶음|(\d+)개씩\s*(\d+)줄/);
+  if (match) {
+    const each = Number(match[1] || match[3]);
+    const groups = Number(match[2] || match[4]);
+    return { mode: "array", each, groups, product: each * groups };
+  }
+
+  return null;
 }
 
 function paginatePdfBlocks(blocks) {
@@ -1685,11 +2012,39 @@ function paginatePdfBlocks(blocks) {
 }
 
 function measurePdfBlockHeight(ctx, block, maxWidth) {
+  if (block.kind === "question") {
+    return measurePdfQuestionBlockHeight(ctx, block, maxWidth);
+  }
+
   ctx.font = "42px Malgun Gothic, sans-serif";
   const titleLines = wrapCanvasText(ctx, block.title, maxWidth);
   ctx.font = "32px Malgun Gothic, sans-serif";
   const bodyLines = block.body.split("\n").flatMap((line) => wrapCanvasText(ctx, line, maxWidth));
   return 38 + titleLines.length * 50 + bodyLines.length * 42 + 34;
+}
+
+function measurePdfQuestionBlockHeight(ctx, block, maxWidth) {
+  ctx.font = "700 38px Malgun Gothic, sans-serif";
+  const titleLines = wrapCanvasText(ctx, block.title, maxWidth - 64);
+  const visualHeight = getPdfVisualDisplayHeight(block, maxWidth - 64);
+  ctx.font = "30px Malgun Gothic, sans-serif";
+  const explanationLines = (block.explanationSteps || [])
+    .flatMap((step) => wrapCanvasText(ctx, step, maxWidth - 120));
+  const answerLines = wrapCanvasText(ctx, block.pdfType === "answer"
+    ? `정답: ${block.correctText || "-"}`
+    : "내 풀이: ____________________    답: ________", maxWidth - 120);
+  return 52 + titleLines.length * 46 + visualHeight + answerLines.length * 38 + explanationLines.length * 36 + 78;
+}
+
+function getPdfVisualDisplayHeight(block, maxWidth) {
+  if (!block.visualImage) {
+    return block.pdfType === "answer" ? 390 : 280;
+  }
+
+  const ratioHeight = Math.round(maxWidth * block.visualImage.height / Math.max(1, block.visualImage.width));
+  const maxHeight = block.pdfType === "answer" ? 590 : 390;
+  const minHeight = block.pdfType === "answer" ? 340 : 240;
+  return Math.max(minHeight, Math.min(maxHeight, ratioHeight));
 }
 
 function drawStudentPdfCanvas(summary, type, blocks, pageNumber, totalPages) {
@@ -1730,6 +2085,10 @@ function drawStudentPdfCanvas(summary, type, blocks, pageNumber, totalPages) {
 
 function drawPdfBlock(ctx, block, x, y, width) {
   const height = measurePdfBlockHeight(ctx, block, width);
+  if (block.kind === "question") {
+    return drawPdfQuestionBlock(ctx, block, x, y, width, height);
+  }
+
   ctx.fillStyle = block.kind === "question" ? "#ffffff" : "#fff9d8";
   roundRect(ctx, x, y, width, height, 24);
   ctx.fill();
@@ -1756,6 +2115,214 @@ function drawPdfBlock(ctx, block, x, y, width) {
   });
 
   return y + height + 28;
+}
+
+function drawPdfQuestionBlock(ctx, block, x, y, width, height) {
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x, y, width, height, 24);
+  ctx.fill();
+  ctx.strokeStyle = "#b8ddf6";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  let textY = y + 56;
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 38px Malgun Gothic, sans-serif";
+  wrapCanvasText(ctx, block.title, width - 64).forEach((line) => {
+    ctx.fillText(line, x + 32, textY);
+    textY += 46;
+  });
+
+  const visualX = x + 32;
+  const visualY = textY + 8;
+  const visualWidth = width - 64;
+  const visualHeight = getPdfVisualDisplayHeight(block, visualWidth);
+  ctx.fillStyle = "#f3fbff";
+  roundRect(ctx, visualX, visualY, visualWidth, visualHeight, 22);
+  ctx.fill();
+  ctx.strokeStyle = "#d4ecfb";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 24px Malgun Gothic, sans-serif";
+  ctx.fillText(block.visualTitle || "그림 풀이", visualX + 24, visualY + 34);
+
+  const imageBox = {
+    x: visualX + 20,
+    y: visualY + 48,
+    width: visualWidth - 40,
+    height: visualHeight - 64
+  };
+  if (block.visualImage) {
+    drawFittedImage(ctx, block.visualImage.image, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  } else {
+    drawFallbackQuestionGraphic(ctx, block, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  }
+
+  let detailY = visualY + visualHeight + 44;
+  ctx.fillStyle = block.pdfType === "answer" ? "#e9f8df" : "#fff4c7";
+  roundRect(ctx, x + 32, detailY - 28, width - 64, 46, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 28px Malgun Gothic, sans-serif";
+  const answerLine = block.pdfType === "answer"
+    ? `정답: ${block.correctText || "-"}`
+    : "내 풀이: ____________________    답: ________";
+  wrapCanvasText(ctx, answerLine, width - 112).forEach((line) => {
+    ctx.fillText(line, x + 56, detailY + 5);
+    detailY += 36;
+  });
+
+  detailY += 18;
+  ctx.font = "28px Malgun Gothic, sans-serif";
+  ctx.fillStyle = "#173451";
+  (block.explanationSteps || []).forEach((step, index) => {
+    const badgeX = x + 48;
+    const stepY = detailY;
+    ctx.fillStyle = index === 0 ? "#2f86c8" : "#2fc2a3";
+    roundRect(ctx, badgeX, stepY - 25, 40, 34, 15);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 20px Malgun Gothic, sans-serif";
+    ctx.fillText(String(index + 1), badgeX + 14, stepY - 2);
+    ctx.fillStyle = "#173451";
+    ctx.font = "28px Malgun Gothic, sans-serif";
+    wrapCanvasText(ctx, step, width - 128).forEach((line) => {
+      ctx.fillText(line, x + 100, detailY);
+      detailY += 36;
+    });
+    detailY += 8;
+  });
+
+  return y + height + 28;
+}
+
+function drawFittedImage(ctx, image, x, y, width, height) {
+  const scale = Math.min(width / Math.max(1, image.width), height / Math.max(1, image.height));
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = y + (height - drawHeight) / 2;
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+}
+
+function drawFallbackQuestionGraphic(ctx, block, x, y, width, height) {
+  const prompt = block.prompt || "";
+  const addSub = parsePdfAddSubModel(block);
+  if (addSub) {
+    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height);
+    return;
+  }
+  const multiplication = parsePdfMultiplicationModel(block);
+  if (multiplication) {
+    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height);
+    return;
+  }
+
+  const numbers = extractNumbers(prompt).slice(0, 6);
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x + 12, y + 12, width - 24, height - 24, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("문제 그림", x + 38, y + 62);
+  ctx.font = "700 34px Malgun Gothic, sans-serif";
+  if (numbers.length) {
+    numbers.forEach((number, index) => {
+      const chipX = x + 42 + index * 92;
+      ctx.fillStyle = index === numbers.length - 1 ? "#fff1a6" : "#dff2ff";
+      roundRect(ctx, chipX, y + 104, 70, 58, 20);
+      ctx.fill();
+      ctx.fillStyle = "#0b4166";
+      ctx.fillText(String(number), chipX + 18, y + 144);
+    });
+  } else {
+    wrapCanvasText(ctx, prompt, width - 90).slice(0, 3).forEach((line, index) => {
+      ctx.fillText(line, x + 42, y + 118 + index * 44);
+    });
+  }
+}
+
+function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
+  const columns = model.operator === "-" ? ["처음", "바꾼 뒤", "남은 수"] : ["첫 수", "더할 수", "합친 수"];
+  const cardWidth = (width - 48) / 3;
+  columns.forEach((label, index) => {
+    const cardX = x + 12 + index * (cardWidth + 12);
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, cardX, y + 18, cardWidth, height - 36, 18);
+    ctx.fill();
+    ctx.strokeStyle = "#b8ddf6";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 24px Malgun Gothic, sans-serif";
+    ctx.fillText(label, cardX + 20, y + 58);
+  });
+
+  const values = model.operator === "-"
+    ? [model.left, Math.max(0, model.left - (model.left % 10 < model.right % 10 ? 10 : 0)), model.result]
+    : [model.left, model.right, model.result];
+  values.forEach((value, index) => {
+    const cardX = x + 12 + index * (cardWidth + 12);
+    drawBaseTenValue(ctx, value, cardX + 22, y + 88, cardWidth - 44);
+  });
+
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 28px Malgun Gothic, sans-serif";
+  ctx.fillText(`${model.left} ${model.operator} ${model.right} = ${model.result}`, x + 30, y + height - 24);
+}
+
+function drawBaseTenValue(ctx, value, x, y, width) {
+  const tens = Math.min(9, Math.floor(Math.abs(value) / 10));
+  const ones = Math.min(16, Math.abs(value) % 10);
+  for (let index = 0; index < tens; index += 1) {
+    const rodX = x + (index % 3) * 34;
+    const rodY = y + Math.floor(index / 3) * 18;
+    ctx.fillStyle = "#2f86c8";
+    roundRect(ctx, rodX, rodY, 28, 12, 6);
+    ctx.fill();
+    ctx.strokeStyle = "#0f5f93";
+    ctx.stroke();
+  }
+  for (let index = 0; index < ones; index += 1) {
+    const dotX = x + width - 92 + (index % 4) * 20;
+    const dotY = y + Math.floor(index / 4) * 20;
+    ctx.fillStyle = "#ffd66e";
+    ctx.beginPath();
+    ctx.arc(dotX, dotY + 8, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c58c21";
+    ctx.stroke();
+  }
+}
+
+function drawFallbackMultiplicationGraphic(ctx, model, x, y, width, height) {
+  const groups = Math.max(1, Math.min(model.groups || 4, 8));
+  const each = Math.max(1, Math.min(model.each || 4, 9));
+  const groupWidth = Math.min(118, (width - 36) / groups);
+  for (let group = 0; group < groups; group += 1) {
+    const groupX = x + 18 + group * groupWidth;
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, groupX, y + 28, groupWidth - 10, height - 88, 18);
+    ctx.fill();
+    ctx.strokeStyle = "#cce6f8";
+    ctx.stroke();
+    for (let dot = 0; dot < each; dot += 1) {
+      const dotX = groupX + 20 + (dot % 3) * 22;
+      const dotY = y + 58 + Math.floor(dot / 3) * 22;
+      ctx.fillStyle = "#27b8aa";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "700 20px Malgun Gothic, sans-serif";
+    ctx.fillText(`${group + 1}묶음`, groupX + 16, y + height - 38);
+  }
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText(`${model.each}×${model.groups}=${model.product}`, x + 30, y + height - 8);
 }
 
 function wrapCanvasText(ctx, text, maxWidth) {
@@ -1886,7 +2453,7 @@ async function saveLearningRecords(records) {
 
 function handleStorageBridgeResponse(event) {
   const message = event.data;
-  if (!message || typeof message !== "object" || message.type !== "learning-records-response") {
+  if (!message || typeof message !== "object" || !message.storageBridgeRequestId || !String(message.type || "").endsWith("-response")) {
     return;
   }
 
@@ -1897,7 +2464,11 @@ function handleStorageBridgeResponse(event) {
 
   window.clearTimeout(request.timeoutHandle);
   storageBridgeRequests.delete(message.storageBridgeRequestId);
-  request.resolve(message.records);
+  if (Object.prototype.hasOwnProperty.call(message, "records")) {
+    request.resolve(message.records);
+    return;
+  }
+  request.resolve(message);
 }
 
 function requestStorageBridge(type, payload = {}) {
@@ -1913,7 +2484,7 @@ function requestStorageBridge(type, payload = {}) {
     const timeoutHandle = window.setTimeout(() => {
       storageBridgeRequests.delete(requestId);
       resolve(null);
-    }, 1200);
+    }, type === "question-visual-render" ? 3500 : 1200);
 
     storageBridgeRequests.set(requestId, { resolve, timeoutHandle });
     bridgeWindow.postMessage({
@@ -2018,4 +2589,56 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function extractFirstNumber(text) {
+  const match = String(text || "").replace(/,/g, "").match(/-?\d+/);
+  return match ? Number(match[0]) : Number.NaN;
+}
+
+function extractNumbers(text) {
+  return (String(text || "").replace(/,/g, "").match(/-?\d+/g) || []).map(Number);
+}
+
+function numberLastDigit(value) {
+  const number = Math.abs(Number(value));
+  return Number.isFinite(number) ? number % 10 : 0;
+}
+
+function numberHasFinalConsonant(value) {
+  return [0, 1, 3, 6, 7, 8].includes(numberLastDigit(value));
+}
+
+function numberSubjectParticle(value) {
+  return numberHasFinalConsonant(value) ? "이" : "가";
+}
+
+function numberObjectParticle(value) {
+  return numberHasFinalConsonant(value) ? "을" : "를";
+}
+
+function numberDirectionParticle(value) {
+  const lastDigit = numberLastDigit(value);
+  const endsWithRieul = [1, 7, 8].includes(lastDigit);
+  return numberHasFinalConsonant(value) && !endsWithRieul ? "으로" : "로";
+}
+
+function getQuestionRecordSelectedText(questionRecord) {
+  const attempts = Array.isArray(questionRecord.attempts) ? questionRecord.attempts : [];
+  const wrongAttempt = attempts.find((attempt) => !attempt.correct);
+  return wrongAttempt?.selectedText || questionRecord.wrongSelections?.[0] || "";
+}
+
+function getPdfLatestRecordStamp(summary) {
+  const latest = summary?.lastSavedAt ? new Date(summary.lastSavedAt) : new Date();
+  if (Number.isNaN(latest.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  const y = latest.getFullYear();
+  const m = String(latest.getMonth() + 1).padStart(2, "0");
+  const d = String(latest.getDate()).padStart(2, "0");
+  const hh = String(latest.getHours()).padStart(2, "0");
+  const mm = String(latest.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}_${hh}${mm}`;
 }

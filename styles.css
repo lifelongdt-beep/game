@@ -3706,6 +3706,14 @@ body:has(#gameScreen.active) .top-actions {
   font-size: 0.95rem;
 }
 
+.student-pdf-tools p {
+  margin: 5px 0 0;
+  color: #31536d;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
 .student-pdf-actions {
   display: flex;
   flex-wrap: wrap;
@@ -4124,6 +4132,11 @@ body:has(#gameScreen.active) .top-actions {
   color: #0e4064;
   background: #e5f4ff;
   white-space: nowrap;
+}
+
+.record-copy-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .record-comment-text {

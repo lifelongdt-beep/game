@@ -156,8 +156,104 @@ function initStorageBridge() {
         storageBridgeRequestId: message.storageBridgeRequestId,
         records: loadLearningRecords()
       }, "*");
+      return;
+    }
+
+    if (message.type === "question-visual-render") {
+      const questionRecord = message.questionRecord || {};
+      const question = resolveStoredQuestionForVisual(questionRecord);
+      const selectedText = getStoredQuestionSelectedText(questionRecord);
+      const correctText = questionRecord.correctText || compactOptionText(question.options?.[question.answer] || "");
+      const revealAnswer = message.revealAnswer === true;
+      const visualHtml = revealAnswer
+        ? buildFeedbackClueVisual(question, selectedText, correctText)
+        : renderQuestionLearningVisual(question, { revealAnswer: false });
+
+      event.source?.postMessage({
+        type: "question-visual-render-response",
+        storageBridgeRequestId: message.storageBridgeRequestId,
+        visualHtml,
+        prompt: question.prompt,
+        correctText,
+        category: question.category,
+        categoryName: resolveQuestionCategory(question),
+        scene: cloneLearningRecordData(question.scene || null)
+      }, "*");
     }
   });
+}
+
+function resolveStoredQuestionForVisual(questionRecord) {
+  const bankQuestion = findQuestionInBankByRecord(questionRecord);
+  const baseQuestion = bankQuestion || {
+    id: questionRecord.questionId || `stored-${Date.now()}`,
+    category: questionRecord.category || "mixed",
+    difficulty: questionRecord.difficulty || "mid",
+    prompt: questionRecord.prompt || "문항",
+    scene: null,
+    sceneLines: [],
+    options: questionRecord.correctText ? [questionRecord.correctText] : ["정답"],
+    answer: 0
+  };
+  const options = Array.isArray(questionRecord.options) && questionRecord.options.length
+    ? questionRecord.options
+    : [...(baseQuestion.options || [])];
+  let answer = Number.isInteger(questionRecord.answerIndex) ? questionRecord.answerIndex : baseQuestion.answer;
+  const correctText = questionRecord.correctText || "";
+
+  if (!Number.isInteger(answer) || !options[answer] || (correctText && compactOptionText(options[answer]) !== correctText)) {
+    const matchedIndex = options.findIndex((option) => compactOptionText(option) === correctText);
+    answer = matchedIndex >= 0 ? matchedIndex : Math.max(0, Math.min(Number(baseQuestion.answer) || 0, options.length - 1));
+  }
+
+  return {
+    ...baseQuestion,
+    id: questionRecord.questionId || baseQuestion.id,
+    category: questionRecord.category || baseQuestion.category,
+    difficulty: questionRecord.difficulty || baseQuestion.difficulty,
+    prompt: questionRecord.prompt || baseQuestion.prompt,
+    lessonKey: questionRecord.lessonKey || baseQuestion.lessonKey,
+    variantKey: questionRecord.variantKey || baseQuestion.variantKey,
+    scene: questionRecord.scene || baseQuestion.scene || null,
+    sceneLines: questionRecord.sceneLines || baseQuestion.sceneLines || baseQuestion.scene?.lines || [],
+    options,
+    answer
+  };
+}
+
+function findQuestionInBankByRecord(questionRecord) {
+  const bank = window.Math2GameBank?.DISPLAY_QUESTION_BANK || window.DISPLAY_QUESTION_BANK || {};
+  const questionId = String(questionRecord.questionId || "");
+  const baseQuestionId = questionId.replace(/-as-(low|mid|high)-\d+$/, "");
+  const category = questionRecord.category || "";
+  const difficulty = questionRecord.difficulty || "";
+  const candidates = [
+    ...(category && difficulty ? bank[category]?.[difficulty] || [] : []),
+    ...(category ? Object.values(bank[category] || {}).flat() : []),
+    ...Object.values(bank).flatMap((group) => Object.values(group || {}).flat())
+  ];
+
+  return candidates.find((question) => question.id === questionId || question.id === baseQuestionId)
+    || candidates.find((question) => question.prompt === questionRecord.prompt && compactOptionText(question.options?.[question.answer] || "") === questionRecord.correctText)
+    || null;
+}
+
+function getStoredQuestionSelectedText(questionRecord) {
+  const attempts = Array.isArray(questionRecord.attempts) ? questionRecord.attempts : [];
+  const wrongAttempt = attempts.find((attempt) => !attempt.correct);
+  return wrongAttempt?.selectedText || questionRecord.wrongSelections?.[0] || "";
+}
+
+function cloneLearningRecordData(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (error) {
+    return value;
+  }
 }
 
 function renderStartControls() {
@@ -938,8 +1034,15 @@ function finalizeQuestionRecord(playerState, question, outcome, answeredAt) {
     categoryName: resolveQuestionCategory(question),
     difficulty: playerState.difficulty,
     difficultyName: DIFFICULTY_NAMES[playerState.difficulty] || "",
+    lessonKey: question.lessonKey || "",
+    variantKey: question.variantKey || "",
     prompt: question.prompt,
+    scene: cloneLearningRecordData(question.scene || null),
+    sceneLines: cloneLearningRecordData(question.sceneLines || question.scene?.lines || []),
+    options: (question.options || []).map((option) => compactOptionText(option)),
+    answerIndex: question.answer,
     correctText: compactOptionText(question.options[question.answer] || ""),
+    explanation: question.explanation || "",
     outcome,
     finalCorrect: outcome === "correct",
     attempts,
