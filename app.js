@@ -6354,19 +6354,22 @@ function renderMultiplicationReverseFeedback(model, selectedText, correctText) {
     : model.mode === "target-groups"
       ? "목표 수 만들기"
       : "묶음 수 찾기";
+  const visibleGroupCount = Math.min(model.groups, 8);
+  const visibleDotsPerGroup = Math.min(model.each, 8);
+  const dotColumns = visibleDotsPerGroup <= 4 ? 2 : visibleDotsPerGroup <= 6 ? 3 : 4;
   return `
     <div class="concept-card concept-card--groups teach-card">
       <div class="teach-head"><span>${modeText}</span><strong>전체를 같은 크기 묶음으로 나누어 확인해요</strong></div>
-      <div class="reverse-group-board" style="--cols:${Math.max(1, Math.min(model.each, 8))}">
-        ${Array.from({ length: Math.min(model.groups, 8) }, (_, groupIndex) => `
+      <div class="reverse-group-board" style="--cols:${dotColumns}">
+        ${Array.from({ length: visibleGroupCount }, (_, groupIndex) => `
           <div>
-            ${Array.from({ length: Math.min(model.each, 8) }, () => `<i></i>`).join("")}
+            ${Array.from({ length: visibleDotsPerGroup }, () => `<i></i>`).join("")}
             <span>${groupIndex + 1}묶음</span>
           </div>
         `).join("")}
       </div>
       <div class="skip-count-strip">
-        ${Array.from({ length: Math.min(model.groups, 8) }, (_, index) => `<span>${model.each * (index + 1)}</span>`).join("")}
+        ${Array.from({ length: visibleGroupCount }, (_, index) => `<span>${model.each * (index + 1)}</span>`).join("")}
       </div>
       <div class="concept-equation">${model.each}×${model.groups}=${model.product}</div>
       ${renderFeedbackAnswerLine(selectedText, correctText)}
