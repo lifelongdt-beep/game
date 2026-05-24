@@ -3061,6 +3061,42 @@ body:has(#gameScreen.active) .top-actions {
   font-size: 0.86rem;
 }
 
+.student-practice-grade-option {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 217, 102, 0.35);
+  cursor: pointer;
+}
+
+.student-practice-grade-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #ffd966;
+}
+
+.student-practice-grade-option strong {
+  margin-top: 0;
+  color: #fff5bd;
+  font-size: 0.78rem;
+}
+
+.student-practice-grade-option em {
+  display: block;
+  margin-top: 2px;
+  color: #dff6ff;
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
 .teacher-hero {
   display: flex;
   align-items: center;

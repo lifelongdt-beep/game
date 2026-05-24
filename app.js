@@ -7856,12 +7856,26 @@ function renderPersonalizedPracticeLauncher(player, savedRecord, practicePlan) {
     : practicePlan?.mode === "extension"
       ? "새 유형 확장"
       : "부담 낮춘 재도전";
+  const practiceGrade = Number(practicePlan?.grade || savedRecord.grade || state.grade || 2);
+  const canAllowEarlierGrades = practiceGrade > 1 && practicePlan?.mode !== "challenge" && practicePlan?.mode !== "extension";
+  const earlierGradeOption = canAllowEarlierGrades
+    ? `
+      <label class="student-practice-grade-option">
+        <input type="checkbox" data-earlier-grade-practice data-player="${player.id}" ${practicePlan?.allowEarlierGrades ? "checked" : ""}>
+        <span>
+          <strong>이전 학년 보충 허용</strong>
+          <em>${practiceGrade - 1}학년 이하의 기초 문제를 함께 섞어요. 상위 학년 문제는 절대 나오지 않아요.</em>
+        </span>
+      </label>
+    `
+    : "";
   return `
     <div class="student-practice-launch">
       <div>
         <span>${escapeHtml(modeText)}</span>
         <strong>${escapeHtml(focusText)}</strong>
       </div>
+      ${earlierGradeOption}
       <button class="primary-button student-practice-button" type="button" data-personalized-practice data-player="${player.id}">
         맞춤 다시 풀기
       </button>
@@ -7917,7 +7931,14 @@ function handleStudentSubmitAction(event) {
   }
 
   const playerId = practiceButton.dataset.player;
-  startPersonalizedPractice(playerId);
+  startPersonalizedPractice(playerId, getEarlierGradePracticePermissions());
+}
+
+function getEarlierGradePracticePermissions() {
+  return Object.fromEntries(
+    Array.from(studentResultForms.querySelectorAll("[data-earlier-grade-practice]"))
+      .map((input) => [input.dataset.player, Boolean(input.checked)])
+  );
 }
 
 function syncAllStudentClassSelections(classNumber) {
@@ -8004,7 +8025,10 @@ function saveLearningRecordsForPlayers(studentInfoByPlayer) {
     record.playerId,
     buildPersonalizedPracticePlan(
       recordsForPlanning.filter((item) => item.studentKey === record.studentKey),
-      record
+      record,
+      {
+        allowEarlierGrades: Boolean(state.practiceMode?.plansByPlayer?.[record.playerId]?.allowEarlierGrades)
+      }
     )
   ]));
   const newRecords = draftRecords.map((record) => ({
@@ -8029,6 +8053,8 @@ function serializePersonalizedPracticePlan(plan) {
   return {
     mode: plan.mode || "review",
     difficulty: plan.difficulty || "mid",
+    grade: plan.grade || "",
+    allowEarlierGrades: Boolean(plan.allowEarlierGrades),
     focusText: plan.focusText || "맞춤 복습",
     targetTypes: cloneLearningRecordData(plan.targetTypes || []),
     questions: (plan.questions || []).map(serializePracticeQuestion)
@@ -8042,6 +8068,7 @@ function serializePracticeQuestion(question) {
     questionId: question.id || "",
     category: question.category || "",
     categoryName: resolveQuestionCategory(question),
+    grade: question.grade || getCategoryGrade(question.category || ""),
     difficulty: question.difficulty || "mid",
     lessonKey: question.lessonKey || "",
     variantKey: question.variantKey || "",
@@ -8113,7 +8140,7 @@ function saveLearningDataFromSubmit() {
   studentSubmitSummary.textContent = `${newRecords.length}명의 평가 결과를 저장했습니다. 학생별 맞춤 다시 풀기 버튼이 준비되었습니다.`;
 }
 
-function startPersonalizedPractice(playerId) {
+function startPersonalizedPractice(playerId, earlierGradePermissions = {}) {
   const savedRecordsByPlayer = { ...(state.savedSubmissionRecordsByPlayer || {}) };
   const clickedRecord = savedRecordsByPlayer[playerId];
   if (!clickedRecord) {
@@ -8130,8 +8157,11 @@ function startPersonalizedPractice(playerId) {
       }
 
       const studentRecords = allRecords.filter((record) => record.studentKey === savedRecord.studentKey);
-      const plan = state.personalizedPracticePlansByPlayer[player.id]
-        || buildPersonalizedPracticePlan(studentRecords, savedRecord);
+      const allowEarlierGrades = Boolean(earlierGradePermissions[player.id]);
+      const plan = allowEarlierGrades
+        ? buildPersonalizedPracticePlan(studentRecords, savedRecord, { allowEarlierGrades: true })
+        : state.personalizedPracticePlansByPlayer[player.id]
+          || buildPersonalizedPracticePlan(studentRecords, savedRecord);
       return plan.questions.length ? { player, savedRecord, plan } : null;
     })
     .filter(Boolean);
@@ -8168,6 +8198,7 @@ function startPersonalizedPractice(playerId) {
         classNumber: entry.savedRecord.classNumber,
         studentNumber: entry.savedRecord.studentNumber,
         grade: entry.plan.grade || entry.savedRecord.grade || state.grade,
+        allowEarlierGrades: Boolean(entry.plan.allowEarlierGrades),
         focusText: entry.plan.focusText,
         mode: entry.plan.mode,
         targetTypes: entry.plan.targetTypes || []
@@ -8218,9 +8249,10 @@ function startPersonalizedPractice(playerId) {
   renderPlayerBoard();
 }
 
-function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
+function buildPersonalizedPracticePlan(studentRecords, anchorRecord, options = {}) {
   const anchorQuestions = Array.isArray(anchorRecord.questionRecords) ? anchorRecord.questionRecords : [];
   const planGrade = Number(anchorRecord.grade || anchorQuestions.find((question) => question.grade)?.grade || getCategoryGrade(anchorRecord.category || anchorQuestions[0]?.category || state.category));
+  const allowEarlierGrades = Boolean(options.allowEarlierGrades && planGrade > 1);
   const growth = analyzeStudentGrowthByQuestionType(studentRecords);
   const recoveredKeys = new Set(growth.recovered.map((item) => item.key));
   const ongoingKeys = growth.ongoing.map((item) => item.key);
@@ -8246,6 +8278,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
       ? buildAdvancedStoryChallengeQuestions(anchorRecord, studentRecords.length, planGrade)
       : pickDifferentTypeQuestions({
           difficulty: targetDifficulty,
+          grade: planGrade,
           seen,
           excludeKeys: new Set(anchorQuestions.map(getQuestionTypeKey).filter(Boolean)),
           limit: 8
@@ -8262,31 +8295,46 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
       anchorQuestions,
       baseDifficulty,
       seen,
+      planGrade,
       new Set(exactRetryQuestions.map((question) => question.prompt).filter(Boolean)),
       Math.max(0, 5 - exactRetryQuestions.length)
     );
     const focusQuestions = [...exactRetryQuestions, ...similarQuestions].slice(0, 5);
-    const warmupQuestions = pickWarmupQuestions(cleanCorrectQuestions, baseDifficulty, seen, 2);
+    const earlierGradeBridgeQuestions = allowEarlierGrades
+      ? pickEarlierGradeBridgeQuestions({
+          anchorQuestions: anchorQuestions.filter(isQuestionRecordNeedingSupport),
+          difficulty: baseDifficulty,
+          maxGrade: planGrade,
+          seen,
+          blockedPrompts: new Set(focusQuestions.map((question) => question.prompt).filter(Boolean)),
+          limit: 2
+        })
+      : [];
+    const warmupLimit = earlierGradeBridgeQuestions.length ? 1 : 2;
+    const warmupQuestions = pickWarmupQuestions(cleanCorrectQuestions, baseDifficulty, seen, warmupLimit, planGrade);
     const extensionQuestions = pickDifferentTypeQuestions({
       difficulty: baseDifficulty,
+      grade: planGrade,
       seen,
       excludeKeys: new Set([...cleanCorrectQuestions.map(getQuestionTypeKey).filter(Boolean)]),
-      excludePrompts: new Set(focusQuestions.map((question) => question.prompt).filter(Boolean)),
+      excludePrompts: new Set([...focusQuestions, ...earlierGradeBridgeQuestions].map((question) => question.prompt).filter(Boolean)),
       limit: 1
     });
-    questions = interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions).slice(0, 8);
+    questions = interleavePracticeQuestions(focusQuestions, warmupQuestions, earlierGradeBridgeQuestions, extensionQuestions).slice(0, 8);
     if (!focusQuestions.length) {
       focusText = "가볍게 성공 경험을 쌓는 확인 문제";
     } else {
       const label = growth.ongoing.find((item) => targetKeys.includes(item.key))?.label
         || getQuestionTypeLabel(anchorQuestions.find((question) => targetKeys.includes(getQuestionTypeKey(question))))
         || "보충 유형";
-      focusText = `${label} 중심 + 쉬운 성공 문제 섞기`;
+      focusText = allowEarlierGrades && earlierGradeBridgeQuestions.length
+        ? `${label} 중심 + 이전 학년 기초 보충 섞기`
+        : `${label} 중심 + 쉬운 성공 문제 섞기`;
     }
   }
 
   if (!questions.length) {
-    questions = pickDifferentTypeQuestions({ difficulty: targetDifficulty, seen, excludeKeys: new Set(), limit: 8 });
+    questions = pickDifferentTypeQuestions({ difficulty: targetDifficulty, grade: planGrade, seen, excludeKeys: new Set(), limit: 8 });
   } else if (questions.length < 8) {
     const usedQuestionIds = new Set(questions.map((question) => question.id).filter(Boolean));
     const usedTypeKeys = new Set([
@@ -8295,6 +8343,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
     ]);
     const fillers = pickDifferentTypeQuestions({
       difficulty: targetDifficulty,
+      grade: planGrade,
       seen,
       excludeKeys: usedTypeKeys,
       excludePrompts: new Set(questions.map((question) => question.prompt).filter(Boolean)),
@@ -8302,9 +8351,11 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
     }).filter((question) => !usedQuestionIds.has(question.id));
     questions = [...questions, ...fillers].slice(0, 8);
   }
+  questions = questions.filter((question) => getQuestionGrade(question) <= planGrade);
 
   return {
     grade: planGrade,
+    allowEarlierGrades,
     mode,
     difficulty: targetDifficulty,
     focusText,
@@ -8450,6 +8501,10 @@ function getAllBankQuestions(difficulty = "", grade = state.grade) {
   ));
 }
 
+function getQuestionGrade(question) {
+  return Number(question?.grade || getCategoryGrade(question?.category || "") || state.grade || 2);
+}
+
 function pickExactRetryQuestions(questionRecords, recoveredKeys, seen, limit) {
   const picked = [];
   const usedPrompts = new Set();
@@ -8478,7 +8533,7 @@ function pickExactRetryQuestions(questionRecords, recoveredKeys, seen, limit) {
   return picked;
 }
 
-function pickSimilarQuestionsForTypeKeys(typeKeys, anchorQuestions, difficulty, seen, blockedPrompts = new Set(), limit = 5) {
+function pickSimilarQuestionsForTypeKeys(typeKeys, anchorQuestions, difficulty, seen, grade = state.grade, blockedPrompts = new Set(), limit = 5) {
   const picked = [];
   const usedIds = new Set();
   const usedPrompts = new Set(blockedPrompts);
@@ -8497,7 +8552,7 @@ function pickSimilarQuestionsForTypeKeys(typeKeys, anchorQuestions, difficulty, 
     }
 
     const anchor = anchorsByKey.get(key);
-    const similar = pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit - picked.length);
+    const similar = pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit - picked.length, grade);
     similar.forEach((question) => {
       picked.push(question);
       usedIds.add(question.id);
@@ -8508,7 +8563,7 @@ function pickSimilarQuestionsForTypeKeys(typeKeys, anchorQuestions, difficulty, 
   return picked;
 }
 
-function pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit) {
+function pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit, grade = state.grade) {
   if (!anchor || limit <= 0) {
     return [];
   }
@@ -8527,10 +8582,10 @@ function pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPr
     && !seen.prompts.has(question.prompt)
   );
   const banks = [
-    getAllBankQuestions(difficulty).filter((question) => sameLesson(question) && notSameQuestion(question)),
-    getAllBankQuestions().filter((question) => sameLesson(question) && notSameQuestion(question)),
-    getAllBankQuestions(difficulty).filter((question) => sameCategory(question) && notSameQuestion(question)),
-    getAllBankQuestions().filter((question) => sameCategory(question) && notSameQuestion(question))
+    getAllBankQuestions(difficulty, grade).filter((question) => sameLesson(question) && notSameQuestion(question)),
+    getAllBankQuestions("", grade).filter((question) => sameLesson(question) && notSameQuestion(question)),
+    getAllBankQuestions(difficulty, grade).filter((question) => sameCategory(question) && notSameQuestion(question)),
+    getAllBankQuestions("", grade).filter((question) => sameCategory(question) && notSameQuestion(question))
   ];
 
   for (const bank of banks) {
@@ -8543,7 +8598,7 @@ function pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPr
   return [];
 }
 
-function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
+function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit, grade = state.grade) {
   const picked = [];
   const usedIds = new Set();
 
@@ -8552,8 +8607,8 @@ function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
       return;
     }
 
-    const sameDifficulty = getAllBankQuestions(difficulty).filter((question) => getQuestionTypeKey(question) === key);
-    const anyDifficulty = getAllBankQuestions().filter((question) => getQuestionTypeKey(question) === key);
+    const sameDifficulty = getAllBankQuestions(difficulty, grade).filter((question) => getQuestionTypeKey(question) === key);
+    const anyDifficulty = getAllBankQuestions("", grade).filter((question) => getQuestionTypeKey(question) === key);
     const candidates = preferStrictUnseenQuestions(sameDifficulty.length ? sameDifficulty : anyDifficulty, seen, usedIds);
     if (candidates[0]) {
       picked.push(candidates[0]);
@@ -8567,7 +8622,7 @@ function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
         return;
       }
       const lessonKey = key.split(":")[0];
-      const lessonCandidates = getAllBankQuestions(difficulty).filter((question) => question.lessonKey && key.includes(question.lessonKey));
+      const lessonCandidates = getAllBankQuestions(difficulty, grade).filter((question) => question.lessonKey && key.includes(question.lessonKey));
       preferStrictUnseenQuestions(lessonCandidates, seen, usedIds).slice(0, limit - picked.length).forEach((question) => {
         picked.push(question);
         usedIds.add(question.id);
@@ -8578,17 +8633,17 @@ function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
   return picked;
 }
 
-function pickWarmupQuestions(cleanCorrectQuestions, difficulty, seen, limit) {
+function pickWarmupQuestions(cleanCorrectQuestions, difficulty, seen, limit, grade = state.grade) {
   const keys = uniqueStrings(cleanCorrectQuestions.map(getQuestionTypeKey));
-  return pickQuestionsForTypeKeys(keys, difficulty, seen, limit);
+  return pickQuestionsForTypeKeys(keys, difficulty, seen, limit, grade);
 }
 
-function pickDifferentTypeQuestions({ difficulty, seen, excludeKeys = new Set(), excludePrompts = new Set(), limit = 8 }) {
-  const candidates = getAllBankQuestions(difficulty)
+function pickDifferentTypeQuestions({ difficulty, grade = state.grade, seen, excludeKeys = new Set(), excludePrompts = new Set(), limit = 8 }) {
+  const candidates = getAllBankQuestions(difficulty, grade)
     .filter((question) => !excludeKeys.has(getQuestionTypeKey(question)))
     .filter((question) => !excludePrompts.has(question.prompt))
     .filter((question) => !seen.typeKeys.has(getQuestionTypeKey(question)) || !seen.lessonKeys.has(question.lessonKey));
-  const fallback = getAllBankQuestions(difficulty)
+  const fallback = getAllBankQuestions(difficulty, grade)
     .filter((question) => !excludeKeys.has(getQuestionTypeKey(question)))
     .filter((question) => !excludePrompts.has(question.prompt));
   const strict = preferStrictUnseenQuestions(candidates.length ? candidates : fallback, seen, new Set());
@@ -8601,6 +8656,73 @@ function pickDifferentTypeQuestions({ difficulty, seen, excludeKeys = new Set(),
     .filter((question) => !excludePrompts.has(question.prompt))
     .filter((question) => !usedPrompts.has(question.prompt));
   return [...strict, ...fallbackQuestions].slice(0, limit);
+}
+
+function pickEarlierGradeBridgeQuestions({ anchorQuestions, difficulty, maxGrade, seen, blockedPrompts = new Set(), limit = 2 }) {
+  const highestAllowedGrade = Math.max(1, Number(maxGrade || 1) - 1);
+  if (highestAllowedGrade < 1 || limit <= 0) {
+    return [];
+  }
+
+  const domainKeys = uniqueStrings((anchorQuestions || []).map(getQuestionDomainKey));
+  const gradeOrder = Array.from({ length: highestAllowedGrade }, (_, index) => highestAllowedGrade - index);
+  const difficultyOrder = uniqueStrings([
+    difficulty === "high" ? "mid" : difficulty,
+    "low",
+    "mid"
+  ]);
+  const domainCandidates = gradeOrder.flatMap((grade) => (
+    difficultyOrder.flatMap((level) => getAllBankQuestions(level, grade))
+  )).filter((question) => (
+    domainKeys.length === 0 || domainKeys.includes(getQuestionDomainKey(question))
+  ));
+  const fallbackCandidates = gradeOrder.flatMap((grade) => (
+    difficultyOrder.flatMap((level) => getAllBankQuestions(level, grade))
+  ));
+  const usedIds = new Set();
+  return preferStrictUnseenQuestions(domainCandidates.length ? domainCandidates : fallbackCandidates, seen, usedIds)
+    .filter((question) => !blockedPrompts.has(question.prompt))
+    .filter((question) => getQuestionGrade(question) < Number(maxGrade))
+    .slice(0, limit)
+    .map((question) => ({
+      ...question,
+      reviewSource: "earlier-grade-bridge",
+      practiceMode: "earlier-grade-bridge"
+    }));
+}
+
+function getQuestionDomainKey(questionRecord) {
+  const text = [
+    questionRecord?.categoryName || "",
+    questionRecord?.unitLabel || "",
+    questionRecord?.prompt || ""
+  ].join(" ");
+
+  if (/분수|소수|비율|백분율|비례/.test(text)) {
+    return "fraction-ratio";
+  }
+  if (/곱셈|나눗셈|묶음|배수|약수|×|÷/.test(text)) {
+    return "multiply-divide";
+  }
+  if (/덧셈|뺄셈|더|빼|\+|-|받아올림|받아내림/.test(text)) {
+    return "add-sub";
+  }
+  if (/자리|큰 수|몇십|몇백|자연수|수의 범위|어림|반올림/.test(text)) {
+    return "number";
+  }
+  if (/도형|각|삼각형|사각형|원|입체|직육면체|각기둥|각뿔|모서리|꼭짓점/.test(text)) {
+    return "geometry";
+  }
+  if (/길이|시간|시각|들이|무게|넓이|부피|cm|m|L|kg|분|시/.test(text)) {
+    return "measure";
+  }
+  if (/표|그래프|자료|평균|가능성/.test(text)) {
+    return "data";
+  }
+  if (/규칙|대응|다음에 올|반복/.test(text)) {
+    return "pattern";
+  }
+  return "general";
 }
 
 function preferStrictUnseenQuestions(candidates, seen, usedIds = new Set()) {
@@ -8631,9 +8753,18 @@ function uniqueQuestionsByPrompt(questions) {
   });
 }
 
-function interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions) {
+function interleavePracticeQuestions(focusQuestions, warmupQuestions, earlierGradeQuestions = [], extensionQuestions = []) {
   const result = [];
-  const sources = [warmupQuestions, focusQuestions, focusQuestions.slice(1), extensionQuestions, focusQuestions.slice(2), warmupQuestions.slice(1)];
+  const sources = [
+    warmupQuestions,
+    focusQuestions,
+    earlierGradeQuestions,
+    focusQuestions.slice(1),
+    extensionQuestions,
+    earlierGradeQuestions.slice(1),
+    focusQuestions.slice(2),
+    warmupQuestions.slice(1)
+  ];
   sources.forEach((source) => {
     source.forEach((question) => {
       if (!result.some((item) => item.id === question.id || item.prompt === question.prompt)) {
