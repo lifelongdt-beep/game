@@ -2051,11 +2051,17 @@ function renderStructuredMultiplicationVisual(scene, options = {}) {
     `;
   }
 
-  return renderMiniMultiplicationVisual((scene.lines || []).join(" "));
+  return renderMiniMultiplicationVisual((scene.lines || []).join(" "), { revealAnswer });
 }
 
-function renderMiniMultiplicationVisual(prompt) {
+function renderMiniMultiplicationVisual(prompt, options = {}) {
   const model = parseMultiplicationPromptModel(prompt);
+  const revealAnswer = options.revealAnswer === true;
+
+  if (model.mode === "groups-plus") {
+    return renderMiniMultiplicationPlusVisual(model, { revealAnswer });
+  }
+
   if (model.mode === "repeated-addition") {
     return `
       <div class="problem-visual-card problem-addition-strip">
@@ -2114,11 +2120,57 @@ function renderMiniMultiplicationVisual(prompt) {
   `;
 }
 
+function renderMiniMultiplicationPlusVisual(model, options = {}) {
+  const revealAnswer = options.revealAnswer === true;
+  const visibleGroups = Math.max(1, Math.min(model.groups, 8));
+  const visibleEach = Math.max(1, Math.min(model.each, 8));
+  const visibleExtra = Math.max(0, Math.min(model.extra || 0, 8));
+  const dotColumns = visibleEach <= 4 ? visibleEach : 4;
+
+  return `
+    <div class="problem-visual-card problem-groups-plus">
+      <div class="story-group-grid" style="--group-cols:${visibleGroups <= 4 ? visibleGroups : 3};--dot-cols:${dotColumns}">
+        ${Array.from({ length: visibleGroups }, (_, groupIndex) => `
+          <div class="story-group-card" aria-label="${groupIndex + 1}모둠">
+            ${Array.from({ length: visibleEach }, () => `<i></i>`).join("")}
+            <span>${groupIndex + 1}모둠 · ${model.each}${escapeHtml(model.unit)}</span>
+          </div>
+        `).join("")}
+      </div>
+      <div class="story-plus-row">
+        <strong>${model.each}${escapeHtml(model.unit)}씩 ${model.groups}모둠</strong>
+        <b>+</b>
+        <div class="story-helper-card">
+          ${Array.from({ length: visibleExtra }, () => `<i></i>`).join("")}
+          <span>${escapeHtml(model.extraLabel || "더 온 사람")} ${model.extra}${escapeHtml(model.unit)}</span>
+        </div>
+      </div>
+      <div class="story-expression">${model.each}×${model.groups} + ${model.extra}${revealAnswer ? ` = ${model.product}${escapeHtml(model.unit)}` : ""}</div>
+    </div>
+  `;
+}
+
 function parseMultiplicationPromptModel(prompt) {
   const text = String(prompt || "");
   let match = text.match(/(\d+)\s*×\s*(\d+)/);
   if (match) {
     return { mode: "equation", each: Number(match[1]), groups: Number(match[2]) };
+  }
+
+  match = text.match(/한\s*모둠에[\s\S]*?(\d+)\s*명씩[\s\S]*?모둠이\s*(\d+)\s*개[\s\S]*?(\d+)\s*명\s*(?:이\s*)?더/);
+  if (match) {
+    const each = Number(match[1]);
+    const groups = Number(match[2]);
+    const extra = Number(match[3]);
+    return {
+      mode: "groups-plus",
+      each,
+      groups,
+      extra,
+      product: each * groups + extra,
+      unit: "명",
+      extraLabel: "발표 도우미"
+    };
   }
 
   match = text.match(/(?:모두\s*)?(\d+)\s*개(?:를|을)?.*?(\d+)\s*개씩/);
@@ -6314,6 +6366,10 @@ function renderMultiplicationConceptFeedback(question, selectedText, correctText
     return renderMultiplicationReverseFeedback(model, selectedText, correctText);
   }
 
+  if (model.mode === "groups-plus") {
+    return renderMultiplicationPlusFeedback(model, selectedText, correctText);
+  }
+
   if (model.mode === "repeated-addition") {
     return renderRepeatedAdditionFeedback(model, selectedText, correctText);
   }
@@ -6373,6 +6429,22 @@ function parseMultiplicationModel(question, correctText) {
     const each = Number(match[1]);
     const groups = Number(match[2]);
     return { mode: "array", each, groups, product: each * groups };
+  }
+
+  match = prompt.match(/한\s*모둠에[\s\S]*?(\d+)\s*명씩[\s\S]*?모둠이\s*(\d+)\s*개[\s\S]*?(\d+)\s*명\s*(?:이\s*)?더/);
+  if (match) {
+    const each = Number(match[1]);
+    const groups = Number(match[2]);
+    const extra = Number(match[3]);
+    return {
+      mode: "groups-plus",
+      each,
+      groups,
+      extra,
+      product: each * groups + extra,
+      unit: "명",
+      extraLabel: "발표 도우미"
+    };
   }
 
   const repeated = prompt.match(/^\s*(\d+)(?:\s*\+\s*\d+)+/);
@@ -6442,6 +6514,18 @@ function parseMultiplicationModel(question, correctText) {
   }
 
   return null;
+}
+
+function renderMultiplicationPlusFeedback(model, selectedText, correctText) {
+  return `
+    <div class="concept-card concept-card--groups teach-card">
+      <div class="teach-head"><span>문장제 묶음</span><strong>같은 모둠을 먼저 곱하고, 따로 온 사람을 더해요</strong></div>
+      ${renderMiniMultiplicationPlusVisual(model, { revealAnswer: true })}
+      <div class="concept-equation">${model.each}×${model.groups}=${model.each * model.groups}, ${model.each * model.groups}+${model.extra}=${model.product}${escapeHtml(model.unit)}</div>
+      ${renderFeedbackAnswerLine(selectedText, correctText)}
+      ${renderStudentPrompt("‘한 모둠에 4명씩’과 ‘그런 모둠 6개’가 곱셈 부분입니다. ‘3명이 더 왔다’는 모둠에 섞지 말고 마지막에 더해요.")}
+    </div>
+  `;
 }
 
 function renderArrayMultiplicationFeedback(model, selectedText, correctText) {
