@@ -105,15 +105,18 @@ function initTeacherDashboard() {
 async function renderTeacherDashboard(message = "") {
   const records = await loadLearningRecords();
   const summaries = buildStudentReportSummaries(records);
-  if (summaries.length > 0 && !summaries.some((summary) => summary.studentKey === selectedTeacherStudentKey)) {
-    selectedTeacherStudentKey = summaries[0].studentKey;
+  const orderedSummaries = sortStudentSummariesForTeacher(summaries);
+  if (orderedSummaries.length > 0 && !orderedSummaries.some((summary) => summary.studentKey === selectedTeacherStudentKey)) {
+    selectedTeacherStudentKey = orderedSummaries[0].studentKey;
   }
   const selectedSummary = summaries.find((summary) => summary.studentKey === selectedTeacherStudentKey) || summaries[0] || null;
   teacherDashboardMessage.textContent = message || "학생이 게임 종료 후 반과 번호를 입력하면 이 화면에 누적됩니다.";
   teacherStats.innerHTML = renderTeacherStats(records, summaries);
-  teacherStudentSummary.innerHTML = renderStudentCumulativeSummary(summaries, selectedSummary?.studentKey || "");
+  teacherStudentSummary.innerHTML = renderStudentCumulativeSummary(orderedSummaries, selectedSummary?.studentKey || "");
   teacherStudentDetail.innerHTML = renderTeacherStudentDetail(selectedSummary);
-  teacherRecordTable.innerHTML = renderTeacherRecordTable(records);
+  if (teacherRecordTable) {
+    teacherRecordTable.innerHTML = renderTeacherRecordTable(records);
+  }
 }
 
 function renderTeacherStats(records, summaries = buildStudentReportSummaries(records)) {
@@ -126,13 +129,48 @@ function renderTeacherStats(records, summaries = buildStudentReportSummaries(rec
   const advancedCount = summaries.filter((summary) => resolveStudentRecordLevel(summary) === "advanced").length;
   const retryRecoveryCount = summaries.filter((summary) => (summary.retrySuccess || 0) > 0).length;
   const commonFocus = getClassCommonFocus(records);
+  const averageAccuracy = calculateClassAccuracy(records);
+  const supportRate = studentCount ? Math.round((supportCount / studentCount) * 100) : 0;
+  const advancedRate = studentCount ? Math.round((advancedCount / studentCount) * 100) : 0;
+  const steadyCount = Math.max(0, studentCount - supportCount - advancedCount);
+  const steadyRate = studentCount ? Math.max(0, 100 - supportRate - advancedRate) : 0;
+  const standardStats = getClassStandardStats(summaries);
 
-  return [
-    teacherStatCard("지원 우선", `${supportCount}명`, `${studentCount}명 중 보충·개별 확인`),
-    teacherStatCard("재도전 회복", `${retryRecoveryCount}명`, "피드백 후 다시 맞힌 경험"),
-    teacherStatCard("공통 막힘", commonFocus.title, commonFocus.detail),
-    teacherStatCard("심화 가능", `${advancedCount}명`, "정확·빠름·최종오답 없음")
-  ].join("");
+  return `
+    <section class="class-overview-panel" aria-label="학급 전체 학습 정도">
+      <div class="class-overview-main">
+        <div class="class-accuracy-ring" style="--value:${averageAccuracy}">
+          <strong>${averageAccuracy}%</strong>
+          <span>학급 평균</span>
+        </div>
+        <div class="class-overview-copy">
+          <span>전체 학습 정도</span>
+          <strong>${studentCount}명 · 지원 우선 ${supportCount}명</strong>
+          <p>공통 막힘: ${escapeHtml(commonFocus.title)} · 재도전 회복 ${retryRecoveryCount}명 · 심화 가능 ${advancedCount}명</p>
+        </div>
+      </div>
+      <div class="class-progress-graphic" aria-label="지원 우선 ${supportRate}%, 안정 ${steadyRate}%, 심화 ${advancedRate}%">
+        <div class="class-progress-bar">
+          <i class="is-support" style="--value:${supportRate}"></i>
+          <i class="is-steady" style="--value:${steadyRate}"></i>
+          <i class="is-advanced" style="--value:${advancedRate}"></i>
+        </div>
+        <div class="class-progress-labels">
+          <span>지원 ${supportCount}명</span>
+          <span>안정 ${steadyCount}명</span>
+          <span>심화 ${advancedCount}명</span>
+        </div>
+      </div>
+      <div class="class-standard-strip">
+        ${standardStats.map((standard) => `
+          <article class="class-standard-pill class-standard-pill--${standard.status}">
+            <span>${escapeHtml(standard.shortLabel)}</span>
+            <strong>${standard.accuracy}%</strong>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function teacherStatCard(label, value, detail) {
@@ -153,33 +191,18 @@ function renderStudentCumulativeSummary(summaries, selectedStudentKey = "") {
   const cards = summaries.map((summary) => {
     const level = resolveStudentRecordLevel(summary);
     const priority = getStudentPrioritySignal(summary, level);
-    const plan = buildStudentFeedbackPlan(summary, level);
-    const trend = getStudentTrend(summary);
     const isSelected = summary.studentKey === selectedStudentKey;
     return `
-      <button class="student-insight-card ${isSelected ? "is-selected" : ""}" type="button" data-student-key="${escapeHtml(summary.studentKey)}" aria-pressed="${isSelected}">
-        <div class="student-insight-top">
-          <span class="student-priority student-priority--${priority.modifier}">${escapeHtml(priority.label)}</span>
-          <strong>${escapeHtml(summary.studentKey)}</strong>
-        </div>
-        <div class="student-insight-metrics">
-          <span>정확도 <b>${summary.accuracyPercent}%</b></span>
-          <span>평균 <b>${formatSeconds(summary.avgQuestionTimeMs)}</b></span>
-          <span>누적 <b>${summary.sessions}회</b></span>
-        </div>
-        <div class="student-accuracy-track" aria-label="정확도 ${summary.accuracyPercent}%">
-          <i style="--value:${summary.accuracyPercent}"></i>
-        </div>
-        ${renderStudentMiniTrend(summary)}
-        <p class="student-insight-feedback">${escapeHtml(plan.teacherTalk)}</p>
-        <p class="student-insight-action">${escapeHtml(plan.nextAction)}</p>
-        <span class="student-insight-trend">${escapeHtml(trend.label)}</span>
+      <button class="student-compact-card student-compact-card--${priority.modifier} ${isSelected ? "is-selected" : ""}" type="button" data-student-key="${escapeHtml(summary.studentKey)}" aria-pressed="${isSelected}" aria-label="${escapeHtml(summary.studentKey)} ${summary.accuracyPercent}% ${escapeHtml(priority.label)}">
+        <span>${escapeHtml(summary.classNumber || "-")}반</span>
+        <strong>${escapeHtml(summary.studentNumber || "-")}번</strong>
+        <b>${summary.accuracyPercent}%</b>
       </button>
     `;
   }).join("");
 
   return `
-    <div class="student-insight-list">
+    <div class="student-compact-grid">
       ${cards}
     </div>
   `;
@@ -196,6 +219,12 @@ function selectTeacherStudent(event) {
 }
 
 async function copyTeacherFeedbackSnippet(event) {
+  const pdfButton = event.target.closest("[data-student-pdf]");
+  if (pdfButton) {
+    await downloadStudentFeedbackPdf(pdfButton.dataset.studentKey || "", pdfButton.dataset.studentPdf || "practice");
+    return;
+  }
+
   const button = event.target.closest("[data-copy-feedback]");
   if (!button) {
     return;
@@ -260,6 +289,17 @@ function renderTeacherStudentDetail(summary) {
             <p>${escapeHtml(familyTalk)}</p>
             <button class="record-copy-button" type="button" data-copy-label="가정 문장 복사" data-copy-feedback="${escapeHtml(familyTalk)}">가정 문장 복사</button>
           </article>
+        </div>
+      </section>
+
+      <section class="student-pdf-tools" aria-label="학생 피드백 PDF 자료">
+        <div>
+          <span>첨부 자료</span>
+          <strong>다시 공부할 문제와 정답·설명 PDF</strong>
+        </div>
+        <div class="student-pdf-actions">
+          <button class="record-copy-button" type="button" data-student-key="${escapeHtml(summary.studentKey)}" data-student-pdf="practice">다시 공부할 문제 PDF</button>
+          <button class="record-copy-button" type="button" data-student-key="${escapeHtml(summary.studentKey)}" data-student-pdf="answer">정답·설명 자료 PDF</button>
         </div>
       </section>
 
@@ -576,6 +616,53 @@ function getClassCommonFocus(records) {
     title: getShortFocusName(top[0]),
     detail: `${top[1]}회 반복 신호`
   };
+}
+
+function calculateClassAccuracy(records) {
+  const totalQuestions = records.reduce((sum, record) => sum + (record.questionCount || 0), 0);
+  const totalCorrect = records.reduce((sum, record) => sum + (record.correct || 0), 0);
+  return totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+}
+
+function getClassStandardStats(summaries) {
+  return CURRICULUM_STANDARDS.map((standard) => {
+    const aggregate = summaries.reduce((acc, summary) => {
+      const stat = (summary.standardStats || []).find((item) => item.code === standard.code);
+      if (stat) {
+        acc.total += stat.total || 0;
+        acc.correct += stat.correct || 0;
+      }
+      return acc;
+    }, { total: 0, correct: 0 });
+    const accuracy = aggregate.total ? Math.round((aggregate.correct / aggregate.total) * 100) : 0;
+    return {
+      ...standard,
+      accuracy,
+      status: aggregate.total === 0 ? "observe" : accuracy >= 75 ? "strong" : accuracy >= 45 ? "practice" : "support"
+    };
+  });
+}
+
+function sortStudentSummariesForTeacher(summaries) {
+  return [...summaries].sort((a, b) => (
+    getStudentPriorityRank(a) - getStudentPriorityRank(b)
+    || a.accuracyPercent - b.accuracyPercent
+    || Number(a.classNumber) - Number(b.classNumber)
+    || Number(a.studentNumber) - Number(b.studentNumber)
+  ));
+}
+
+function getStudentPriorityRank(summary) {
+  const priority = getStudentPrioritySignal(summary, resolveStudentRecordLevel(summary));
+  return {
+    urgent: 0,
+    reteach: 1,
+    speed: 2,
+    observe: 3,
+    feedback: 4,
+    stable: 5,
+    extend: 6
+  }[priority.modifier] ?? 5;
 }
 
 function renderStudentMiniTrend(summary) {
@@ -1480,6 +1567,291 @@ async function copyTextToClipboard(text) {
   tempTextarea.select();
   document.execCommand("copy");
   tempTextarea.remove();
+}
+
+async function downloadStudentFeedbackPdf(studentKey, type = "practice") {
+  const records = await loadLearningRecords();
+  const summary = buildStudentReportSummaries(records).find((item) => item.studentKey === studentKey);
+  if (!summary) {
+    window.alert("PDF로 만들 학생 기록을 찾지 못했어요.");
+    return;
+  }
+
+  const pdfBlob = createStudentFeedbackPdf(summary, type);
+  const fileType = type === "answer" ? "정답_설명자료" : "다시공부할문제";
+  downloadBlob(pdfBlob, `${sanitizeFileName(summary.studentKey)}_${fileType}_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+function createStudentFeedbackPdf(summary, type = "practice") {
+  const blocks = buildStudentPdfBlocks(summary, type);
+  const pages = paginatePdfBlocks(blocks);
+  const images = pages.map((pageBlocks, index) => drawStudentPdfCanvas(summary, type, pageBlocks, index + 1, pages.length));
+  return buildImagePdf(images);
+}
+
+function buildStudentPdfBlocks(summary, type) {
+  const level = resolveStudentRecordLevel(summary);
+  const plan = buildStudentFeedbackPlan(summary, level);
+  const questions = getStudentPdfQuestions(summary);
+  const focus = getShortFocusName(summary.focusTags?.[0] || summary.weakText || "");
+  const headerBlocks = type === "answer"
+    ? [
+      {
+        kind: "note",
+        title: "교사용 안내",
+        body: `${summary.studentKey} 학생의 정답과 설명 자료입니다. 설명은 한 번에 길게 읽히기보다, 학생이 다시 푼 뒤 필요한 부분만 짧게 제시하는 용도로 사용하세요.`
+      },
+      {
+        kind: "note",
+        title: "오늘의 핵심",
+        body: plan.diagnosis
+      }
+    ]
+    : [
+      {
+        kind: "note",
+        title: "다시 공부할 때 먼저 보기",
+        body: `${focus}을 먼저 확인합니다. 답을 바로 고르지 말고 문제에서 필요한 말과 수를 표시한 뒤 풀어 보세요.`
+      },
+      {
+        kind: "note",
+        title: "교사 피드백",
+        body: plan.teacherTalk
+      }
+    ];
+
+  const questionBlocks = questions.map((questionRecord, index) => {
+    const explanation = buildQuestionExplanation(questionRecord);
+    if (type === "answer") {
+      return {
+        kind: "question",
+        title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
+        body: `정답: ${questionRecord.correctText || "-"}\n설명: ${explanation}`
+      };
+    }
+
+    return {
+      kind: "question",
+      title: `${index + 1}. ${questionRecord.prompt || "문항"}`,
+      body: `내 풀이: ________________________________\n답: __________\n확인할 점: ${explanation}`
+    };
+  });
+
+  return [...headerBlocks, ...questionBlocks];
+}
+
+function getStudentPdfQuestions(summary) {
+  const questions = [...(summary.questionRecords || [])];
+  const priorityQuestions = questions.filter((questionRecord) => (
+    !questionRecord.finalCorrect || (questionRecord.attemptCount || 0) > 1 || (questionRecord.elapsedMs || 0) >= 12000
+  ));
+  const selected = priorityQuestions.length > 0 ? priorityQuestions : questions;
+  return selected.slice(0, 8);
+}
+
+function buildQuestionExplanation(questionRecord) {
+  const tags = analyzeQuestionRecordNeed(questionRecord);
+  if (tags.length === 0) {
+    return "문제에서 묻는 말과 필요한 수를 확인하면 안정적으로 풀 수 있습니다.";
+  }
+
+  return getActionForFocus(tags[0]);
+}
+
+function paginatePdfBlocks(blocks) {
+  const measureCanvas = document.createElement("canvas");
+  const ctx = measureCanvas.getContext("2d");
+  const maxWidth = 960;
+  const pages = [];
+  let current = [];
+  let y = 240;
+
+  blocks.forEach((block) => {
+    const height = measurePdfBlockHeight(ctx, block, maxWidth);
+    if (current.length > 0 && y + height > 1560) {
+      pages.push(current);
+      current = [];
+      y = 240;
+    }
+    current.push(block);
+    y += height + 28;
+  });
+
+  if (current.length > 0) {
+    pages.push(current);
+  }
+
+  return pages.length > 0 ? pages : [[{ kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }]];
+}
+
+function measurePdfBlockHeight(ctx, block, maxWidth) {
+  ctx.font = "42px Malgun Gothic, sans-serif";
+  const titleLines = wrapCanvasText(ctx, block.title, maxWidth);
+  ctx.font = "32px Malgun Gothic, sans-serif";
+  const bodyLines = block.body.split("\n").flatMap((line) => wrapCanvasText(ctx, line, maxWidth));
+  return 38 + titleLines.length * 50 + bodyLines.length * 42 + 34;
+}
+
+function drawStudentPdfCanvas(summary, type, blocks, pageNumber, totalPages) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1240;
+  canvas.height = 1754;
+  const ctx = canvas.getContext("2d");
+  const title = type === "answer" ? "정답 및 설명 자료" : "다시 공부할 문제";
+
+  ctx.fillStyle = "#f5fbff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#0b4166";
+  ctx.fillRect(0, 0, canvas.width, 178);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "700 56px Malgun Gothic, sans-serif";
+  ctx.fillText(title, 86, 82);
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText(`${summary.studentKey} · 정확도 ${summary.accuracyPercent}% · ${summary.questionCount}문항 누적`, 88, 130);
+
+  ctx.fillStyle = "#e9f7ff";
+  roundRect(ctx, 86, 206, 1068, 76, 28);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText(`핵심: ${getShortFocusName(summary.focusTags?.[0] || summary.weakText || "핵심 개념")}`, 118, 254);
+
+  let y = 330;
+  blocks.forEach((block) => {
+    y = drawPdfBlock(ctx, block, 86, y, 1068);
+  });
+
+  ctx.fillStyle = "#668299";
+  ctx.font = "24px Malgun Gothic, sans-serif";
+  ctx.fillText(`보조개샘ai클래스 · ${pageNumber}/${totalPages}`, 86, 1702);
+
+  return canvas.toDataURL("image/jpeg", 0.92);
+}
+
+function drawPdfBlock(ctx, block, x, y, width) {
+  const height = measurePdfBlockHeight(ctx, block, width);
+  ctx.fillStyle = block.kind === "question" ? "#ffffff" : "#fff9d8";
+  roundRect(ctx, x, y, width, height, 24);
+  ctx.fill();
+  ctx.strokeStyle = block.kind === "question" ? "#b8ddf6" : "#f0d36a";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  let textY = y + 56;
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 42px Malgun Gothic, sans-serif";
+  wrapCanvasText(ctx, block.title, width - 64).forEach((line) => {
+    ctx.fillText(line, x + 32, textY);
+    textY += 50;
+  });
+
+  ctx.fillStyle = "#173451";
+  ctx.font = "32px Malgun Gothic, sans-serif";
+  block.body.split("\n").forEach((paragraph) => {
+    wrapCanvasText(ctx, paragraph, width - 64).forEach((line) => {
+      ctx.fillText(line, x + 32, textY);
+      textY += 42;
+    });
+    textY += 8;
+  });
+
+  return y + height + 28;
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const source = String(text || "");
+  const words = source.includes(" ") ? source.split(" ") : Array.from(source);
+  const lines = [];
+  let line = "";
+
+  words.forEach((word) => {
+    const joiner = source.includes(" ") && line ? " " : "";
+    const next = `${line}${joiner}${word}`;
+    if (line && ctx.measureText(next).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  });
+
+  if (line) {
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function buildImagePdf(imageDataUrls) {
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const objects = [];
+  const pageObjects = [];
+
+  objects.push("<< /Type /Catalog /Pages 2 0 R >>");
+  objects.push("");
+
+  imageDataUrls.forEach((dataUrl, index) => {
+    const imageObjectNumber = objects.length + 1;
+    const contentObjectNumber = objects.length + 2;
+    const pageObjectNumber = objects.length + 3;
+    const imageBinary = atob(dataUrl.split(",")[1] || "");
+    const content = `q ${pageWidth} 0 0 ${pageHeight} 0 0 cm /Im${index + 1} Do Q`;
+
+    objects.push(`<< /Type /XObject /Subtype /Image /Width 1240 /Height 1754 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBinary.length} >>\nstream\n${imageBinary}\nendstream`);
+    objects.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im${index + 1} ${imageObjectNumber} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
+    pageObjects.push(pageObjectNumber);
+  });
+
+  objects[1] = `<< /Type /Pages /Count ${pageObjects.length} /Kids [${pageObjects.map((number) => `${number} 0 R`).join(" ")}] >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  const bytes = new Uint8Array(pdf.length);
+  for (let index = 0; index < pdf.length; index += 1) {
+    bytes[index] = pdf.charCodeAt(index) & 0xff;
+  }
+
+  return new Blob([bytes], { type: "application/pdf" });
+}
+
+function downloadBlob(blob, filename) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function sanitizeFileName(value) {
+  return String(value || "학생").replace(/[\\/:*?"<>|]/g, "_");
 }
 
 async function loadLearningRecords() {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2학년 수학 교사용 평가 결과 누적 관리</title>
-  <link rel="stylesheet" href="styles.css?v=math2-teacher-feedback-dashboard-20260525a">
+  <link rel="stylesheet" href="styles.css?v=math2-teacher-class-overview-pdf-20260525a">
 </head>
 <body>
   <div class="app-shell teacher-app-shell">
@@ -43,7 +43,7 @@
           </div>
         </div>
 
-        <div class="teacher-stat-grid" id="teacherStats"></div>
+        <div class="teacher-overview-wrap" id="teacherStats"></div>
 
         <div class="teacher-dashboard-grid teacher-dashboard-grid--feedback">
           <section class="teacher-panel teacher-panel--student-list">
@@ -60,14 +60,6 @@
               <span>근거 · 진단 · 다음 지도</span>
             </div>
             <div id="teacherStudentDetail"></div>
-          </section>
-
-          <section class="teacher-panel teacher-panel--record-log">
-            <div class="teacher-panel-head">
-              <h3>평가 기록</h3>
-              <span>최근 저장순</span>
-            </div>
-            <div id="teacherRecordTable"></div>
           </section>
         </div>
       </section>
@@ -106,6 +98,6 @@
   </div>
 
   <iframe id="storageBridgeFrame" src="index.html#storageBridge" title="학습 데이터 저장소" hidden></iframe>
-  <script src="teacher-dashboard.js?v=math2-teacher-feedback-dashboard-20260525a"></script>
+  <script src="teacher-dashboard.js?v=math2-teacher-class-overview-pdf-20260525a"></script>
 </body>
 </html>
