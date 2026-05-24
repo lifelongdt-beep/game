@@ -474,6 +474,7 @@ function startGame() {
   state.practiceMode = null;
   state.totalCorrect = 0;
   state.totalAnswered = 0;
+  resetLearningSaveButton();
 
   clearTimers();
   clearPlayerDelays();
@@ -7450,8 +7451,12 @@ function endGame() {
   closeOpenQuestionRecordsOnEnd();
   clearTimers();
   clearPlayerDelays();
+  const autoSaved = autoSavePersonalizedPracticeResults();
   renderPlayerBoard();
   showStudentSubmitScreen();
+  if (autoSaved) {
+    studentSubmitSummary.textContent = "맞춤 재도전 결과를 같은 학생 정보로 바로 저장했어요. 잘 푼 유형은 덜어내고, 다음 맞춤 다시 풀기 문제를 새로 준비했어요.";
+  }
 }
 
 function showResults() {
@@ -7491,6 +7496,31 @@ function renderStudentSubmitScreen() {
     const questionCount = playerState.questionRecords.length;
     const avgMs = questionCount ? Math.round(playerState.totalQuestionTimeMs / questionCount) : 0;
     const accuracy = getRecordAccuracyPercent(playerState.questionRecords);
+    const studentInfoMarkup = savedRecord
+      ? `
+        <div class="student-saved-identity">
+          <span>저장 학생</span>
+          <strong>${escapeHtml(savedRecord.studentKey)}</strong>
+        </div>
+      `
+      : `
+        <div class="student-input-row">
+          <label>
+            <span>반</span>
+            <select data-field="classNumber" data-player="${player.id}" aria-label="${player.name} 반 선택">
+              <option value="">반 선택</option>
+              ${renderNumberSelectOptions(1, STUDENT_CLASS_MAX, "반")}
+            </select>
+          </label>
+          <label>
+            <span>번호</span>
+            <select data-field="studentNumber" data-player="${player.id}" aria-label="${player.name} 번호 선택">
+              <option value="">번호 선택</option>
+              ${renderNumberSelectOptions(1, STUDENT_NUMBER_MAX, "번")}
+            </select>
+          </label>
+        </div>
+      `;
     const cardHelp = savedRecord
       ? `${savedRecord.studentKey}으로 저장 완료 · 맞춤 재도전 문제 ${practicePlan?.questions?.length || 0}문항 준비`
       : "입력 후 저장하면 선생님 전용 관리 파일에 풀이 기록이 누적됩니다.";
@@ -7509,22 +7539,7 @@ function renderStudentSubmitScreen() {
           <span>정확도 <strong>${accuracy}%</strong></span>
           <span>평균 ${formatSeconds(avgMs)}</span>
         </div>
-        <div class="student-input-row">
-          <label>
-            <span>반</span>
-            <select data-field="classNumber" data-player="${player.id}" aria-label="${player.name} 반 선택">
-              <option value="">반 선택</option>
-              ${renderNumberSelectOptions(1, STUDENT_CLASS_MAX, "반")}
-            </select>
-          </label>
-          <label>
-            <span>번호</span>
-            <select data-field="studentNumber" data-player="${player.id}" aria-label="${player.name} 번호 선택">
-              <option value="">번호 선택</option>
-              ${renderNumberSelectOptions(1, STUDENT_NUMBER_MAX, "번")}
-            </select>
-          </label>
-        </div>
+        ${studentInfoMarkup}
         <p class="student-submit-help">${escapeHtml(cardHelp)}</p>
         ${savedRecord ? renderPersonalizedPracticeLauncher(player, savedRecord, practicePlan) : ""}
       </article>
@@ -7660,6 +7675,63 @@ function syncStudentSubmitSelections(changedSelect = null) {
   });
 }
 
+function resetLearningSaveButton() {
+  saveLearningDataButton.disabled = false;
+  saveLearningDataButton.textContent = "평가 결과 저장";
+}
+
+function getPracticeStudentInfoByPlayer() {
+  const plansByPlayer = state.practiceMode?.plansByPlayer || {};
+  return state.players.reduce((accumulator, player) => {
+    const practiceMeta = plansByPlayer[player.id];
+    if (practiceMeta?.classNumber && practiceMeta?.studentNumber) {
+      accumulator[player.id] = {
+        classNumber: practiceMeta.classNumber,
+        studentNumber: practiceMeta.studentNumber
+      };
+    }
+    return accumulator;
+  }, {});
+}
+
+function saveLearningRecordsForPlayers(studentInfoByPlayer) {
+  const newRecords = state.players.map((player) => (
+    buildLearningRecord(player, state.scores[player.id], studentInfoByPlayer[player.id])
+  ));
+  const savedRecords = loadLearningRecords();
+  const allRecords = [...savedRecords, ...newRecords];
+  saveLearningRecords(allRecords);
+  state.submissionSaved = true;
+  state.savedSubmissionRecordsByPlayer = Object.fromEntries(newRecords.map((record) => [record.playerId, record]));
+  state.personalizedPracticePlansByPlayer = Object.fromEntries(newRecords.map((record) => [
+    record.playerId,
+    buildPersonalizedPracticePlan(
+      allRecords.filter((item) => item.studentKey === record.studentKey),
+      record
+    )
+  ]));
+  saveLearningDataButton.disabled = true;
+  saveLearningDataButton.textContent = "저장 완료";
+  return newRecords;
+}
+
+function autoSavePersonalizedPracticeResults() {
+  if (!state.practiceMode?.active || state.submissionSaved) {
+    return false;
+  }
+
+  const studentInfoByPlayer = getPracticeStudentInfoByPlayer();
+  const hasEveryStudentInfo = state.players.every((player) => (
+    studentInfoByPlayer[player.id]?.classNumber && studentInfoByPlayer[player.id]?.studentNumber
+  ));
+  if (!hasEveryStudentInfo) {
+    return false;
+  }
+
+  saveLearningRecordsForPlayers(studentInfoByPlayer);
+  return true;
+}
+
 function saveLearningDataFromSubmit() {
   if (state.submissionSaved) {
     studentSubmitSummary.textContent = "이번 평가 결과는 이미 저장되어 있어요. 선생님은 교사용 파일에서 누적 결과를 확인할 수 있습니다.";
@@ -7695,23 +7767,7 @@ function saveLearningDataFromSubmit() {
     return;
   }
 
-  const newRecords = state.players.map((player) => (
-    buildLearningRecord(player, state.scores[player.id], studentInfoByPlayer[player.id])
-  ));
-  const savedRecords = loadLearningRecords();
-  const allRecords = [...savedRecords, ...newRecords];
-  saveLearningRecords(allRecords);
-  state.submissionSaved = true;
-  state.savedSubmissionRecordsByPlayer = Object.fromEntries(newRecords.map((record) => [record.playerId, record]));
-  state.personalizedPracticePlansByPlayer = Object.fromEntries(newRecords.map((record) => [
-    record.playerId,
-    buildPersonalizedPracticePlan(
-      allRecords.filter((item) => item.studentKey === record.studentKey),
-      record
-    )
-  ]));
-  saveLearningDataButton.disabled = true;
-  saveLearningDataButton.textContent = "저장 완료";
+  const newRecords = saveLearningRecordsForPlayers(studentInfoByPlayer);
   renderStudentSubmitScreen();
   studentSubmitSummary.textContent = `${newRecords.length}명의 평가 결과를 저장했습니다. 학생별 맞춤 다시 풀기 버튼이 준비되었습니다.`;
 }
@@ -7745,7 +7801,7 @@ function startPersonalizedPractice(playerId) {
   }
 
   primeAudio();
-  const previousTimer = state.timer;
+  const previousTimer = state.practiceMode?.previousTimer || state.timer;
   state.sessionToken += 1;
   state.gameEnded = false;
   state.sessionId = createSessionId();
@@ -7754,6 +7810,7 @@ function startPersonalizedPractice(playerId) {
   state.submissionSaved = false;
   state.savedSubmissionRecordsByPlayer = {};
   state.personalizedPracticePlansByPlayer = {};
+  resetLearningSaveButton();
   state.practiceMode = {
     active: true,
     sourceRecordId: clickedRecord.id,
@@ -7767,6 +7824,8 @@ function startPersonalizedPractice(playerId) {
       {
         sourceRecordId: entry.savedRecord.id,
         sourceStudentKey: entry.savedRecord.studentKey,
+        classNumber: entry.savedRecord.classNumber,
+        studentNumber: entry.savedRecord.studentNumber,
         focusText: entry.plan.focusText,
         mode: entry.plan.mode,
         targetTypes: entry.plan.targetTypes || []
@@ -7841,7 +7900,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
     mode = baseDifficulty === "high" ? "challenge" : "extension";
     focusText = baseDifficulty === "high" ? "3줄 이상 심화 문장제" : "새 차시·새 유형 확장";
     questions = baseDifficulty === "high"
-      ? buildAdvancedStoryChallengeQuestions(anchorRecord)
+      ? buildAdvancedStoryChallengeQuestions(anchorRecord, studentRecords.length)
       : pickDifferentTypeQuestions({
           difficulty: targetDifficulty,
           seen,
@@ -8085,8 +8144,8 @@ function cloneQuestionForPersonalizedPractice(question, index, mode) {
   };
 }
 
-function buildAdvancedStoryChallengeQuestions(anchorRecord) {
-  const seed = Number(anchorRecord.studentNumber || 1);
+function buildAdvancedStoryChallengeQuestions(anchorRecord, attemptOffset = 0) {
+  const seed = Number(anchorRecord.studentNumber || 1) + (Number(attemptOffset) % 12);
   const specs = [
     {
       category: "1-3",
@@ -8199,6 +8258,10 @@ function buildLearningRecord(player, playerState, studentInfo) {
   const avgQuestionTimeMs = questionCount ? Math.round(playerState.totalQuestionTimeMs / questionCount) : 0;
   const practiceMeta = state.practiceMode?.plansByPlayer?.[player.id] || null;
   const isPersonalizedPractice = Boolean(state.practiceMode?.active && practiceMeta);
+  const resolvedStudentInfo = {
+    classNumber: studentInfo?.classNumber || practiceMeta?.classNumber || "",
+    studentNumber: studentInfo?.studentNumber || practiceMeta?.studentNumber || ""
+  };
 
   return {
     id: `${state.sessionId}-${player.id}`,
@@ -8206,9 +8269,9 @@ function buildLearningRecord(player, playerState, studentInfo) {
     savedAt: new Date().toISOString(),
     startedAt: state.startedAt ? new Date(state.startedAt).toISOString() : "",
     endedAt: state.endedAt ? new Date(state.endedAt).toISOString() : "",
-    classNumber: studentInfo.classNumber,
-    studentNumber: studentInfo.studentNumber,
-    studentKey: `${studentInfo.classNumber}반 ${studentInfo.studentNumber}번`,
+    classNumber: resolvedStudentInfo.classNumber,
+    studentNumber: resolvedStudentInfo.studentNumber,
+    studentKey: `${resolvedStudentInfo.classNumber}반 ${resolvedStudentInfo.studentNumber}번`,
     playerId: player.id,
     playerName: player.name,
     playerAvatar: player.avatar,
