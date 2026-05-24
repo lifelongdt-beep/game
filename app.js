@@ -5786,6 +5786,8 @@ function renderShapeConceptFeedback(question, selectedText, correctText) {
 function renderShapeSceneFeedback(question, selectedText, correctText) {
   const scene = question.scene || {};
   const visual = renderStructuredShapeVisual(scene, { revealAnswer: true });
+  const isSizeMisconception = scene.kind === "shape-grid"
+    && (`${scene.note || ""} ${correctText || ""}`).includes("크기");
   const sceneText = {
     "stack-cubes": {
       title: scene.ask === "top" ? "위에서 본 모양" : "쌓기나무 세기",
@@ -5810,8 +5812,10 @@ function renderShapeSceneFeedback(question, selectedText, correctText) {
       principle: "조각 하나씩 바깥 윤곽을 보고 조건에 맞는 조각만 표시해요"
     },
     "shape-grid": {
-      title: "번호 도형 확인",
-      principle: "이름을 외우기 전에 테두리를 따라가며 변과 꼭짓점을 확인해요"
+      title: isSizeMisconception ? "도형 설명 확인" : "번호 도형 확인",
+      principle: isSizeMisconception
+        ? "도형 이름과 크기는 따로 봐요"
+        : "이름을 외우기 전에 테두리를 따라가며 변과 꼭짓점을 확인해요"
     },
     "object-shapes": {
       title: "생활 속 도형",
@@ -5827,7 +5831,6 @@ function renderShapeSceneFeedback(question, selectedText, correctText) {
       ${visual}
       <div class="concept-equation">답: ${escapeHtml(correctText)}</div>
       ${renderFeedbackAnswerLine(selectedText, correctText)}
-      ${renderStudentPrompt(sceneText.principle)}
     </div>
   `;
 }
@@ -7848,10 +7851,12 @@ function renderScene(scene) {
   return "";
 }
 
-function shapeSVG(item, className) {
+function shapeSVG(item, className, options = {}) {
   const fill = SHAPE_FILL[item.kind] || "#8a94a6";
   const rotate = item.rotate || 0;
-  const label = item.label ? `<text x="50" y="95" text-anchor="middle" font-size="12" fill="#5a6570" font-weight="700">${item.label}</text>` : "";
+  const label = options.showLabel && item.label
+    ? `<text x="50" y="95" text-anchor="middle" font-size="12" fill="#5a6570" font-weight="700">${escapeHtml(item.label)}</text>`
+    : "";
 
   const wrappers = {
     triangle: `<polygon points="50,10 88,82 12,82" fill="${fill}" />`,
