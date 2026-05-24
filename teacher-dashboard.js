@@ -1610,36 +1610,6 @@ async function createStudentFeedbackPdf(summary, type = "practice") {
 }
 
 function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions(summary), visualPayloads = []) {
-  const level = resolveStudentRecordLevel(summary);
-  const plan = buildStudentFeedbackPlan(summary, level);
-  const focus = getShortFocusName(summary.focusTags?.[0] || summary.weakText || "");
-  const latestText = summary.lastSavedAt ? formatDateTime(summary.lastSavedAt) : "저장 기록 없음";
-  const headerBlocks = type === "answer"
-    ? [
-      {
-        kind: "note",
-        title: "교사용 안내",
-        body: `${summary.studentKey} 학생의 정답과 설명 자료입니다. 다운로드하는 순간의 누적 기록으로 다시 만들었습니다. 설명은 학생이 다시 푼 뒤 필요한 부분만 짧게 제시하는 용도로 사용하세요.`
-      },
-      {
-        kind: "note",
-        title: "오늘의 핵심",
-        body: `${plan.diagnosis}\n최근 반영: ${latestText} · 누적 ${summary.sessions}회, ${summary.questionCount}문항`
-      }
-    ]
-    : [
-      {
-        kind: "note",
-        title: "다시 공부할 때 먼저 보기",
-        body: `${focus}을 먼저 확인합니다. 답을 바로 고르지 말고 문제에서 필요한 말과 수를 표시한 뒤 풀어 보세요.\n최근 반영: ${latestText} · 누적 ${summary.sessions}회, ${summary.questionCount}문항`
-      },
-      {
-        kind: "note",
-        title: "교사 피드백",
-        body: plan.teacherTalk
-      }
-    ];
-
   const questionBlocks = questions.map((questionRecord, index) => {
     const visualPayload = visualPayloads[index] || buildFallbackQuestionVisualPayload(questionRecord, type);
     const explanationSteps = buildQuestionExplanationSteps(questionRecord);
@@ -1680,7 +1650,9 @@ function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions
     };
   });
 
-  return [...headerBlocks, ...questionBlocks];
+  return questionBlocks.length > 0
+    ? questionBlocks
+    : [{ kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }];
 }
 
 function getStudentPdfQuestions(summary) {
@@ -2053,29 +2025,16 @@ function parsePdfMultiplicationModel(questionRecord) {
 }
 
 function paginatePdfBlocks(blocks) {
-  const measureCanvas = document.createElement("canvas");
-  const ctx = measureCanvas.getContext("2d");
-  const maxWidth = 960;
-  const pages = [];
-  let current = [];
-  let y = 240;
-
-  blocks.forEach((block) => {
-    const height = measurePdfBlockHeight(ctx, block, maxWidth);
-    if (current.length > 0 && y + height > 1560) {
-      pages.push(current);
-      current = [];
-      y = 240;
-    }
-    current.push(block);
-    y += height + 28;
-  });
-
-  if (current.length > 0) {
-    pages.push(current);
+  const questionBlocks = blocks.filter((block) => block.kind === "question");
+  if (!questionBlocks.length) {
+    return [[{ kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }]];
   }
 
-  return pages.length > 0 ? pages : [[{ kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }]];
+  const pages = [];
+  for (let index = 0; index < questionBlocks.length; index += 4) {
+    pages.push(questionBlocks.slice(index, index + 4));
+  }
+  return pages;
 }
 
 function measurePdfBlockHeight(ctx, block, maxWidth) {
@@ -2120,34 +2079,175 @@ function drawStudentPdfCanvas(summary, type, blocks, pageNumber, totalPages) {
   canvas.height = 1754;
   const ctx = canvas.getContext("2d");
   const title = type === "answer" ? "정답 및 설명 자료" : "다시 공부할 문제";
+  const level = resolveStudentRecordLevel(summary);
+  const plan = buildStudentFeedbackPlan(summary, level);
+  const focus = getShortFocusName(summary.focusTags?.[0] || summary.weakText || "핵심 개념");
+  const latestText = summary.lastSavedAt ? formatDateTime(summary.lastSavedAt) : "저장 기록 없음";
+  const guideText = type === "answer"
+    ? "정답은 학생이 다시 푼 뒤 필요한 부분만 짚어 주세요."
+    : "답을 바로 보지 말고 문제 그림을 보며 내 풀이를 먼저 씁니다.";
 
   ctx.fillStyle = "#f5fbff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#0b4166";
-  ctx.fillRect(0, 0, canvas.width, 178);
+  ctx.fillRect(0, 0, canvas.width, 148);
   ctx.fillStyle = "#ffffff";
-  ctx.font = "700 56px Malgun Gothic, sans-serif";
-  ctx.fillText(title, 86, 82);
-  ctx.font = "700 30px Malgun Gothic, sans-serif";
-  ctx.fillText(`${summary.studentKey} · 정확도 ${summary.accuracyPercent}% · ${summary.questionCount}문항 누적`, 88, 130);
+  ctx.font = "700 50px Malgun Gothic, sans-serif";
+  ctx.fillText(title, 64, 72);
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  ctx.fillText(`${summary.studentKey} · 정확도 ${summary.accuracyPercent}% · ${summary.questionCount}문항 누적 · 최근 반영 ${latestText}`, 66, 116);
 
   ctx.fillStyle = "#e9f7ff";
-  roundRect(ctx, 86, 206, 1068, 76, 28);
+  roundRect(ctx, 54, 170, 1132, 58, 22);
   ctx.fill();
   ctx.fillStyle = "#0b4166";
-  ctx.font = "700 30px Malgun Gothic, sans-serif";
-  ctx.fillText(`핵심: ${getShortFocusName(summary.focusTags?.[0] || summary.weakText || "핵심 개념")}`, 118, 254);
+  ctx.font = "700 24px Malgun Gothic, sans-serif";
+  drawLimitedCanvasText(ctx, `핵심: ${focus} · ${guideText} · 교사 판단: ${plan.diagnosis}`, 82, 207, 1076, 28, 1);
 
-  let y = 330;
-  blocks.forEach((block) => {
-    y = drawPdfBlock(ctx, block, 86, y, 1068);
-  });
+  const questionBlocks = blocks.filter((block) => block.kind === "question");
+  if (questionBlocks.length) {
+    getPdfQuestionGridSlots().forEach((slot, index) => {
+      const block = questionBlocks[index];
+      if (block) {
+        drawPdfQuestionGridCell(ctx, block, slot.x, slot.y, slot.width, slot.height);
+      } else {
+        drawPdfEmptyQuestionCell(ctx, slot.x, slot.y, slot.width, slot.height);
+      }
+    });
+  } else {
+    drawPdfBlock(ctx, blocks[0] || { kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }, 86, 330, 1068);
+  }
 
   ctx.fillStyle = "#668299";
   ctx.font = "24px Malgun Gothic, sans-serif";
-  ctx.fillText(`보조개샘ai클래스 · ${pageNumber}/${totalPages}`, 86, 1702);
+  ctx.fillText(`보조개샘ai클래스 · ${pageNumber}/${totalPages} · 한 페이지 4문항`, 64, 1706);
 
   return canvas.toDataURL("image/jpeg", 0.92);
+}
+
+function getPdfQuestionGridSlots() {
+  const left = 54;
+  const top = 250;
+  const gap = 22;
+  const width = (1240 - left * 2 - gap) / 2;
+  const height = (1670 - top - gap) / 2;
+  return [
+    { x: left, y: top, width, height },
+    { x: left + width + gap, y: top, width, height },
+    { x: left, y: top + height + gap, width, height },
+    { x: left + width + gap, y: top + height + gap, width, height }
+  ];
+}
+
+function drawPdfQuestionGridCell(ctx, block, x, y, width, height) {
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x, y, width, height, 24);
+  ctx.fill();
+  ctx.strokeStyle = "#b8ddf6";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const questionNumber = String(block.title || "").match(/^(\d+)\./)?.[1] || "";
+  const titleText = String(block.title || block.prompt || "문항").replace(/^\d+\.\s*/, "");
+  ctx.fillStyle = "#2f86c8";
+  roundRect(ctx, x + 18, y + 22, 42, 38, 16);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "700 22px Malgun Gothic, sans-serif";
+  ctx.fillText(questionNumber || "?", x + 39 - ctx.measureText(questionNumber || "?").width / 2, y + 48);
+
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 24px Malgun Gothic, sans-serif";
+  drawLimitedCanvasText(ctx, titleText, x + 72, y + 45, width - 96, 30, 2);
+
+  const visualY = y + 96;
+  const visualHeight = block.pdfType === "answer" ? 318 : 300;
+  ctx.fillStyle = "#f3fbff";
+  roundRect(ctx, x + 18, visualY, width - 36, visualHeight, 20);
+  ctx.fill();
+  ctx.strokeStyle = "#d4ecfb";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const imageBox = {
+    x: x + 30,
+    y: visualY + 12,
+    width: width - 60,
+    height: visualHeight - 24
+  };
+  if (canDrawNativePdfGraphic(block)) {
+    drawNativePdfQuestionGraphic(ctx, block, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  } else if (block.visualImage) {
+    drawFittedImage(ctx, block.visualImage.image, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  } else {
+    drawFallbackQuestionGraphic(ctx, block, imageBox.x, imageBox.y, imageBox.width, imageBox.height);
+  }
+
+  const answerY = visualY + visualHeight + 20;
+  ctx.fillStyle = block.pdfType === "answer" ? "#e9f8df" : "#fff4c7";
+  roundRect(ctx, x + 18, answerY, width - 36, 64, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 22px Malgun Gothic, sans-serif";
+  const answerLine = block.pdfType === "answer"
+    ? `정답: ${block.correctText || "-"}`
+    : "내 풀이: ________________    답: ______";
+  drawLimitedCanvasText(ctx, answerLine, x + 36, answerY + 28, width - 72, 26, 2);
+
+  const steps = (block.explanationSteps || []).slice(0, block.pdfType === "answer" ? 2 : 1);
+  let stepY = answerY + 96;
+  steps.forEach((step, index) => {
+    ctx.fillStyle = index === 0 ? "#2f86c8" : "#2fc2a3";
+    roundRect(ctx, x + 22, stepY - 24, 34, 30, 14);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 18px Malgun Gothic, sans-serif";
+    ctx.fillText(String(index + 1), x + 39 - ctx.measureText(String(index + 1)).width / 2, stepY - 3);
+    ctx.fillStyle = "#173451";
+    ctx.font = "24px Malgun Gothic, sans-serif";
+    stepY = drawLimitedCanvasText(ctx, step, x + 66, stepY, width - 92, 30, 2) + 10;
+  });
+}
+
+function drawPdfEmptyQuestionCell(ctx, x, y, width, height) {
+  ctx.fillStyle = "#f7fcff";
+  roundRect(ctx, x, y, width, height, 24);
+  ctx.fill();
+  ctx.strokeStyle = "#d4ecfb";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 10]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#8aa8bd";
+  ctx.font = "700 26px Malgun Gothic, sans-serif";
+  const text = "추가 복습 칸";
+  ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height / 2);
+}
+
+function drawLimitedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  const lines = getLimitedCanvasTextLines(ctx, text, maxWidth, maxLines);
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+  return y + lines.length * lineHeight;
+}
+
+function getLimitedCanvasTextLines(ctx, text, maxWidth, maxLines) {
+  const lines = wrapCanvasText(ctx, text, maxWidth);
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+  const limited = lines.slice(0, maxLines);
+  limited[limited.length - 1] = fitCanvasText(ctx, `${limited[limited.length - 1]}...`, maxWidth);
+  return limited;
+}
+
+function fitCanvasText(ctx, text, maxWidth) {
+  let fitted = String(text || "");
+  while (fitted.length > 3 && ctx.measureText(fitted).width > maxWidth) {
+    fitted = `${fitted.slice(0, -4)}...`;
+  }
+  return fitted;
 }
 
 function drawPdfBlock(ctx, block, x, y, width) {
@@ -2298,13 +2398,13 @@ function drawNativePdfQuestionGraphic(ctx, block, x, y, width, height) {
 
   const addSub = parsePdfAddSubModel(block);
   if (addSub) {
-    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height);
+    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height, block.pdfType === "answer");
     return;
   }
 
   const multiplication = parsePdfMultiplicationModel(block);
   if (multiplication) {
-    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height);
+    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height, block.pdfType === "answer");
     return;
   }
 
@@ -2351,12 +2451,12 @@ function drawFallbackQuestionGraphic(ctx, block, x, y, width, height) {
 
   const addSub = parsePdfAddSubModel(block);
   if (addSub) {
-    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height);
+    drawFallbackBaseTenGraphic(ctx, addSub, x, y, width, height, block.pdfType === "answer");
     return;
   }
   const multiplication = parsePdfMultiplicationModel(block);
   if (multiplication) {
-    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height);
+    drawFallbackMultiplicationGraphic(ctx, multiplication, x, y, width, height, block.pdfType === "answer");
     return;
   }
 
@@ -2434,6 +2534,17 @@ function parsePdfPlaceValueModel(block) {
     };
   }
 
+  if (/바로 앞|바로 뒤/.test(prompt) && numbers.length >= 1) {
+    const answerNumbers = extractNumbers(block.correctText);
+    const number = numbers[0];
+    return {
+      mode: "neighbor",
+      number,
+      before: answerNumbers[0] || number - 1,
+      after: answerNumbers[1] || number + 1
+    };
+  }
+
   const target = Number.isFinite(correctNumber) ? correctNumber : numbers[0];
   if (!Number.isFinite(target)) {
     return null;
@@ -2460,6 +2571,11 @@ function drawPdfPlaceValueGraphic(ctx, model, block, x, y, width, height) {
 
   if (model.mode === "order") {
     drawPdfPlaceOrderGraphic(ctx, model, block, x, y, width, height);
+    return;
+  }
+
+  if (model.mode === "neighbor") {
+    drawPdfPlaceNeighborGraphic(ctx, model, block, x, y, width, height);
     return;
   }
 
@@ -2523,6 +2639,7 @@ function drawPdfPlaceNumberCard(ctx, number, labels, digits, x, y, width, height
 }
 
 function drawPdfPlaceOrderGraphic(ctx, model, block, x, y, width, height) {
+  const shouldRevealAnswer = block.pdfType === "answer";
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 30px Malgun Gothic, sans-serif";
   ctx.fillText("큰 자리부터 줄 세우기", x + 40, y + 48);
@@ -2544,11 +2661,65 @@ function drawPdfPlaceOrderGraphic(ctx, model, block, x, y, width, height) {
   ctx.fill();
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 26px Malgun Gothic, sans-serif";
-  const text = model.sorted.join(" < ");
+  const text = shouldRevealAnswer ? model.sorted.join(" < ") : "작은 수부터 빈칸에 쓰기";
+  ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height - 33);
+}
+
+function drawPdfPlaceNeighborGraphic(ctx, model, block, x, y, width, height) {
+  const shouldRevealAnswer = block.pdfType === "answer";
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 30px Malgun Gothic, sans-serif";
+  ctx.fillText("바로 앞뒤는 한 칸만 움직이기", x + 40, y + 48);
+
+  const slotWidth = Math.min(142, (width - 156) / 3);
+  const centerY = y + 98;
+  const startX = x + width / 2 - (slotWidth * 3 + 96) / 2;
+  const slots = [
+    { label: "바로 앞", value: shouldRevealAnswer ? model.before : "?", fill: "#f8fbff", stroke: "#9bd0ff" },
+    { label: "기준 수", value: model.number, fill: "#fff5c9", stroke: "#f3c94f" },
+    { label: "바로 뒤", value: shouldRevealAnswer ? model.after : "?", fill: "#f8fbff", stroke: "#9bd0ff" }
+  ];
+
+  slots.forEach((slot, index) => {
+    const slotX = startX + index * (slotWidth + 48);
+    ctx.fillStyle = slot.fill;
+    roundRect(ctx, slotX, centerY, slotWidth, 112, 20);
+    ctx.fill();
+    ctx.strokeStyle = slot.stroke;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = "#31536d";
+    ctx.font = "700 20px Malgun Gothic, sans-serif";
+    ctx.fillText(slot.label, slotX + slotWidth / 2 - ctx.measureText(slot.label).width / 2, centerY + 34);
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "800 42px Malgun Gothic, sans-serif";
+    const value = String(slot.value);
+    ctx.fillText(value, slotX + slotWidth / 2 - ctx.measureText(value).width / 2, centerY + 82);
+  });
+
+  ctx.fillStyle = "#16557f";
+  ctx.font = "800 24px Malgun Gothic, sans-serif";
+  ["-1", "+1"].forEach((step, index) => {
+    const bubbleX = startX + slotWidth + 14 + index * (slotWidth + 48);
+    ctx.beginPath();
+    ctx.arc(bubbleX, centerY + 56, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(step, bubbleX - ctx.measureText(step).width / 2, centerY + 64);
+    ctx.fillStyle = "#16557f";
+  });
+
+  ctx.fillStyle = "#fff0b8";
+  roundRect(ctx, x + 42, y + height - 62, width - 84, 44, 18);
+  ctx.fill();
+  ctx.fillStyle = "#0b4166";
+  ctx.font = "700 24px Malgun Gothic, sans-serif";
+  const text = shouldRevealAnswer ? `${model.before}, ${model.after}` : "정답 숫자는 직접 계산해서 쓰기";
   ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height - 33);
 }
 
 function drawPdfPlaceDecomposeGraphic(ctx, model, block, x, y, width, height) {
+  const shouldRevealAnswer = block.pdfType === "answer";
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 30px Malgun Gothic, sans-serif";
   ctx.fillText("자리집에 넣어 보기", x + 40, y + 48);
@@ -2575,7 +2746,9 @@ function drawPdfPlaceDecomposeGraphic(ctx, model, block, x, y, width, height) {
   ctx.fill();
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 26px Malgun Gothic, sans-serif";
-  const text = `${model.labels.map((label, index) => `${label} ${model.digits[index]}`).join(" · ")} = ${model.number}`;
+  const text = shouldRevealAnswer
+    ? `${model.labels.map((label, index) => `${label} ${model.digits[index]}`).join(" · ")} = ${model.number}`
+    : `${model.labels.map((label, index) => `${label} ${model.digits[index]}`).join(" · ")} → 수로 쓰기`;
   ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + height - 33);
 }
 
@@ -2624,6 +2797,7 @@ function parsePdfTimeModel(block) {
 }
 
 function drawPdfTimeGraphic(ctx, model, block, x, y, width, height) {
+  const shouldRevealAnswer = block.pdfType === "answer";
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 30px Malgun Gothic, sans-serif";
   ctx.fillText("시작과 끝 사이를 세기", x + 40, y + 48);
@@ -2651,7 +2825,7 @@ function drawPdfTimeGraphic(ctx, model, block, x, y, width, height) {
   ctx.fill();
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 26px Malgun Gothic, sans-serif";
-  const text = Number.isFinite(model.minutes) ? `${model.minutes}분` : "몇 분";
+  const text = shouldRevealAnswer && Number.isFinite(model.minutes) ? `${model.minutes}분` : "몇 분";
   ctx.fillText(text, x + width / 2 - ctx.measureText(text).width / 2, y + 149);
 }
 
@@ -2698,6 +2872,7 @@ function parsePdfShapeModel(block) {
 }
 
 function drawPdfShapeGraphic(ctx, model, block, x, y, width, height) {
+  const shouldRevealAnswer = block.pdfType === "answer";
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 30px Malgun Gothic, sans-serif";
   ctx.fillText("변과 꼭짓점을 직접 세기", x + 40, y + 48);
@@ -2705,7 +2880,7 @@ function drawPdfShapeGraphic(ctx, model, block, x, y, width, height) {
   kinds.forEach((kind, index) => {
     const cx = x + 120 + index * Math.min(160, (width - 220) / 3);
     const cy = y + 145;
-    drawPdfShape(ctx, kind, cx, cy, 48, model.target.includes(getKoreanShapeName(kind)));
+    drawPdfShape(ctx, kind, cx, cy, 48, shouldRevealAnswer && model.target.includes(getKoreanShapeName(kind)));
     ctx.fillStyle = "#0b4166";
     ctx.font = "700 22px Malgun Gothic, sans-serif";
     const name = getKoreanShapeName(kind);
@@ -2795,7 +2970,7 @@ function drawPdfPatternGraphic(ctx, model, block, x, y, width, height) {
   });
 }
 
-function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
+function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height, revealAnswer = true) {
   const columns = model.operator === "-" ? ["처음", "바꾼 뒤", "남은 수"] : ["첫 수", "더할 수", "합친 수"];
   const cardWidth = (width - 48) / 3;
   columns.forEach((label, index) => {
@@ -2812,8 +2987,8 @@ function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
   });
 
   const values = model.operator === "-"
-    ? [model.left, Math.max(0, model.left - (model.left % 10 < model.right % 10 ? 10 : 0)), model.result]
-    : [model.left, model.right, model.result];
+    ? [model.left, Math.max(0, model.left - (model.left % 10 < model.right % 10 ? 10 : 0)), revealAnswer ? model.result : null]
+    : [model.left, model.right, revealAnswer ? model.result : null];
   values.forEach((value, index) => {
     const cardX = x + 12 + index * (cardWidth + 12);
     drawBaseTenValue(ctx, value, cardX + 22, y + 88, cardWidth - 44);
@@ -2821,13 +2996,65 @@ function drawFallbackBaseTenGraphic(ctx, model, x, y, width, height) {
 
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 28px Malgun Gothic, sans-serif";
-  ctx.fillText(`${model.left} ${model.operator} ${model.right} = ${model.result}`, x + 30, y + height - 24);
+  ctx.fillText(`${model.left} ${model.operator} ${model.right} = ${revealAnswer ? model.result : "?"}`, x + 30, y + height - 24);
 }
 
 function drawBaseTenValue(ctx, value, x, y, width) {
+  if (!Number.isFinite(Number(value))) {
+    ctx.fillStyle = "#fff0b8";
+    roundRect(ctx, x + Math.max(0, width / 2 - 34), y + 36, 68, 58, 20);
+    ctx.fill();
+    ctx.fillStyle = "#0b4166";
+    ctx.font = "800 42px Malgun Gothic, sans-serif";
+    ctx.fillText("?", x + Math.max(0, width / 2 - 8), y + 78);
+    return;
+  }
+
   const hundreds = Math.min(9, Math.floor(Math.abs(value) / 100));
   const tens = Math.min(9, Math.floor((Math.abs(value) % 100) / 10));
   const ones = Math.min(16, Math.abs(value) % 10);
+
+  if (width < 140) {
+    let cursorY = y;
+    for (let index = 0; index < hundreds; index += 1) {
+      const squareX = x + 8 + (index % 3) * 20;
+      const squareY = cursorY + Math.floor(index / 3) * 20;
+      ctx.fillStyle = "#9fe3d0";
+      roundRect(ctx, squareX, squareY, 16, 16, 5);
+      ctx.fill();
+      ctx.strokeStyle = "#1d927d";
+      ctx.stroke();
+    }
+    if (hundreds > 0) {
+      cursorY += Math.ceil(hundreds / 3) * 20 + 8;
+    }
+
+    for (let index = 0; index < tens; index += 1) {
+      const rodX = x + 8 + (index % 2) * 26;
+      const rodY = cursorY + Math.floor(index / 2) * 15;
+      ctx.fillStyle = "#2f86c8";
+      roundRect(ctx, rodX, rodY, 22, 10, 5);
+      ctx.fill();
+      ctx.strokeStyle = "#0f5f93";
+      ctx.stroke();
+    }
+    if (tens > 0) {
+      cursorY += Math.ceil(tens / 2) * 15 + 10;
+    }
+
+    for (let index = 0; index < ones; index += 1) {
+      const dotX = x + 8 + (index % 5) * 16;
+      const dotY = cursorY + Math.floor(index / 5) * 16;
+      ctx.fillStyle = "#ffd66e";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY + 6, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#c58c21";
+      ctx.stroke();
+    }
+    return;
+  }
+
   const hundredStartX = x;
   const tenStartX = x + Math.max(72, width * 0.32);
   const oneStartX = x + Math.max(150, width * 0.68);
@@ -2863,7 +3090,7 @@ function drawBaseTenValue(ctx, value, x, y, width) {
   }
 }
 
-function drawFallbackMultiplicationGraphic(ctx, model, x, y, width, height) {
+function drawFallbackMultiplicationGraphic(ctx, model, x, y, width, height, revealAnswer = true) {
   const groups = Math.max(1, Math.min(model.groups || 4, 8));
   const each = Math.max(1, Math.min(model.each || 4, 9));
   const groupWidth = Math.min(118, (width - 36) / groups);
@@ -2888,7 +3115,7 @@ function drawFallbackMultiplicationGraphic(ctx, model, x, y, width, height) {
   }
   ctx.fillStyle = "#0b4166";
   ctx.font = "700 30px Malgun Gothic, sans-serif";
-  ctx.fillText(`${model.each}×${model.groups}=${model.product}`, x + 30, y + height - 8);
+  ctx.fillText(`${model.each}×${model.groups}=${revealAnswer ? model.product : "?"}`, x + 30, y + height - 8);
 }
 
 function wrapCanvasText(ctx, text, maxWidth) {
