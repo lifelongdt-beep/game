@@ -5933,6 +5933,36 @@ body:has(#gameScreen.active) .top-actions {
   font-size: 1.74rem;
 }
 
+.player-board[data-player-count="4"],
+.player-board[data-player-count="5"] {
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.player-board[data-player-count="4"] .player-panel,
+.player-board[data-player-count="5"] .player-panel {
+  min-height: 0;
+}
+
+.player-board[data-player-count="4"] .problem-stage,
+.player-board[data-player-count="5"] .problem-stage {
+  grid-template-rows: auto auto;
+  align-content: start;
+}
+
+.player-board[data-player-count="4"] .concept-array,
+.player-board[data-player-count="5"] .concept-array {
+  gap: 2px;
+  padding: 6px;
+}
+
+.player-board[data-player-count="4"] .concept-array i,
+.player-board[data-player-count="5"] .concept-array i {
+  aspect-ratio: auto;
+  height: 12px;
+  border-radius: 4px;
+}
+
 .player-scene {
   place-items: stretch;
   align-items: stretch;
@@ -6041,6 +6071,10 @@ body:has(#gameScreen.active) .top-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.concept-value-chips--tight {
+  gap: 4px;
 }
 
 .concept-value-chips span,
@@ -6154,7 +6188,7 @@ body:has(#gameScreen.active) .top-actions {
 
 .concept-fraction {
   display: grid;
-  grid-template-columns: repeat(12, minmax(8px, 1fr));
+  grid-template-columns: repeat(var(--fraction-columns, 12), minmax(7px, 1fr));
   gap: 3px;
   padding: 8px;
   border-radius: 12px;
@@ -6163,7 +6197,7 @@ body:has(#gameScreen.active) .top-actions {
 }
 
 .concept-fraction i {
-  height: 22px;
+  height: clamp(16px, 4.8vh, 22px);
   border-radius: 6px;
   background: #d7edf8;
 }
@@ -6174,15 +6208,16 @@ body:has(#gameScreen.active) .top-actions {
 
 .concept-array {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 4px;
-  padding: 8px;
+  grid-template-columns: repeat(var(--array-columns, 8), minmax(5px, 1fr));
+  gap: 3px;
+  padding: 7px;
   border-radius: 12px;
   background: #f7fbff;
 }
 
 .concept-array i {
   aspect-ratio: 1;
+  min-width: 0;
   background: #ffd36e;
   border: 1px solid #d59618;
 }

@@ -493,6 +493,7 @@ function renderChoiceButtons(container, options, selectedValue, onSelect) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "choice-button";
+    button.dataset.value = String(option.value);
     if (String(option.value) === String(selectedValue)) {
       button.classList.add("is-selected");
     }
@@ -1396,10 +1397,11 @@ function renderConceptModel(scene, visibleValues, revealAnswer) {
   }
 
   if (scene.kind === "fraction") {
-    const cellCount = revealAnswer ? 12 : 10;
+    const denominator = Math.max(2, Math.min(16, Number(scene.fraction?.denominator) || 10));
+    const numerator = Math.max(0, Math.min(denominator, Number(scene.fraction?.numerator) || 0));
     return `
-      <div class="concept-fraction">
-        ${Array.from({ length: cellCount }, (_, index) => `<i class="${revealAnswer && index < Math.ceil(cellCount / 2) ? "is-filled" : ""}"></i>`).join("")}
+      <div class="concept-fraction" style="--fraction-columns:${Math.min(denominator, 12)}">
+        ${Array.from({ length: denominator }, (_, index) => `<i class="${revealAnswer && index < numerator ? "is-filled" : ""}"></i>`).join("")}
       </div>
       ${renderConceptValueChips(visibleValues)}
     `;
@@ -1417,10 +1419,15 @@ function renderConceptModel(scene, visibleValues, revealAnswer) {
   }
 
   if (scene.kind === "array") {
+    const columns = Math.max(1, Math.min(12, Number(scene.columns) || 8));
+    const rows = Math.max(1, Math.min(8, Number(scene.rows) || 3));
+    const total = columns * rows;
+    const layerChip = scene.layers ? `<span>${escapeHtml(scene.layers)}층</span>` : "";
     return `
-      <div class="concept-array">
-        ${Array.from({ length: 24 }, (_, index) => `<i class="${index % 5 === 0 ? "is-guide" : ""}"></i>`).join("")}
+      <div class="concept-array" style="--array-columns:${columns}">
+        ${Array.from({ length: total }, (_, index) => `<i class="${index % columns === 0 ? "is-guide" : ""}"></i>`).join("")}
       </div>
+      ${scene.layers ? `<div class="concept-value-chips concept-value-chips--tight">${layerChip}<span>한 층 ${columns}×${rows}</span></div>` : ""}
       ${renderConceptValueChips(visibleValues)}
     `;
   }

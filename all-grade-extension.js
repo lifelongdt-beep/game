@@ -337,7 +337,10 @@
     const remainder = difficulty === "high" ? (index % divisor) : 0;
     const total = divisor * quotient + remainder;
     const answer = remainder ? `${quotient}개씩, ${remainder}개 남음` : `${quotient}개`;
-    return makeOriginalQuestion(unitInfo, difficulty, index, lesson, `구슬 ${total}개를 ${divisor}명에게 똑같이 나누어 주면 한 명에게 몇 개씩 줄 수 있나요?`, answer, [`${quotient + 1}개`, `${Math.max(1, quotient - 1)}개`, `${divisor}개`, `${total - divisor}개`], conceptScene("groups", {
+    const prompt = remainder
+      ? `구슬 ${total}개를 ${divisor}명에게 똑같이 나누어 주면 한 명에게 몇 개씩 주고 몇 개가 남나요?`
+      : `구슬 ${total}개를 ${divisor}명에게 똑같이 나누어 주면 한 명에게 몇 개씩 줄 수 있나요?`;
+    return makeOriginalQuestion(unitInfo, difficulty, index, lesson, prompt, answer, [`${quotient + 1}개`, `${Math.max(1, quotient - 1)}개`, `${divisor}개`, `${total - divisor}개`], conceptScene("groups", {
       title: "똑같이 나누기",
       values: [`전체 ${total}개`, `${divisor}명에게 나누기`],
       groups: divisor,
@@ -369,19 +372,24 @@
   }
 
   function buildDecimalQuestion(unitInfo, difficulty, index, lesson) {
-    const a = Number((1 + (index % 8) + (index % 10) / 10).toFixed(1));
+    const isDivision = unitInfo.domain === "decimalDiv";
+    const a = isDivision
+      ? Number(((12 + ((index + diffLevel(difficulty)) % 30) * 2) / 10).toFixed(1))
+      : Number((1 + (index % 8) + (index % 10) / 10).toFixed(1));
     const b = Number((0.3 + ((index + diffLevel(difficulty)) % 6) / 10).toFixed(1));
-    const answer = unitInfo.domain === "decimalDiv" ? Number((a / 2).toFixed(1)) : Number((a + b).toFixed(1));
-    const prompt = unitInfo.domain === "decimalDiv"
+    const answer = isDivision ? Number((a / 2).toFixed(1)) : Number((a + b).toFixed(1));
+    const prompt = isDivision
       ? `${a}L 주스를 2명이 똑같이 나누면 한 명은 몇 L씩 마실 수 있나요?`
       : `${a}+${b}의 값은 무엇인가요?`;
     return makeOriginalQuestion(unitInfo, difficulty, index, lesson, prompt, `${answer}`, decimalDistractors(answer), conceptScene("place", {
-      title: "소수점 맞추기",
-      values: [`${a}`, unitInfo.domain === "decimalDiv" ? "2명에게 나누기" : `+ ${b}`],
-      hint: "소수는 같은 자리끼리 맞추어 계산해요.",
-      expression: unitInfo.domain === "decimalDiv" ? `${a}÷2` : `${a}+${b}`,
-      steps: [`소수점의 위치를 먼저 확인합니다.`, `계산하면 ${answer}입니다.`]
-    }), "소수 계산은 소수점을 기준으로 같은 자리끼리 맞춥니다.", numberFeedback("소수점이 기준이에요.", "소수 계산에서 자릿값 정렬이 흐트러지면 답의 크기가 크게 달라집니다.", ["소수점을 세로로 맞춥니다.", "같은 자리끼리 계산합니다.", "답에도 소수점을 내려 씁니다."], "계산 전 어림값을 먼저 말해 답의 크기를 확인하게 하세요."));
+      title: isDivision ? "소수도 똑같이 나누기" : "소수점 맞추기",
+      values: [`${a}`, isDivision ? "2명에게 나누기" : `+ ${b}`],
+      hint: isDivision ? "1L와 0.1L를 같은 몫으로 나누어 봐요." : "소수는 같은 자리끼리 맞추어 계산해요.",
+      expression: isDivision ? `${a}÷2` : `${a}+${b}`,
+      steps: isDivision
+        ? [`${a}L를 두 사람에게 똑같이 나눕니다.`, `한 사람 몫은 ${answer}L입니다.`]
+        : [`소수점의 위치를 먼저 확인합니다.`, `계산하면 ${answer}입니다.`]
+    }), isDivision ? "소수 나눗셈은 1L 묶음과 0.1L 묶음을 같은 몫으로 나누어 봅니다." : "소수 계산은 소수점을 기준으로 같은 자리끼리 맞춥니다.", numberFeedback(isDivision ? "한 사람 몫을 먼저 생각해요." : "소수점이 기준이에요.", isDivision ? "소수 나눗셈에서 반올림한 값처럼 답을 말하면 정확한 몫 개념이 흔들립니다." : "소수 계산에서 자릿값 정렬이 흐트러지면 답의 크기가 크게 달라집니다.", isDivision ? ["L 묶음을 두 몫으로 나눕니다.", "0.1L 묶음도 두 몫으로 나눕니다.", `두 몫을 합하면 ${answer}L입니다.`] : ["소수점을 세로로 맞춥니다.", "같은 자리끼리 계산합니다.", "답에도 소수점을 내려 씁니다."], isDivision ? "몫이 몇 L쯤 되는지 먼저 어림하고, 정확한 소수 몫과 비교하게 하세요." : "계산 전 어림값을 먼저 말해 답의 크기를 확인하게 하세요."));
   }
 
   function buildGeometryQuestion(unitInfo, difficulty, index, lesson) {
@@ -416,6 +424,9 @@
       return makeOriginalQuestion(unitInfo, difficulty, index, lesson, `가로 ${width}cm, 세로 ${height}cm인 직사각형의 넓이는 몇 cm²인가요?`, `${answer}cm²`, numericDistractors(answer, "cm²", [-width, width, -height, height]), conceptScene("array", {
         title: "넓이는 1cm²가 몇 개인지 세기",
         values: [`가로 ${width}cm`, `세로 ${height}cm`],
+        columns: width,
+        rows: height,
+        unit: "cm²",
         hint: "가로 한 줄의 칸 수와 줄 수를 곱해요.",
         expression: `${width}×${height}`,
         steps: [`한 줄에 ${width}칸이 있습니다.`, `${height}줄이므로 ${width}×${height}=${answer}입니다.`]
@@ -430,6 +441,10 @@
       return makeOriginalQuestion(unitInfo, difficulty, index, lesson, `가로 ${w}cm, 세로 ${d}cm, 높이 ${h}cm인 직육면체의 부피는 몇 cm³인가요?`, `${answer}cm³`, numericDistractors(answer, "cm³", [-w * h, w * h, -d, d]), conceptScene("array", {
         title: "부피는 1cm³가 몇 개인지 보기",
         values: [`가로 ${w}`, `세로 ${d}`, `높이 ${h}`],
+        columns: w,
+        rows: d,
+        layers: h,
+        unit: "cm³",
         hint: "바닥 한 층의 칸 수를 구하고 높이만큼 쌓아요.",
         expression: `${w}×${d}×${h}`,
         steps: [`바닥은 ${w}×${d}=${w * d}개입니다.`, `${h}층이므로 ${answer}cm³입니다.`]
@@ -563,6 +578,10 @@
   }
 
   function fractionScene(expression, answer, hint) {
+    const fractionMatch = String(answer || "").match(/^(\d+)\/(\d+)$/);
+    const fraction = fractionMatch
+      ? { numerator: Number(fractionMatch[1]), denominator: Number(fractionMatch[2]) }
+      : null;
     return conceptScene("fraction", {
       title: "같은 크기로 나눈 칸 보기",
       values: [expression],
@@ -570,6 +589,7 @@
       hideValuesUntilReveal: true,
       hint,
       expression,
+      fraction,
       steps: [`그림에서 같은 크기의 칸을 셉니다.`, `답은 ${answer}입니다.`],
       answerSummary: answer
     });
