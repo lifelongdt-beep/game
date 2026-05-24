@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2학년 수학 교사용 평가 결과 누적 관리</title>
+  <link rel="stylesheet" href="styles.css?v=math2-teacher-record-tone-20260521">
+</head>
+<body>
+  <div class="app-shell teacher-app-shell">
+    <header class="top-bar">
+      <a class="brand-link" href="index.html">
+        <div class="brand-icon brand-icon--math" aria-hidden="true">
+          <img class="brand-teacher-image" src="./assets/bojogae-ai-class-icon.png" alt="">
+        </div>
+        <span class="brand-copy">
+          <strong>보조개샘ai클래스</strong>
+          <span>학생용 게임으로 돌아가기</span>
+        </span>
+      </a>
+      <div class="title-lockup">
+        <p class="eyebrow">2학년 수학 · 1학기/2학기 전단원</p>
+        <h1>교사용 평가 결과 관리</h1>
+      </div>
+      <div class="top-actions">
+        <button class="secondary-button top-action-button" id="teacherGenerateReportButton" type="button">생기부 문장</button>
+        <button class="secondary-button top-action-button" id="teacherRefreshButton" type="button">새로고침</button>
+        <button class="secondary-button top-action-button" id="teacherExportDataButton" type="button">CSV</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen active teacher-only-screen" aria-label="교사용 누적 관리 화면">
+        <div class="teacher-hero">
+          <div>
+            <p class="hero-tag">교사용 학습 데이터</p>
+            <h2>학생별 평가 결과 누적 관리</h2>
+            <p id="teacherDashboardMessage">학생이 게임 종료 후 반과 번호를 입력하면 이 화면에 누적됩니다.</p>
+          </div>
+          <div class="teacher-actions">
+            <a class="secondary-button" href="index.html">학생용 게임 열기</a>
+            <button class="secondary-button danger-button" id="teacherClearDataButton" type="button">누적 데이터 삭제</button>
+          </div>
+        </div>
+
+        <div class="teacher-stat-grid" id="teacherStats"></div>
+
+        <div class="teacher-dashboard-grid">
+          <section class="teacher-panel">
+            <div class="teacher-panel-head">
+              <h3>학생별 누적 요약</h3>
+              <span>반·번호 기준</span>
+            </div>
+            <div id="teacherStudentSummary"></div>
+          </section>
+
+          <section class="teacher-panel">
+            <div class="teacher-panel-head">
+              <h3>평가 기록</h3>
+              <span>최근 저장순</span>
+            </div>
+            <div id="teacherRecordTable"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="record-comment-modal" id="recordCommentModal" aria-label="생활기록부 입력용 평가 결과" hidden>
+        <div class="record-comment-dialog" role="dialog" aria-modal="true" aria-labelledby="recordCommentTitle">
+          <div class="record-comment-head">
+            <div>
+              <p class="hero-tag">2022 개정 교육과정 기반</p>
+              <h2 id="recordCommentTitle">생활기록부 입력용 평가 결과</h2>
+              <p id="recordCommentToneDescription">학생별 누적 평가 결과를 성취기준과 연결해 장점 중심 서술형 문장으로 정리합니다.</p>
+            </div>
+            <div class="record-comment-actions">
+              <button class="secondary-button" id="copyRecordCommentsButton" type="button">전체 복사</button>
+              <button class="secondary-button" id="closeRecordCommentsButton" type="button">닫기</button>
+            </div>
+          </div>
+
+          <div class="record-tone-panel" aria-label="생기부 문장 버전 선택">
+            <strong>문장 버전</strong>
+            <div class="record-tone-controls" id="recordCommentToneControls">
+              <button class="record-tone-button is-active" type="button" data-comment-tone="praise">칭찬버전</button>
+              <button class="record-tone-button" type="button" data-comment-tone="analytical">냉철</button>
+            </div>
+          </div>
+
+          <div class="record-standard-panel">
+            <strong>확인한 성취기준</strong>
+            <div class="record-standard-list" id="recordStandardList"></div>
+          </div>
+
+          <div class="record-comment-list" id="recordCommentList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <iframe id="storageBridgeFrame" src="index.html#storageBridge" title="학습 데이터 저장소" hidden></iframe>
+  <script src="teacher-dashboard.js?v=math2-teacher-record-tone-20260521"></script>
+</body>
+</html>

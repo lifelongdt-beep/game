@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2학년 수학 전단원 종합 놀이</title>
+  <link rel="stylesheet" href="styles.css?v=math2-korean-feedback-20260525a">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-bar">
+      <a class="brand-link" id="blogLink" href="#" target="_blank" rel="noreferrer">
+        <div class="brand-icon brand-icon--math" aria-hidden="true">
+          <img class="brand-teacher-image" src="./assets/bojogae-ai-class-icon.png" alt="">
+        </div>
+        <span class="brand-copy">
+          <strong>보조개샘ai클래스</strong>
+          <span>학급 수업 놀이 바로가기</span>
+        </span>
+      </a>
+      <div class="title-lockup">
+        <p class="eyebrow">2학년 수학 · 1학기/2학기 전단원</p>
+        <h1>수학 로켓 종합 놀이</h1>
+      </div>
+      <div class="top-actions">
+        <a class="secondary-button top-action-button" href="./teacher.html">교사용 기록</a>
+        <button class="secondary-button top-action-button" id="homeButton" type="button">처음 화면</button>
+        <button class="secondary-button top-action-button" id="fullscreenButton" type="button">전체 화면</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen active" id="startScreen" aria-label="시작 화면">
+        <div class="hero-panel">
+          <div class="hero-copy">
+            <p class="hero-tag">수 · 도형 · 연산 · 측정 · 자료 · 규칙</p>
+            <h2>2학년 수학 전단원을<br>한 번에 연결하는 종합 놀이</h2>
+            <p class="hero-description">
+              문제 유형, 시간, 참여 인원을 고르고 바로 시작할 수 있는 학급형 수학 놀이입니다.
+              놀이 화면에 들어가면 학생마다 첫 화면에서 자기 난이도를 직접 고를 수 있어요.
+              친구마다 다른 문제가 동시에 열리고, 정답을 맞힐수록 가운데 수학 로켓이 점점 더 힘차게 성장합니다.
+              1학기와 2학기 수학의 핵심 단원을 한 번에 복습해 보세요.
+            </p>
+          </div>
+
+          <div class="hero-shapes" aria-hidden="true">
+            <div class="shape-badge tangram-large"></div>
+            <div class="shape-badge tangram-square"></div>
+            <div class="shape-badge tangram-parallelogram"></div>
+          </div>
+        </div>
+
+        <div class="setup-grid">
+          <article class="setup-card setup-card--category">
+            <div class="setup-head">
+              <span class="setup-step">1</span>
+              <h3>학기·단원</h3>
+            </div>
+            <div class="choice-grid" id="categoryChoices"></div>
+          </article>
+
+          <article class="setup-card setup-card--lesson">
+            <div class="setup-head">
+              <span class="setup-step">2</span>
+              <h3>차시·범위</h3>
+            </div>
+            <div class="choice-grid" id="lessonChoices"></div>
+          </article>
+
+          <article class="setup-card setup-card--timer">
+            <div class="setup-head">
+              <span class="setup-step">3</span>
+              <h3>제한 시간</h3>
+            </div>
+            <div class="choice-grid compact" id="timerChoices"></div>
+          </article>
+
+          <article class="setup-card setup-card--players">
+            <div class="setup-head">
+              <span class="setup-step">4</span>
+              <h3>참여 인원</h3>
+            </div>
+            <div class="choice-grid compact" id="playerCountChoices"></div>
+          </article>
+        </div>
+
+        <div class="start-actions">
+          <div class="selection-summary" id="selectionSummary"></div>
+          <div class="start-action-buttons">
+            <label class="secondary-button upload-button" for="characterPhotoInput">주인공 사진 불러오기</label>
+            <button class="primary-button" id="startGameButton" type="button">놀이 시작</button>
+          </div>
+        </div>
+        <div class="character-photo-status" id="characterPhotoStatus">현재 주인공 사진: 기본 그림</div>
+        <input id="characterPhotoInput" type="file" accept="image/*" hidden>
+      </section>
+
+      <section class="screen" id="gameScreen" aria-label="놀이 화면">
+        <div class="celebration-layer" id="celebrationLayer" aria-hidden="true"></div>
+        <div class="celebration-banner" id="celebrationBanner" aria-live="polite"></div>
+        <div class="game-top">
+          <div class="game-status-card">
+            <span class="status-label">현재 설정</span>
+            <p id="settingsBadge"></p>
+          </div>
+
+          <div class="game-status-card timer-card">
+            <span class="status-label">남은 시간</span>
+            <div class="timer-row">
+              <strong id="timerValue">00</strong>
+              <span>초</span>
+            </div>
+            <div class="timer-track" aria-hidden="true">
+              <div class="timer-fill" id="timerFill"></div>
+            </div>
+          </div>
+
+          <div class="game-status-card progress-card">
+            <span class="status-label">성장 진행</span>
+            <p id="progressValue">총 정답 0개</p>
+            <small id="growthStageBadge">계산 새싹</small>
+          </div>
+        </div>
+
+        <section class="growth-panel">
+          <div class="growth-copy">
+            <p class="question-kicker">정답이 쌓일수록 성장해요</p>
+            <h2 id="growthHeadline">숫자를 깨우는 계산 새싹</h2>
+            <p class="growth-description" id="growthSubline">
+              전체 시간 동안 각 친구가 다른 2학년 수학 문제를 풀며 수학 감각을 키우고 있어요.
+            </p>
+            <div class="growth-meter" aria-hidden="true">
+              <div class="growth-meter-fill" id="growthMeterFill"></div>
+            </div>
+          </div>
+
+          <div class="character-stage">
+            <div class="character-card" id="characterCard">
+              <div class="character-shell" id="characterShell" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="growth-side-card">
+            <p class="status-label">놀이 안내</p>
+            <div class="growth-side-list">
+              <div class="growth-side-item">친구마다 다른 2학년 수학 문제가 동시에 나와요.</div>
+              <div class="growth-side-item">오답 뒤에는 두 번 더 도전하고, 그래도 틀리면 자세한 설명 화면이 열려요.</div>
+              <div class="growth-side-item">남은 시간 안에 더 많이 맞히면 수학 로켓이 더 멋지게 성장해요.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="player-board" id="playerBoard" aria-label="친구 문제판"></section>
+      </section>
+
+      <section class="screen" id="resultScreen" aria-label="결과 화면">
+        <div class="result-hero">
+          <p class="hero-tag">놀이 마침</p>
+          <h2 id="winnerHeadline">결과를 확인해 보세요</h2>
+          <p id="winnerSummary">친구별 정답 수와 점수가 정리됩니다.</p>
+        </div>
+
+        <div class="result-grid" id="resultGrid"></div>
+
+        <div class="result-actions">
+          <button class="secondary-button" id="openSubmitButton" type="button">반·번호 입력</button>
+          <button class="secondary-button" id="restartButton" type="button">다시 하기</button>
+          <button class="primary-button" id="backToHomeButton" type="button">처음 화면으로</button>
+        </div>
+      </section>
+
+      <section class="screen" id="submitScreen" aria-label="학생 평가 결과 입력 화면">
+        <div class="submit-hero">
+          <p class="hero-tag">평가 결과 저장</p>
+          <h2>반과 번호를 입력하면<br>평가 결과가 저장돼요</h2>
+          <p id="studentSubmitSummary">평가 결과를 저장할 학생 정보를 입력해 주세요.</p>
+        </div>
+
+        <div class="student-submit-grid" id="studentResultForms"></div>
+
+        <div class="result-actions submit-actions">
+          <button class="secondary-button" id="showResultButton" type="button">결과만 보기</button>
+          <button class="secondary-button" id="submitBackToHomeButton" type="button">처음 화면</button>
+          <button class="primary-button" id="saveLearningDataButton" type="button">평가 결과 저장</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="question-bank.js?v=math2-korean-feedback-20260525a"></script>
+  <script src="app.js?v=math2-korean-feedback-20260525a"></script>
+</body>
+</html>
