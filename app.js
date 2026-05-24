@@ -7717,23 +7717,35 @@ function saveLearningDataFromSubmit() {
 }
 
 function startPersonalizedPractice(playerId) {
-  const savedRecord = state.savedSubmissionRecordsByPlayer[playerId];
-  if (!savedRecord) {
+  const savedRecordsByPlayer = { ...(state.savedSubmissionRecordsByPlayer || {}) };
+  const clickedRecord = savedRecordsByPlayer[playerId];
+  if (!clickedRecord) {
     window.alert("먼저 반과 번호를 저장한 뒤 맞춤 다시 풀기를 시작할 수 있어요.");
     return;
   }
 
   const allRecords = loadLearningRecords();
-  const studentRecords = allRecords.filter((record) => record.studentKey === savedRecord.studentKey);
-  const plan = state.personalizedPracticePlansByPlayer[playerId]
-    || buildPersonalizedPracticePlan(studentRecords, savedRecord);
+  const practiceEntries = state.players
+    .map((player) => {
+      const savedRecord = savedRecordsByPlayer[player.id];
+      if (!savedRecord) {
+        return null;
+      }
 
-  if (!plan.questions.length) {
+      const studentRecords = allRecords.filter((record) => record.studentKey === savedRecord.studentKey);
+      const plan = state.personalizedPracticePlansByPlayer[player.id]
+        || buildPersonalizedPracticePlan(studentRecords, savedRecord);
+      return plan.questions.length ? { player, savedRecord, plan } : null;
+    })
+    .filter(Boolean);
+
+  if (!practiceEntries.length) {
     window.alert("맞춤 재도전 문제를 만들 기록이 아직 충분하지 않아요.");
     return;
   }
 
   primeAudio();
+  const previousTimer = state.timer;
   state.sessionToken += 1;
   state.gameEnded = false;
   state.sessionId = createSessionId();
@@ -7744,12 +7756,22 @@ function startPersonalizedPractice(playerId) {
   state.personalizedPracticePlansByPlayer = {};
   state.practiceMode = {
     active: true,
-    sourceRecordId: savedRecord.id,
-    sourceStudentKey: savedRecord.studentKey,
-    focusText: plan.focusText,
-    mode: plan.mode,
-    targetTypes: plan.targetTypes,
-    previousTimer: state.timer
+    sourceRecordId: clickedRecord.id,
+    sourceStudentKey: clickedRecord.studentKey,
+    focusText: "학생별 맞춤 재도전",
+    mode: practiceEntries.some((entry) => entry.plan.mode === "challenge") ? "challenge" : "review",
+    targetTypes: practiceEntries.flatMap((entry) => entry.plan.targetTypes || []),
+    previousTimer,
+    plansByPlayer: Object.fromEntries(practiceEntries.map((entry) => [
+      entry.player.id,
+      {
+        sourceRecordId: entry.savedRecord.id,
+        sourceStudentKey: entry.savedRecord.studentKey,
+        focusText: entry.plan.focusText,
+        mode: entry.plan.mode,
+        targetTypes: entry.plan.targetTypes || []
+      }
+    ]))
   };
   state.totalCorrect = 0;
   state.totalAnswered = 0;
@@ -7758,26 +7780,37 @@ function startPersonalizedPractice(playerId) {
   clearPlayerDelays();
   resetCelebration();
 
-  const practicePlayer = {
-    ...createPlayers(1)[0],
-    id: "player-1",
-    name: savedRecord.studentKey,
-    avatar: savedRecord.playerAvatar || createPlayers(1)[0].avatar,
-    animal: savedRecord.playerAvatar || createPlayers(1)[0].animal,
-    soundText: "좋아요"
-  };
-  state.players = [practicePlayer];
+  state.players = state.players.map((player) => {
+    const savedRecord = savedRecordsByPlayer[player.id];
+    return savedRecord
+      ? {
+          ...player,
+          name: savedRecord.studentKey,
+          avatar: savedRecord.playerAvatar || player.avatar,
+          animal: savedRecord.playerAvatar || player.animal,
+          soundText: "좋아요"
+        }
+      : player;
+  });
   state.scores = createScoreState(state.players);
-  state.timer = plan.mode === "challenge" ? Math.max(state.timer, 180) : Math.max(state.timer, 120);
+  state.timer = practiceEntries.some((entry) => entry.plan.mode === "challenge")
+    ? Math.max(state.timer, 180)
+    : Math.max(state.timer, 120);
   state.timerLeft = state.timer;
 
-  const playerState = state.scores[practicePlayer.id];
-  playerState.difficulty = plan.difficulty;
-  playerState.questionPool = arrangeDiverseQuestionPool(plan.questions);
-  playerState.status = plan.mode === "challenge" ? "심화 문장제 도전" : "맞춤 재도전";
+  practiceEntries.forEach(({ player, plan }) => {
+    const playerState = state.scores[player.id];
+    if (!playerState) {
+      return;
+    }
+
+    playerState.difficulty = plan.difficulty;
+    playerState.questionPool = arrangeDiverseQuestionPool(plan.questions);
+    playerState.status = plan.mode === "challenge" ? "심화 문장제 도전" : "맞춤 재도전";
+  });
 
   switchScreen("game");
-  assignNextQuestion(practicePlayer.id);
+  practiceEntries.forEach(({ player }) => assignNextQuestion(player.id));
   maybeStartTimer();
   updateGameStatus();
   renderGrowthPanel();
@@ -8164,6 +8197,8 @@ function buildLearningRecord(player, playerState, studentInfo) {
   }));
   const questionCount = questionRecords.length;
   const avgQuestionTimeMs = questionCount ? Math.round(playerState.totalQuestionTimeMs / questionCount) : 0;
+  const practiceMeta = state.practiceMode?.plansByPlayer?.[player.id] || null;
+  const isPersonalizedPractice = Boolean(state.practiceMode?.active && practiceMeta);
 
   return {
     id: `${state.sessionId}-${player.id}`,
@@ -8177,11 +8212,11 @@ function buildLearningRecord(player, playerState, studentInfo) {
     playerId: player.id,
     playerName: player.name,
     playerAvatar: player.avatar,
-    category: state.practiceMode?.active ? "personalized-review" : state.category,
-    categoryName: state.practiceMode?.active ? `맞춤 재도전 · ${state.practiceMode.focusText}` : getSelectedScopeName(),
-    lessonKey: state.practiceMode?.active ? "personalized-review" : state.lessonKey,
-    lessonName: state.practiceMode?.active ? state.practiceMode.focusText : getSelectedLessonOption()?.label || "",
-    unitKeys: state.practiceMode?.active
+    category: isPersonalizedPractice ? "personalized-review" : state.category,
+    categoryName: isPersonalizedPractice ? `맞춤 재도전 · ${practiceMeta.focusText}` : getSelectedScopeName(),
+    lessonKey: isPersonalizedPractice ? "personalized-review" : state.lessonKey,
+    lessonName: isPersonalizedPractice ? practiceMeta.focusText : getSelectedLessonOption()?.label || "",
+    unitKeys: isPersonalizedPractice
       ? uniqueStrings(questionRecords.map((record) => record.category).filter(Boolean))
       : getQuestionUnitKeys(state.category),
     difficulty: playerState.difficulty,
@@ -8198,11 +8233,11 @@ function buildLearningRecord(player, playerState, studentInfo) {
     finalWrong: playerState.finalWrong,
     feedbackShown: playerState.feedbackShown,
     feedbackConfirmed: playerState.feedbackConfirmed,
-    practiceMode: state.practiceMode?.active ? "personalized-review" : "regular",
-    practiceSourceRecordId: state.practiceMode?.sourceRecordId || "",
-    practiceFocusText: state.practiceMode?.focusText || "",
-    practicePlanMode: state.practiceMode?.mode || "",
-    practiceTargetTypes: cloneLearningRecordData(state.practiceMode?.targetTypes || []),
+    practiceMode: isPersonalizedPractice ? "personalized-review" : "regular",
+    practiceSourceRecordId: practiceMeta?.sourceRecordId || "",
+    practiceFocusText: practiceMeta?.focusText || "",
+    practicePlanMode: practiceMeta?.mode || "",
+    practiceTargetTypes: cloneLearningRecordData(practiceMeta?.targetTypes || []),
     weakCategories: getWeakCategories(questionRecords),
     questionRecords
   };
