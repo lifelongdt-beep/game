@@ -3,6 +3,7 @@ const LEARNING_RECORDS_STORAGE_KEY = "bojogae.math2.allUnits.learningRecords.v2"
 const teacherDashboardMessage = document.getElementById("teacherDashboardMessage");
 const teacherStats = document.getElementById("teacherStats");
 const teacherStudentSummary = document.getElementById("teacherStudentSummary");
+const teacherStudentDetail = document.getElementById("teacherStudentDetail");
 const teacherRecordTable = document.getElementById("teacherRecordTable");
 const teacherClearDataButton = document.getElementById("teacherClearDataButton");
 const teacherExportDataButton = document.getElementById("teacherExportDataButton");
@@ -21,6 +22,7 @@ let storageBridgeRequestId = 0;
 let latestRecordCommentText = "";
 let latestRecordCommentRecords = [];
 let selectedRecordCommentTone = "praise";
+let selectedTeacherStudentKey = "";
 
 const RECORD_COMMENT_TONES = {
   praise: {
@@ -83,6 +85,8 @@ function initTeacherDashboard() {
   recordCommentToneControls?.addEventListener("click", changeRecordCommentTone);
   copyRecordCommentsButton?.addEventListener("click", copyAllRecordComments);
   closeRecordCommentsButton?.addEventListener("click", closeRecordCommentModal);
+  teacherStudentSummary?.addEventListener("click", selectTeacherStudent);
+  teacherStudentDetail?.addEventListener("click", copyTeacherFeedbackSnippet);
   recordCommentModal?.addEventListener("click", (event) => {
     if (event.target === recordCommentModal) {
       closeRecordCommentModal();
@@ -100,28 +104,34 @@ function initTeacherDashboard() {
 
 async function renderTeacherDashboard(message = "") {
   const records = await loadLearningRecords();
+  const summaries = buildStudentReportSummaries(records);
+  if (summaries.length > 0 && !summaries.some((summary) => summary.studentKey === selectedTeacherStudentKey)) {
+    selectedTeacherStudentKey = summaries[0].studentKey;
+  }
+  const selectedSummary = summaries.find((summary) => summary.studentKey === selectedTeacherStudentKey) || summaries[0] || null;
   teacherDashboardMessage.textContent = message || "학생이 게임 종료 후 반과 번호를 입력하면 이 화면에 누적됩니다.";
-  teacherStats.innerHTML = renderTeacherStats(records);
-  teacherStudentSummary.innerHTML = renderStudentCumulativeSummary(records);
+  teacherStats.innerHTML = renderTeacherStats(records, summaries);
+  teacherStudentSummary.innerHTML = renderStudentCumulativeSummary(summaries, selectedSummary?.studentKey || "");
+  teacherStudentDetail.innerHTML = renderTeacherStudentDetail(selectedSummary);
   teacherRecordTable.innerHTML = renderTeacherRecordTable(records);
 }
 
-function renderTeacherStats(records) {
+function renderTeacherStats(records, summaries = buildStudentReportSummaries(records)) {
   const studentCount = new Set(records.map((record) => record.studentKey)).size;
-  const totalScore = records.reduce((sum, record) => sum + record.score, 0);
-  const totalQuestions = records.reduce((sum, record) => sum + record.questionCount, 0);
-  const totalCorrect = records.reduce((sum, record) => sum + record.correct, 0);
-  const totalWrongSelections = records.reduce((sum, record) => sum + record.wrongSelections, 0);
-  const accuracy = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-  const avgSeconds = totalQuestions
-    ? formatSeconds(records.reduce((sum, record) => sum + (record.avgQuestionTimeMs * record.questionCount), 0) / totalQuestions)
-    : "0초";
+  const supportCount = summaries.filter((summary) => {
+    const level = resolveStudentRecordLevel(summary);
+    const priority = getStudentPrioritySignal(summary, level);
+    return ["support", "emerging"].includes(level) || ["urgent", "reteach", "speed"].includes(priority.modifier);
+  }).length;
+  const advancedCount = summaries.filter((summary) => resolveStudentRecordLevel(summary) === "advanced").length;
+  const retryRecoveryCount = summaries.filter((summary) => (summary.retrySuccess || 0) > 0).length;
+  const commonFocus = getClassCommonFocus(records);
 
   return [
-    teacherStatCard("저장 기록", `${records.length}건`, `${studentCount}명 누적`),
-    teacherStatCard("총점", `${totalScore}점`, `전체 정답 ${totalCorrect}개`),
-    teacherStatCard("평균 정확도", `${accuracy}%`, `오답 선택 ${totalWrongSelections}회`),
-    teacherStatCard("평균 풀이시간", avgSeconds, `기록 문항 ${totalQuestions}개`)
+    teacherStatCard("지원 우선", `${supportCount}명`, `${studentCount}명 중 보충·개별 확인`),
+    teacherStatCard("재도전 회복", `${retryRecoveryCount}명`, "피드백 후 다시 맞힌 경험"),
+    teacherStatCard("공통 막힘", commonFocus.title, commonFocus.detail),
+    teacherStatCard("심화 가능", `${advancedCount}명`, "정확·빠름·최종오답 없음")
   ].join("");
 }
 
@@ -135,45 +145,282 @@ function teacherStatCard(label, value, detail) {
   `;
 }
 
-function renderStudentCumulativeSummary(records) {
-  if (records.length === 0) {
+function renderStudentCumulativeSummary(summaries, selectedStudentKey = "") {
+  if (summaries.length === 0) {
     return `<div class="teacher-empty">아직 저장된 평가 결과가 없습니다.</div>`;
   }
 
-  const summaries = Array.from(groupRecordsByStudent(records).values())
-    .sort((a, b) => Number(a.classNumber) - Number(b.classNumber) || Number(a.studentNumber) - Number(b.studentNumber));
-
-  const rows = summaries.map((summary) => `
-    <tr>
-      <td>${escapeHtml(summary.studentKey)}</td>
-      <td>${summary.sessions}회</td>
-      <td>${summary.totalScore}점</td>
-      <td>${summary.correct}개</td>
-      <td>${summary.accuracyPercent}%</td>
-      <td>${formatSeconds(summary.avgQuestionTimeMs)}</td>
-      <td>${escapeHtml(summary.weakText)}</td>
-      <td>${escapeHtml(formatDateTime(summary.lastSavedAt))}</td>
-    </tr>
-  `).join("");
+  const cards = summaries.map((summary) => {
+    const level = resolveStudentRecordLevel(summary);
+    const priority = getStudentPrioritySignal(summary, level);
+    const plan = buildStudentFeedbackPlan(summary, level);
+    const trend = getStudentTrend(summary);
+    const isSelected = summary.studentKey === selectedStudentKey;
+    return `
+      <button class="student-insight-card ${isSelected ? "is-selected" : ""}" type="button" data-student-key="${escapeHtml(summary.studentKey)}" aria-pressed="${isSelected}">
+        <div class="student-insight-top">
+          <span class="student-priority student-priority--${priority.modifier}">${escapeHtml(priority.label)}</span>
+          <strong>${escapeHtml(summary.studentKey)}</strong>
+        </div>
+        <div class="student-insight-metrics">
+          <span>정확도 <b>${summary.accuracyPercent}%</b></span>
+          <span>평균 <b>${formatSeconds(summary.avgQuestionTimeMs)}</b></span>
+          <span>누적 <b>${summary.sessions}회</b></span>
+        </div>
+        <div class="student-accuracy-track" aria-label="정확도 ${summary.accuracyPercent}%">
+          <i style="--value:${summary.accuracyPercent}"></i>
+        </div>
+        ${renderStudentMiniTrend(summary)}
+        <p class="student-insight-feedback">${escapeHtml(plan.teacherTalk)}</p>
+        <p class="student-insight-action">${escapeHtml(plan.nextAction)}</p>
+        <span class="student-insight-trend">${escapeHtml(trend.label)}</span>
+      </button>
+    `;
+  }).join("");
 
   return `
-    <div class="teacher-table-wrap">
-      <table class="teacher-table">
-        <thead>
-          <tr>
-            <th>학생</th>
-            <th>횟수</th>
-            <th>누적 점수</th>
-            <th>정답</th>
-            <th>정확도</th>
-            <th>평균 시간</th>
-            <th>더 볼 유형</th>
-            <th>최근 저장</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="student-insight-list">
+      ${cards}
     </div>
+  `;
+}
+
+function selectTeacherStudent(event) {
+  const card = event.target.closest("[data-student-key]");
+  if (!card) {
+    return;
+  }
+
+  selectedTeacherStudentKey = card.dataset.studentKey || "";
+  renderTeacherDashboard(`${selectedTeacherStudentKey} 학생의 상세 피드백을 열었습니다.`);
+}
+
+async function copyTeacherFeedbackSnippet(event) {
+  const button = event.target.closest("[data-copy-feedback]");
+  if (!button) {
+    return;
+  }
+
+  const text = button.dataset.copyFeedback || "";
+  if (!text) {
+    return;
+  }
+
+  await copyTextToClipboard(text);
+  button.textContent = "복사 완료";
+  window.setTimeout(() => {
+    button.textContent = button.dataset.copyLabel || "복사";
+  }, 1200);
+}
+
+function renderTeacherStudentDetail(summary) {
+  if (!summary) {
+    return `<div class="teacher-empty">왼쪽 학생 요약에서 학생을 선택하면 누적 결과와 교사용 피드백이 열립니다.</div>`;
+  }
+
+  const level = resolveStudentRecordLevel(summary);
+  const priority = getStudentPrioritySignal(summary, level);
+  const plan = buildStudentFeedbackPlan(summary, level);
+  const trend = getStudentTrend(summary);
+  const studentTalk = plan.teacherTalk;
+  const familyTalk = plan.homeTalk;
+
+  return `
+    <div class="student-detail-shell">
+      <section class="student-detail-hero student-detail-hero--${priority.modifier}">
+        <div>
+          <span class="student-priority student-priority--${priority.modifier}">${escapeHtml(priority.label)}</span>
+          <h4>${escapeHtml(summary.studentKey)}</h4>
+          <p>${escapeHtml(getStudentRecordLevelLabel(level))} · ${summary.sessions}회 누적 · ${summary.questionCount}문항 관찰 · 최근 ${escapeHtml(formatDateTime(summary.lastSavedAt))}</p>
+        </div>
+        <div class="student-detail-score">
+          <strong>${summary.accuracyPercent}%</strong>
+          <span>정확도</span>
+        </div>
+      </section>
+
+      <section class="student-feedback-plan">
+        <div class="teacher-section-title">
+          <span>오늘의 지도 판단</span>
+          <strong>${escapeHtml(plan.title)}</strong>
+        </div>
+        <p class="student-feedback-diagnosis">${escapeHtml(plan.diagnosis)}</p>
+        <div class="student-feedback-actions">
+          <article>
+            <span>학생에게 바로 말하기</span>
+            <p>${escapeHtml(studentTalk)}</p>
+            <button class="record-copy-button" type="button" data-copy-label="피드백 복사" data-copy-feedback="${escapeHtml(studentTalk)}">피드백 복사</button>
+          </article>
+          <article>
+            <span>다음 지도 행동</span>
+            <p>${escapeHtml(plan.nextAction)}</p>
+          </article>
+          <article>
+            <span>가정 연계 한마디</span>
+            <p>${escapeHtml(familyTalk)}</p>
+            <button class="record-copy-button" type="button" data-copy-label="가정 문장 복사" data-copy-feedback="${escapeHtml(familyTalk)}">가정 문장 복사</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="student-detail-metrics">
+        ${teacherStatCard("정확도", `${summary.accuracyPercent}%`, `${summary.correct}/${summary.questionCount}문항 정답`)}
+        ${teacherStatCard("평균 풀이", formatSeconds(summary.avgQuestionTimeMs), trend.label)}
+        ${teacherStatCard("재도전 회복", `${summary.retrySuccess || 0}회`, `최종 오답 ${summary.finalWrong || 0}회`)}
+        ${teacherStatCard("설명 확인", `${summary.feedbackConfirmed || 0}회`, plan.metacognition)}
+      </section>
+
+      ${renderStudentExpertFeedback(summary, plan, trend)}
+      ${renderStudentStandardBars(summary)}
+      ${renderStudentSessionTimeline(summary)}
+      ${renderStudentQuestionEvidence(summary)}
+    </div>
+  `;
+}
+
+function renderStudentExpertFeedback(summary, plan, trend) {
+  const professorInsight = getProfessorInsight(summary);
+  return `
+    <section class="student-expert-grid" aria-label="세 전문가 공동 피드백">
+      <article>
+        <span>교육대학교 교수 검토</span>
+        <strong>${escapeHtml(professorInsight.title)}</strong>
+        <p>${escapeHtml(professorInsight.body)}</p>
+      </article>
+      <article>
+        <span>학교 수석교사 처방</span>
+        <strong>${escapeHtml(plan.smallGroup)}</strong>
+        <p>${escapeHtml(plan.coachingRoutine)}</p>
+      </article>
+      <article>
+        <span>10년차 교사 수업 지원</span>
+        <strong>${escapeHtml(trend.label)}</strong>
+        <p>${escapeHtml(plan.quickSupport)}</p>
+      </article>
+    </section>
+  `;
+}
+
+function renderStudentStandardBars(summary) {
+  const standards = getAttemptedStandardStats(summary);
+  if (standards.length === 0) {
+    return `<section class="student-detail-section"><div class="teacher-empty">성취기준별로 해석할 문항 기록이 아직 충분하지 않습니다.</div></section>`;
+  }
+
+  return `
+    <section class="student-detail-section">
+      <div class="teacher-section-title">
+        <span>성취기준별 프로파일</span>
+        <strong>강점과 재지도 근거를 같이 봅니다</strong>
+      </div>
+      <div class="standard-bar-list">
+        ${standards.map((standard) => {
+          const accuracy = getStandardAccuracy(standard);
+          const status = getStandardStatus(standard);
+          return `
+            <article class="standard-bar-card standard-bar-card--${status.modifier}">
+              <div>
+                <strong>${escapeHtml(standard.code)} · ${escapeHtml(standard.shortLabel)}</strong>
+                <span>${escapeHtml(standard.commentLabel)} · ${standard.correct}/${standard.total}문항 · 지원 필요 ${standard.needsSupport}문항</span>
+              </div>
+              <div class="standard-bar" aria-label="${accuracy}%">
+                <i style="--value:${accuracy}"></i>
+              </div>
+              <b>${accuracy}%</b>
+              <em>${escapeHtml(status.label)}</em>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderStudentSessionTimeline(summary) {
+  const records = [...(summary.records || [])].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+  if (records.length === 0) {
+    return "";
+  }
+
+  return `
+    <section class="student-detail-section">
+      <div class="teacher-section-title">
+        <span>학습 기록 전체</span>
+        <strong>평가 회차별 흐름</strong>
+      </div>
+      <div class="student-session-list">
+        ${records.map((record) => `
+          <article class="student-session-card">
+            <div>
+              <strong>${escapeHtml(record.categoryName || "전단원")}</strong>
+              <span>${escapeHtml(formatDateTime(record.savedAt))} · ${escapeHtml(record.difficultyName || "난이도")}</span>
+            </div>
+            <div class="student-session-metrics">
+              <span>${record.score}점</span>
+              <span>${record.correct}/${record.questionCount}</span>
+              <span>${formatSeconds(record.avgQuestionTimeMs)}</span>
+            </div>
+            <p>${escapeHtml(getRecordNeedText(record))}</p>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderStudentQuestionEvidence(summary) {
+  const rows = [...(summary.records || [])]
+    .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
+    .flatMap((record) => (Array.isArray(record.questionRecords) ? record.questionRecords : []).map((questionRecord) => ({
+      record,
+      questionRecord
+    })));
+
+  if (rows.length === 0) {
+    return `<section class="student-detail-section"><div class="teacher-empty">문항별 상세 기록이 없는 이전 형식의 평가 기록입니다.</div></section>`;
+  }
+
+  return `
+    <section class="student-detail-section">
+      <div class="teacher-section-title">
+        <span>문항별 근거</span>
+        <strong>정오답보다 피드백 이유를 봅니다</strong>
+      </div>
+      <div class="teacher-table-wrap student-question-table-wrap">
+        <table class="teacher-table student-question-table">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>결과</th>
+              <th>문제</th>
+              <th>첫 선택 → 정답</th>
+              <th>시도</th>
+              <th>시간</th>
+              <th>피드백 근거</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(({ record, questionRecord }) => {
+              const firstAttempt = questionRecord.attempts?.[0];
+              const selectedText = firstAttempt?.selectedText || questionRecord.wrongSelections?.[0] || "-";
+              const tags = analyzeQuestionRecordNeed(questionRecord);
+              const outcome = getQuestionOutcomeLabel(questionRecord);
+              return `
+                <tr>
+                  <td>${escapeHtml(formatDateTime(record.savedAt))}</td>
+                  <td><span class="question-outcome question-outcome--${outcome.modifier}">${escapeHtml(outcome.label)}</span></td>
+                  <td class="student-question-prompt">${escapeHtml(questionRecord.prompt || "")}</td>
+                  <td>${escapeHtml(selectedText)} → ${escapeHtml(questionRecord.correctText || "")}</td>
+                  <td>${questionRecord.attemptCount || 0}회</td>
+                  <td>${formatSeconds(questionRecord.elapsedMs || 0)}</td>
+                  <td class="teacher-need-cell">${escapeHtml(tags.join(" · ") || "안정적으로 해결")}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
   `;
 }
 
@@ -311,6 +558,264 @@ function getRecordNeedTags(record) {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko-KR"))
     .slice(0, 3)
     .map(([tag]) => tag);
+}
+
+function getClassCommonFocus(records) {
+  const counts = new Map();
+  records.forEach((record) => {
+    getRecordNeedTags(record).forEach((tag) => {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    });
+  });
+  const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
+  if (!top) {
+    return { title: "관찰 중", detail: "공통 막힘 수집 전" };
+  }
+
+  return {
+    title: getShortFocusName(top[0]),
+    detail: `${top[1]}회 반복 신호`
+  };
+}
+
+function renderStudentMiniTrend(summary) {
+  const records = [...(summary.records || [])]
+    .sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt))
+    .slice(-6);
+
+  if (records.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="student-mini-trend" aria-label="최근 정확도 흐름">
+      ${records.map((record) => {
+        const accuracy = record.questionCount ? Math.round((record.correct / record.questionCount) * 100) : 0;
+        return `<i style="--value:${accuracy}" title="${escapeHtml(formatDateTime(record.savedAt))} ${accuracy}%"></i>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function getStudentPrioritySignal(summary, level = resolveStudentRecordLevel(summary)) {
+  if ((summary.questionCount || 0) < 3) {
+    return { label: "관찰 부족", modifier: "observe" };
+  }
+
+  if (level === "support" || summary.accuracyPercent < 50 || (summary.finalWrong || 0) >= 3) {
+    return { label: "즉시 개입", modifier: "urgent" };
+  }
+
+  if (level === "emerging" || (summary.finalWrong || 0) > 0) {
+    return { label: "재지도", modifier: "reteach" };
+  }
+
+  if (summary.accuracyPercent >= 90 && (summary.finalWrong || 0) === 0 && summary.avgQuestionTimeMs <= 10000) {
+    return { label: "심화 가능", modifier: "extend" };
+  }
+
+  if (summary.avgQuestionTimeMs >= 12000) {
+    return { label: "속도 관찰", modifier: "speed" };
+  }
+
+  if ((summary.retrySuccess || 0) > 0 || (summary.feedbackConfirmed || 0) > 0) {
+    return { label: "피드백 효과", modifier: "feedback" };
+  }
+
+  return { label: "안정", modifier: "stable" };
+}
+
+function getStudentTrend(summary) {
+  const records = [...(summary.records || [])].sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
+  if (records.length < 2) {
+    return { label: "추세 관찰 중", detail: "누적 기록이 더 필요합니다." };
+  }
+
+  const recent = records.slice(-3);
+  const previous = records.slice(Math.max(0, records.length - 6), Math.max(1, records.length - 3));
+  const previousAccuracy = averageRecordAccuracy(previous);
+  const recentAccuracy = averageRecordAccuracy(recent);
+  const previousTime = averageRecordTime(previous);
+  const recentTime = averageRecordTime(recent);
+  const accuracyDelta = recentAccuracy - previousAccuracy;
+  const timeDelta = recentTime - previousTime;
+
+  if (Math.abs(accuracyDelta) <= 5 && timeDelta < -1000 && recentAccuracy >= 80) {
+    return { label: "자동화 진행", detail: "정확도는 유지되고 풀이 시간이 줄고 있습니다." };
+  }
+
+  if (accuracyDelta >= 5 && timeDelta >= -1000) {
+    return { label: "숙고형 성장", detail: "정확도가 오르고 있어 생각 과정을 살릴 만합니다." };
+  }
+
+  if (accuracyDelta < -5 && timeDelta < -1000) {
+    return { label: "성급한 선택 신호", detail: "빠르게 고르지만 정확도가 흔들립니다." };
+  }
+
+  if (accuracyDelta < -5 && timeDelta >= 1000) {
+    return { label: "개념 혼란 신호", detail: "시간도 길어지고 정확도도 내려갑니다." };
+  }
+
+  return { label: "흐름 유지", detail: "최근 결과가 큰 변화 없이 유지됩니다." };
+}
+
+function averageRecordAccuracy(records) {
+  const totalQuestions = records.reduce((sum, record) => sum + (record.questionCount || 0), 0);
+  const totalCorrect = records.reduce((sum, record) => sum + (record.correct || 0), 0);
+  return totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+}
+
+function averageRecordTime(records) {
+  const totalQuestions = records.reduce((sum, record) => sum + (record.questionCount || 0), 0);
+  const totalTime = records.reduce((sum, record) => sum + ((record.avgQuestionTimeMs || 0) * (record.questionCount || 0)), 0);
+  return totalQuestions ? Math.round(totalTime / totalQuestions) : 0;
+}
+
+function buildStudentFeedbackPlan(summary, level = resolveStudentRecordLevel(summary)) {
+  const focus = summary.focusTags?.[0] || summary.weakText || "";
+  const focusName = getShortFocusName(focus);
+  const action = getActionForFocus(focus);
+  const trend = getStudentTrend(summary);
+  const weakness = getWeaknessObservationText(summary);
+  const strength = getStrongStandardText(summary);
+  const metacognition = getMetacognitionLabel(summary);
+
+  if (level === "advanced") {
+    return {
+      title: "심화 설명으로 확장",
+      diagnosis: `${strength}이 안정적입니다. 이제 정답을 맞히는 수준을 넘어 풀이 과정을 말로 설명하게 하면 좋습니다.`,
+      teacherTalk: "풀이가 정확하고 빨라. 이제 답만 말하지 말고 왜 그렇게 되는지 한 문장으로 설명해 보자.",
+      nextAction: "비슷한 문제를 하나 직접 만들고 친구에게 풀이 이유를 설명하게 합니다.",
+      smallGroup: "심화 도전 그룹",
+      coachingRoutine: "심화 학생끼리 풀이 비교를 시키고, 서로 다른 풀이 방법을 칠판에 짧게 공유하게 합니다.",
+      quickSupport: "오늘의 확장 카드: 같은 개념을 문장제 또는 빈칸식으로 바꾸어 2문항 제시합니다.",
+      homeTalk: "현재 정확도와 속도가 안정적입니다. 가정에서는 답보다 풀이 이유를 말로 설명하는 연습을 해 주세요.",
+      metacognition
+    };
+  }
+
+  if (level === "support" || level === "emerging") {
+    return {
+      title: `${focusName}부터 다시 잡기`,
+      diagnosis: `${weakness}이 보여 한 번에 여러 내용을 보충하기보다 핵심 행동 하나를 정해 반복하는 편이 좋습니다.`,
+      teacherTalk: `괜찮아. 오늘은 ${focusName}만 먼저 잡자. 그림이나 표시를 하고 같은 유형을 두 문제만 다시 해 보자.`,
+      nextAction: action,
+      smallGroup: `${focusName} 소그룹`,
+      coachingRoutine: "교사와 1문항을 같이 풀고, 같은 구조 2문항을 학생이 말로 설명하며 다시 풉니다.",
+      quickSupport: `3분 루틴: 핵심 표시 → 한 문제 같이 풀기 → 같은 유형 2문항 재도전.`,
+      homeTalk: `오늘은 ${focusName}에서 보충이 필요했습니다. 집에서는 답만 확인하지 말고 풀이 표시를 하고 3문제만 천천히 다시 풀어 주세요.`,
+      metacognition
+    };
+  }
+
+  return {
+    title: `${focusName} 안정화`,
+    diagnosis: `${strength}은 활용하고 있으나 ${weakness}이 일부 보여 첫 선택 전 확인 루틴이 필요합니다.`,
+    teacherTalk: `좋아. 풀 수 있는 힘은 있어. 다음 문제에서는 ${focusName}을 먼저 표시하고 답을 고르자.`,
+    nextAction: action,
+    smallGroup: `${focusName} 확인 그룹`,
+    coachingRoutine: "오답이 나온 유형을 한 문제만 공개적으로 다시 풀고, 학생은 자기 공책에 확인 루틴을 표시합니다.",
+    quickSupport: `${trend.label}: ${trend.detail} 다음 평가 전 같은 유형 2문항으로 확인합니다.`,
+    homeTalk: `${focusName}을 한 번 더 확인하면 정확도가 올라갈 수 있습니다. 가정에서는 문제에서 묻는 말과 필요한 수에 표시하고 풀게 해 주세요.`,
+    metacognition
+  };
+}
+
+function getShortFocusName(focus) {
+  if (!focus) return "핵심 개념";
+  if (focus.includes("받아올림")) return "받아올림";
+  if (focus.includes("받아내림") || focus.includes("빌리는")) return "받아내림";
+  if (focus.includes("□")) return "빈칸식";
+  if (focus.includes("문장제")) return "문장제";
+  if (focus.includes("풀이시간")) return "계산 자동화";
+  if (focus.includes("세 수")) return "세 수 계산";
+  if (focus.includes("표") || focus.includes("그래프")) return "표·그래프 해석";
+  if (focus.includes("묶음") || focus.includes("곱셈")) return "묶음 곱셈";
+  return focus.split(":")[0].slice(0, 12);
+}
+
+function getActionForFocus(focus) {
+  if (focus.includes("받아올림")) {
+    return "일 10개를 십 1개로 바꾸는 장면을 점으로 묶어 말하게 한 뒤 같은 덧셈 2문항을 다시 풉니다.";
+  }
+  if (focus.includes("받아내림") || focus.includes("빌리는")) {
+    return "십 1개를 일 10개로 바꾸는 수모형을 그린 뒤, 바뀐 수에서 다시 빼게 합니다.";
+  }
+  if (focus.includes("□")) {
+    return "전체에 동그라미, 알고 있는 수에 밑줄을 치고 '전체-아는 부분'으로 빈칸을 찾게 합니다.";
+  }
+  if (focus.includes("문장제")) {
+    return "문장 속 '처음/변화/묻는 말'을 세 색으로 표시한 뒤 식을 한 줄로 바꾸게 합니다.";
+  }
+  if (focus.includes("풀이시간")) {
+    return "작은 수 같은 유형 3문항을 30초 안에 정확히 풀고, 틀리면 속도보다 확인 루틴으로 돌아갑니다.";
+  }
+  if (focus.includes("세 수")) {
+    return "앞의 두 수 계산 결과를 중간에 적고, 그 결과에 남은 수를 이어 더하거나 빼게 합니다.";
+  }
+  if (focus.includes("표") || focus.includes("그래프")) {
+    return "항목 이름에서 숫자까지 손가락으로 가로줄을 따라가며, 찾은 수에 체크하게 합니다.";
+  }
+  if (focus.includes("묶음") || focus.includes("곱셈")) {
+    return "한 묶음의 수와 묶음 수를 따로 표시하고, 뛰어세기 결과와 곱셈식을 나란히 쓰게 합니다.";
+  }
+  return "틀린 유형 1문항을 교사와 함께 다시 풀고, 같은 구조 2문항을 혼자 설명하며 풉니다.";
+}
+
+function getMetacognitionLabel(summary) {
+  if ((summary.retrySuccess || 0) > 0 && (summary.feedbackConfirmed || 0) > 0) {
+    return "피드백 수용 좋음";
+  }
+  if ((summary.feedbackConfirmed || 0) > 0 && (summary.finalWrong || 0) > 0) {
+    return "설명 방식 재구성 필요";
+  }
+  if ((summary.retrySuccess || 0) > 0) {
+    return "재도전 효과 있음";
+  }
+  return "오답 검토 습관 관찰";
+}
+
+function getProfessorInsight(summary) {
+  const attempted = getAttemptedStandardStats(summary);
+  const weak = attempted
+    .filter((standard) => standard.total >= 3)
+    .sort((a, b) => getStandardAccuracy(a) - getStandardAccuracy(b))[0];
+
+  if (!weak) {
+    return {
+      title: "판단 자료 축적 필요",
+      body: "성취기준별 문항 수가 아직 적은 영역은 단정하지 않고, 다음 평가에서 같은 기준 문항을 더 관찰하는 편이 타당합니다."
+    };
+  }
+
+  return {
+    title: `${weak.code} ${weak.shortLabel} 근거 확인`,
+    body: `${weak.commentLabel}에서 ${weak.correct}/${weak.total}문항 정답입니다. 지원 필요 문항 ${weak.needsSupport}개를 중심으로 개념 설명과 표상 전환을 확인하세요.`
+  };
+}
+
+function getStandardStatus(standard) {
+  const accuracy = getStandardAccuracy(standard);
+  if (standard.total < 3) {
+    return { label: "판단 보류", modifier: "observe" };
+  }
+  if (accuracy >= 75) {
+    return { label: "강점", modifier: "strong" };
+  }
+  if (accuracy >= 40) {
+    return { label: "보충", modifier: "practice" };
+  }
+  return { label: "재지도", modifier: "support" };
+}
+
+function getQuestionOutcomeLabel(questionRecord) {
+  if (questionRecord.finalCorrect && (questionRecord.attemptCount || 0) <= 1) {
+    return { label: "정답", modifier: "correct" };
+  }
+  if (questionRecord.finalCorrect) {
+    return { label: "재도전", modifier: "retry" };
+  }
+  return { label: "오답", modifier: "wrong" };
 }
 
 function analyzeQuestionRecordNeed(questionRecord) {

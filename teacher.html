@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2학년 수학 교사용 평가 결과 누적 관리</title>
-  <link rel="stylesheet" href="styles.css?v=math2-teacher-record-tone-20260521">
+  <link rel="stylesheet" href="styles.css?v=math2-teacher-feedback-dashboard-20260525a">
 </head>
 <body>
   <div class="app-shell teacher-app-shell">
@@ -45,16 +45,24 @@
 
         <div class="teacher-stat-grid" id="teacherStats"></div>
 
-        <div class="teacher-dashboard-grid">
-          <section class="teacher-panel">
+        <div class="teacher-dashboard-grid teacher-dashboard-grid--feedback">
+          <section class="teacher-panel teacher-panel--student-list">
             <div class="teacher-panel-head">
               <h3>학생별 누적 요약</h3>
-              <span>반·번호 기준</span>
+              <span>학생을 누르면 상세 피드백이 열립니다</span>
             </div>
             <div id="teacherStudentSummary"></div>
           </section>
 
-          <section class="teacher-panel">
+          <section class="teacher-panel teacher-panel--student-detail">
+            <div class="teacher-panel-head">
+              <h3>학생 상세 피드백</h3>
+              <span>근거 · 진단 · 다음 지도</span>
+            </div>
+            <div id="teacherStudentDetail"></div>
+          </section>
+
+          <section class="teacher-panel teacher-panel--record-log">
             <div class="teacher-panel-head">
               <h3>평가 기록</h3>
               <span>최근 저장순</span>
@@ -98,6 +106,6 @@
   </div>
 
   <iframe id="storageBridgeFrame" src="index.html#storageBridge" title="학습 데이터 저장소" hidden></iframe>
-  <script src="teacher-dashboard.js?v=math2-teacher-record-tone-20260521"></script>
+  <script src="teacher-dashboard.js?v=math2-teacher-feedback-dashboard-20260525a"></script>
 </body>
 </html>
