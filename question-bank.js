@@ -943,12 +943,15 @@
       ["1-2", /다음에 올 도형|규칙/, "shape-pattern"],
       ["1-2", /칠교|조각|쌓은|위에서|앞에서/, "shape-compose-stack"],
       ["1-3", /□/, "missing-addend"],
+      ["1-3", /모았습니다|더 많나요|더 많은/, "addition-compare"],
+      ["1-3", /더 받았습니다|모두 몇 장/, "addition-story"],
       ["1-3", /\+/, "addition-regrouping"],
       ["1-3", /-/, "subtraction-regrouping"],
       ["1-4", /어림|가장 알맞은|가장 가까운/, "length-estimate"],
       ["1-4", /이어 붙이면|합하면|더하면/, "length-join"],
       ["1-4", /보다 몇 cm 더|더 긴/, "length-compare"],
       ["1-4", /10cm|0 눈금|자를 사용할/, "ruler-zero-ten"],
+      ["1-5", /빼면|두 묶음|차이/, "classify-compare"],
       ["1-5", /표에서|몇 개인가요|몇 명인가요/, "table-row-read"],
       ["1-5", /합하면|모두|가장 많은|분류할 수 없는/, "classify-compare"],
       ["1-6", /개씩.*묶음|묶음이면|모두 .*개를/, "equal-groups"],
@@ -966,6 +969,7 @@
       ["2-4", /분 뒤|분 후|보다 몇 분 뒤/, "time-add-minutes"],
       ["2-4", /걸린 시간|부터.*까지|반|긴바늘|짧은바늘|30분을 다른 말/, "time-elapsed-clock"],
       ["2-5", /조사|표로 나타내|그래프로 나타내|그래프로 나타낼/, "graph-create"],
+      ["2-5", /두 묶음|빼면|차이/, "graph-interpret"],
       ["2-5", /표에서|몇 명인가요/, "graph-row-read"],
       ["2-5", /모두|차이|가장 많은|가장 적은/, "graph-interpret"],
       ["2-6", /덧셈표|곱셈표|쌓은 모양|생활|동작|소리/, "pattern-table-life"],
@@ -989,12 +993,16 @@
       ["1-2", /쌓은|위에서|앞에서/, "stack-view"],
       ["1-3", /□.*\+|\+□/, "missing-addend"],
       ["1-3", /□.*-|-□/, "missing-subtraction"],
+      ["1-3", /모았습니다|더 많나요|더 많은/, "compare-after-add"],
+      ["1-3", /더 받았습니다|모두 몇 장/, "story-add"],
       ["1-3", /\+/, "addition"],
       ["1-3", /-/, "subtraction"],
       ["1-4", /0 눈금|시작 .*눈금/, "ruler-offset"],
       ["1-4", /이어 붙이면|합하면|더하면/, "join"],
       ["1-4", /더 긴|몇 cm 더/, "compare"],
       ["1-4", /어림|가장 알맞은|가장 가까운/, "estimate"],
+      ["1-5", /빼면|나머지/, "remaining-after-two"],
+      ["1-5", /두 묶음.*차이/, "pair-difference"],
       ["1-5", /표에서 \d+개인/, "row-match"],
       ["1-5", /표에서 .*몇/, "row-count"],
       ["1-5", /가장 많은|가장 적은/, "extreme"],
@@ -1027,6 +1035,8 @@
       ["2-4", /하루|오전|오후|24시간/, "day-cycle"],
       ["2-5", /조사한 자료|표로 나타내/, "survey-to-table"],
       ["2-5", /그래프로 나타낼 때/, "table-to-graph"],
+      ["2-5", /두 묶음.*차이/, "compare-two-pairs"],
+      ["2-5", /빼면|나머지/, "remaining-one"],
       ["2-5", /표에서 \d+명인|명인 활동/, "row-match"],
       ["2-5", /표에서 .*몇 명/, "row-count"],
       ["2-5", /모두 몇 명/, "total"],
@@ -1934,11 +1944,14 @@
   }
 
   function buildAddSubQuestion(difficulty, index) {
-    const mode = selectDifficultyMode(difficulty, index, {
+    const modeMap = {
       low: ["add-no-carry", "sub-no-borrow", "story-add-easy", "make-ten"],
       mid: ["add-carry", "sub-borrow", "story-add-carry", "missing-addend"],
-      high: ["sub-borrow-split", "hundred-sub-borrow", "two-step-story", "missing-subtract"]
-    });
+      high: ["add-three-numbers", "missing-add-carry", "compare-after-add", "sub-borrow-split", "hundred-sub-borrow", "two-step-story", "missing-subtract"]
+    };
+    const modes = modeMap[difficulty] || modeMap.mid;
+    const mode = modes[(index - 1) % modes.length];
+    const cycle = Math.floor((index - 1) / modes.length);
 
     if (mode === "add-no-carry") {
       const onesA = 1 + (index % 4);
@@ -2007,8 +2020,12 @@
     }
 
     if (mode === "add-carry") {
-      const a = 30 + ((index * 7) % 3) * 10 + (6 + (index % 4));
-      const b = 10 + ((index * 5) % 2) * 10 + (5 + ((index + 1) % 4));
+      const onesPairs = [[6, 5], [7, 6], [8, 5], [6, 8], [9, 4], [5, 7]];
+      const tensPairs = [[3, 2], [4, 2], [3, 4], [5, 2], [2, 5], [4, 3]];
+      const [aOnes, bOnes] = onesPairs[cycle % onesPairs.length];
+      const [aTens, bTens] = tensPairs[(cycle + index) % tensPairs.length];
+      const a = aTens * 10 + aOnes;
+      const b = bTens * 10 + bOnes;
       const result = a + b;
       return makeQuestion("1-3", difficulty, index, `${a}+${b}의 값은 무엇인가요?`, `${result}`, numChoices(result, "", [-10, -1, 1, 10, 9, -9]), [
         `일의 자리 ${a % 10}+${b % 10}`,
@@ -2023,9 +2040,8 @@
     }
 
     if (mode === "sub-borrow") {
-      const subOnes = 6 + (index % 4);
-      const sub = (1 + (index % 3)) * 10 + subOnes;
-      const big = (5 + ((index * 2) % 4)) * 10 + (subOnes - 3);
+      const pairs = [[54, 28], [63, 37], [72, 45], [81, 56], [65, 29], [74, 38], [83, 47], [92, 58]];
+      const [big, sub] = pairs[cycle % pairs.length];
       const result = big - sub;
       return makeQuestion("1-3", difficulty, index, `${big}-${sub}의 값은 무엇인가요?`, `${result}`, numChoices(result, "", [-10, -1, 1, 10, 9, -9]), [
         `일의 자리 ${big % 10}-${sub % 10}`,
@@ -2040,8 +2056,8 @@
     }
 
     if (mode === "story-add-carry") {
-      const first = 48 + (index % 5);
-      const more = 24 + ((index * 3) % 6);
+      const pairs = [[38, 27], [46, 25], [29, 36], [54, 18], [43, 29], [57, 24], [35, 46], [48, 33]];
+      const [first, more] = pairs[cycle % pairs.length];
       const total = first + more;
       return makeQuestion("1-3", difficulty, index, `민지가 스티커 ${first}장을 가지고 있고 ${more}장을 더 받았습니다. 모두 몇 장인가요?`, `${total}장`, numChoices(total, "장", [-10, -1, 1, 10, 5, -5]), [
         `처음 ${first}장`,
@@ -2056,8 +2072,8 @@
     }
 
     if (mode === "missing-addend") {
-      const known = 18 + ((index * 5) % 30);
-      const missing = 14 + ((index * 7) % 36);
+      const pairs = [[28, 34], [38, 42], [18, 26], [45, 19], [27, 46], [36, 28], [49, 17], [23, 58]];
+      const [known, missing] = pairs[cycle % pairs.length];
       const total = known + missing;
       return makeQuestion("1-3", difficulty, index, `□+${known}=${total}일 때 □에 알맞은 수는?`, `${missing}`, numChoices(missing, "", [-10, -1, 1, 10, known, -known]), [
         `□ + ${known} = ${total}`,
@@ -2070,9 +2086,91 @@
       ));
     }
 
+    if (mode === "add-three-numbers") {
+      const triples = [
+        [28, 37, 16],
+        [35, 29, 18],
+        [46, 27, 19],
+        [19, 38, 34],
+        [24, 36, 28],
+        [32, 18, 45],
+        [27, 35, 26],
+        [48, 16, 25]
+      ];
+      const [a, b, c] = triples[cycle % triples.length];
+      const firstSum = a + b;
+      const result = firstSum + c;
+      return makeQuestion("1-3", difficulty, index, `${a}+${b}+${c}의 값은 무엇인가요?`, `${result}`, numChoices(result, "", [-20, -10, -1, 1, 10, 20]), [
+        `먼저 ${a}+${b}`,
+        `그 결과에 ${c} 더하기`,
+        "받아올림을 두 번 확인합니다."
+      ], "세 수 덧셈은 앞의 두 수를 먼저 더하고, 그 결과에 남은 수를 더합니다.", makeFeedback(
+        "세 수는 두 번에 나누어 더해요.",
+        "심화 덧셈은 계산이 한 번 더 들어가서 중간 결과를 잊으면 답이 흔들립니다.",
+        [`먼저 ${a}+${b}=${firstSum}입니다.`, `그 다음 ${firstSum}+${c}=${result}입니다.`, `따라서 ${a}+${b}+${c}=${result}입니다.`],
+        `중간 결과 ${firstSum}을 적어 두고 마지막 ${c}를 더하세요.`
+      ));
+    }
+
+    if (mode === "missing-add-carry") {
+      const pairs = [[47, 36], [58, 27], [39, 44], [46, 38], [57, 29], [28, 56], [65, 18], [49, 37]];
+      const [known, missing] = pairs[cycle % pairs.length];
+      const total = known + missing;
+      const blankFirst = cycle % 2 === 1;
+      const prompt = blankFirst
+        ? `□+${known}=${total}일 때 □ 안에 들어갈 수는 무엇인가요?`
+        : `${known}+□=${total}일 때 □ 안에 들어갈 수는 무엇인가요?`;
+      return makeQuestion("1-3", difficulty, index, prompt, `${missing}`, numChoices(missing, "", [-10, -1, 1, 10, known, -known]), [
+        `전체 ${total}`,
+        `알고 있는 수 ${known}`,
+        `${total}-${known}로 빈칸 찾기`
+      ], "덧셈식의 빈칸은 전체에서 알고 있는 부분을 빼서 찾습니다.", makeFeedback(
+        "빈칸은 전체에서 아는 부분을 빼요.",
+        "덧셈식에 빈칸이 있으면 무작정 더하지 말고 전체와 부분의 관계를 먼저 봐야 합니다.",
+        [`전체는 ${total}입니다.`, `이미 알고 있는 부분은 ${known}입니다.`, `${total}-${known}=${missing}이므로 빈칸은 ${missing}입니다.`],
+        `${missing}+${known}=${total}이 되는지 다시 더해 보며 답을 확인하세요.`
+      ));
+    }
+
+    if (mode === "compare-after-add") {
+      const cases = [
+        { leftName: "민지", left: [36, 28], rightName: "서준", right: [25, 33], unit: "장" },
+        { leftName: "하린", left: [47, 25], rightName: "도윤", right: [38, 27], unit: "개" },
+        { leftName: "지우", left: [29, 46], rightName: "서아", right: [35, 31], unit: "개" },
+        { leftName: "유찬", left: [58, 17], rightName: "윤서", right: [42, 26], unit: "장" },
+        { leftName: "소율", left: [34, 39], rightName: "민준", right: [28, 36], unit: "개" },
+        { leftName: "시우", left: [45, 28], rightName: "하준", right: [37, 25], unit: "장" }
+      ];
+      const item = cases[cycle % cases.length];
+      const leftTotal = item.left[0] + item.left[1];
+      const rightTotal = item.right[0] + item.right[1];
+      const leftWins = leftTotal > rightTotal;
+      const winner = leftWins ? item.leftName : item.rightName;
+      const loser = leftWins ? item.rightName : item.leftName;
+      const diff = Math.abs(leftTotal - rightTotal);
+      const answer = `${winner}, ${diff}${item.unit}`;
+      const pairParticle = andParticle(item.unit);
+      const objectJosa = objectParticle(item.unit);
+      return makeQuestion("1-3", difficulty, index, `${item.leftName}${topicParticle(item.leftName)} ${item.left[0]}${item.unit}${pairParticle} ${item.left[1]}${item.unit}${objectJosa}, ${item.rightName}${topicParticle(item.rightName)} ${item.right[0]}${item.unit}${pairParticle} ${item.right[1]}${item.unit}${objectJosa} 모았습니다. 누가 몇 ${item.unit} 더 많나요?`, answer, [
+        `${loser}, ${diff}${item.unit}`,
+        `${winner}, ${diff + 1}${item.unit}`,
+        `${winner}, ${Math.max(1, diff - 1)}${item.unit}`,
+        `${loser}, ${diff + 1}${item.unit}`
+      ], [
+        `${item.leftName}: ${item.left[0]}+${item.left[1]}`,
+        `${item.rightName}: ${item.right[0]}+${item.right[1]}`,
+        "각자의 전체를 만든 뒤 비교합니다."
+      ], "비교 문장제는 각자의 전체 수를 먼저 구하고, 큰 수에서 작은 수를 뺍니다.", makeFeedback(
+        "각자의 전체를 먼저 만들어요.",
+        "두 사람의 수가 두 묶음씩 있으면 바로 비교하지 말고 각자의 전체를 먼저 구해야 합니다.",
+        [`${item.leftName}${topicParticle(item.leftName)} ${item.left[0]}+${item.left[1]}=${leftTotal}${item.unit}입니다.`, `${item.rightName}${topicParticle(item.rightName)} ${item.right[0]}+${item.right[1]}=${rightTotal}${item.unit}입니다.`, `${Math.max(leftTotal, rightTotal)}-${Math.min(leftTotal, rightTotal)}=${diff}이므로 ${winner}${topicParticle(winner)} ${diff}${item.unit} 더 많습니다.`],
+        "비교 문장제는 '각자 전체 만들기 → 큰 수에서 작은 수 빼기' 순서로 푸세요."
+      ));
+    }
+
     if (mode === "sub-borrow-split") {
-      const big = 66 + ((index % 3) * 10);
-      const sub = 18 + (index % 2);
+      const pairs = [[66, 18], [74, 27], [82, 35], [91, 46], [73, 26], [85, 38], [92, 57], [64, 29]];
+      const [big, sub] = pairs[cycle % pairs.length];
       const result = big - sub;
       const bigTensPart = (Math.floor(big / 10) - 1) * 10;
       const bigOnesPart = 10 + (big % 10);
@@ -2091,7 +2189,8 @@
     }
 
     if (mode === "hundred-sub-borrow") {
-      const sub = 23 + ((index * 5) % 15);
+      const subs = [33, 48, 57, 64, 29, 76, 38, 45];
+      const sub = subs[cycle % subs.length];
       const result = 100 - sub;
       const subTensPart = Math.floor(sub / 10) * 10;
       const subOnesPart = sub % 10;
@@ -2108,9 +2207,17 @@
     }
 
     if (mode === "two-step-story") {
-      const start = 45 + ((index * 3) % 20);
-      const more = 18 + (index % 8);
-      const used = 12 + ((index * 5) % 9);
+      const cases = [
+        [38, 27, 19],
+        [46, 25, 18],
+        [52, 19, 34],
+        [29, 36, 17],
+        [57, 18, 26],
+        [34, 28, 15],
+        [45, 37, 24],
+        [63, 16, 28]
+      ];
+      const [start, more, used] = cases[cycle % cases.length];
       const answer = start + more - used;
       return makeQuestion("1-3", difficulty, index, `스티커가 ${start}장 있었고 ${more}장을 더 받았습니다. 그중 ${used}장을 썼다면 몇 장이 남았나요?`, `${answer}장`, numChoices(answer, "장", [-10, -1, 1, 10, 5, -5]), [
         `먼저 ${start}+${more}`,
@@ -2124,8 +2231,8 @@
       ));
     }
 
-    const total = 70 + ((index * 7) % 25);
-    const answer = 18 + ((index * 5) % 20);
+    const cases = [[83, 27], [91, 36], [75, 28], [88, 49], [96, 58], [72, 35], [94, 47], [81, 29]];
+    const [total, answer] = cases[cycle % cases.length];
     const remain = total - answer;
     return makeQuestion("1-3", difficulty, index, `${total}-□=${remain}일 때 □에 알맞은 수는?`, `${answer}`, numChoices(answer, "", [-10, -1, 1, 10, remain, -remain]), [
       `${total} - □ = ${remain}`,
@@ -2149,7 +2256,7 @@
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["ruler-zero", "add-ten", "compare", "join", "estimate-object"],
       mid: ["join", "compare", "add-ten", "ruler-zero", "estimate-near"],
-      high: ["two-step-length", "unknown-piece", "compare-after-add", "ruler-offset", "estimate-error"]
+      high: ["two-step-length", "unknown-piece", "compare-after-add", "ruler-offset", "two-step-length"]
     });
 
     if (mode === "estimate-object") {
@@ -2359,8 +2466,8 @@
   function buildClassifyQuestion(difficulty, index) {
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["row-read", "row-match", "most", "outlier"],
-      mid: ["row-read", "row-match", "two-total", "most", "outlier"],
-      high: ["row-match", "difference", "remaining-after-two", "pair-difference", "criterion-outlier"]
+      mid: ["two-total", "difference", "most", "row-match", "outlier"],
+      high: ["difference", "remaining-after-two", "pair-difference", "remaining-after-two", "pair-difference"]
     });
     const fruits = ["사과", "배", "포도", "귤"];
     const counts = fruits.map((name, order) => ({ name, count: 2 + ((index + order * 3 + difficultyOffset(difficulty)) % 7) }));
@@ -2368,12 +2475,14 @@
 
     if (mode === "remaining-after-two") {
       const total = counts.reduce((sum, item) => sum + item.count, 0);
-      const excluded = counts[0].count + counts[1].count;
+      const first = counts[index % counts.length];
+      const second = counts[(index + 1) % counts.length];
+      const excluded = first.count + second.count;
       const answer = total - excluded;
-      return makeQuestion("1-5", difficulty, index, `표에서 ${counts[0].name}${andParticle(counts[0].name)} ${counts[1].name}${objectParticle(counts[1].name)} 빼면 나머지는 모두 몇 개인가요?`, `${answer}개`, numChoices(answer, "개", [-4, -2, -1, 1, 2, 4]), counts.map((item) => `${item.name} ${item.count}개`), "전체에서 두 항목을 제외한 나머지를 찾습니다.", makeFeedback(
+      return makeQuestion("1-5", difficulty, index, `표에서 ${first.name}${andParticle(first.name)} ${second.name}${objectParticle(second.name)} 빼면 나머지는 모두 몇 개인가요?`, `${answer}개`, numChoices(answer, "개", [-4, -2, -1, 1, 2, 4]), counts.map((item) => `${item.name} ${item.count}개`), "전체에서 두 항목을 제외한 나머지를 찾습니다.", makeFeedback(
         "빼고 남은 분류를 봐요.",
         "심화 분류 문제는 전체를 먼저 보고, 제외할 항목을 빼서 나머지를 찾습니다.",
-        [`전체는 ${total}개입니다.`, `${counts[0].name}${andParticle(counts[0].name)} ${counts[1].name}는 ${excluded}개입니다.`, `${total}-${excluded}=${answer}개가 남습니다.`],
+        [`전체는 ${total}개입니다.`, `${first.name}${andParticle(first.name)} ${second.name}${topicParticle(second.name)} ${excluded}개입니다.`, `${total}-${excluded}=${answer}개가 남습니다.`],
         "제외하는 문제는 빼야 할 항목에 X표를 하고, 남은 항목의 수만 더해도 됩니다."
       ));
     }
@@ -2391,15 +2500,16 @@
     }
 
     if (mode === "pair-difference") {
-      const firstSum = counts[0].count + counts[1].count;
-      const secondSum = counts[2].count + counts[3].count;
+      const rotated = counts.slice(index % counts.length).concat(counts.slice(0, index % counts.length));
+      const firstSum = rotated[0].count + rotated[1].count;
+      const secondSum = rotated[2].count + rotated[3].count;
       const diff = Math.abs(firstSum - secondSum);
-      const firstNames = `${counts[0].name}${andParticle(counts[0].name)} ${counts[1].name}`;
-      const secondNames = `${counts[2].name}${andParticle(counts[2].name)} ${counts[3].name}`;
+      const firstNames = `${rotated[0].name}${andParticle(rotated[0].name)} ${rotated[1].name}`;
+      const secondNames = `${rotated[2].name}${andParticle(rotated[2].name)} ${rotated[3].name}`;
       return makeQuestion("1-5", difficulty, index, `${firstNames}, ${secondNames} 두 묶음의 개수 차이는 몇 개인가요?`, `${diff}개`, numChoices(diff, "개", [-3, -2, -1, 1, 2, 3]), counts.map((item) => `${item.name} ${item.count}개`), "두 항목씩 묶어 더한 뒤 두 묶음의 차이를 구합니다.", makeFeedback(
         "두 묶음을 각각 더한 뒤 비교해요.",
         "심화 분류표 문제는 항목 두 개씩 먼저 합하고, 그 합끼리 비교합니다.",
-        [`${firstNames}는 ${counts[0].count}+${counts[1].count}=${firstSum}개입니다.`, `${secondNames}는 ${counts[2].count}+${counts[3].count}=${secondSum}개입니다.`, `두 묶음의 차이는 ${diff}개입니다.`],
+        [`${firstNames}${topicParticle(rotated[1].name)} ${rotated[0].count}+${rotated[1].count}=${firstSum}개입니다.`, `${secondNames}${topicParticle(rotated[3].name)} ${rotated[2].count}+${rotated[3].count}=${secondSum}개입니다.`, `두 묶음의 차이는 ${diff}개입니다.`],
         "두 묶음을 비교할 때는 각 묶음의 합을 먼저 쓰고, 마지막에 큰 합에서 작은 합을 빼세요."
       ));
     }
@@ -2467,13 +2577,21 @@
 
   function buildMultiplicationIntroQuestion(difficulty, index) {
     const level = difficultyOffset(difficulty);
-    const groups = difficulty === "low" ? 2 + (index % 3) : 2 + ((index + level) % 5);
-    const each = difficulty === "low" ? 2 + ((index * 2) % 4) : 2 + ((index * 2 + level) % 6);
+    const groups = difficulty === "low"
+      ? 2 + (index % 3)
+      : difficulty === "high"
+        ? 4 + ((index + level) % 4)
+        : 3 + ((index + level) % 4);
+    const each = difficulty === "low"
+      ? 2 + ((index * 2) % 4)
+      : difficulty === "high"
+        ? 4 + ((index * 2 + level) % 5)
+        : 3 + ((index * 2 + level) % 5);
     const total = groups * each;
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["equal-groups", "group-count", "repeated-to-multiply", "value"],
-      mid: ["equal-groups", "repeated-to-multiply", "value", "group-count"],
-      high: ["group-count", "unknown-each", "compare-groups", "target-groups"]
+      mid: ["repeated-to-multiply", "value", "group-count", "equal-groups", "unknown-each"],
+      high: ["unknown-each", "compare-groups", "target-groups", "compare-groups", "target-groups"]
     });
 
     if (mode === "equal-groups") {
@@ -2530,7 +2648,10 @@
       const eachA = 3 + (index % 4);
       const groupsA = 4 + (index % 3);
       const eachB = eachA + 1;
-      const groupsB = Math.max(2, groupsA - 1);
+      let groupsB = Math.max(2, groupsA - 1);
+      if (eachA * groupsA === eachB * groupsB) {
+        groupsB = Math.max(2, groupsB - 1);
+      }
       const totalA = eachA * groupsA;
       const totalB = eachB * groupsB;
       const answer = totalA > totalB ? `${eachA}개씩 ${groupsA}묶음` : `${eachB}개씩 ${groupsB}묶음`;
@@ -2726,13 +2847,21 @@
   function buildMultiplicationTableQuestion(difficulty, index) {
     const level = difficultyOffset(difficulty);
     const easyFacts = [2, 3, 4, 5, 10];
-    const a = difficulty === "low" ? easyFacts[index % easyFacts.length] : 2 + ((index + level) % 8);
-    const b = difficulty === "low" ? 2 + ((index * 2) % 4) : 2 + ((index * 3 + level) % 8);
+    const a = difficulty === "low"
+      ? easyFacts[index % easyFacts.length]
+      : difficulty === "high"
+        ? 4 + ((index + level) % 6)
+        : 2 + ((index + level) % 8);
+    const b = difficulty === "low"
+      ? 2 + ((index * 2) % 4)
+      : difficulty === "high"
+        ? 4 + ((index * 3 + level) % 6)
+        : 2 + ((index * 3 + level) % 8);
     const product = a * b;
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["value", "array", "one-zero", "array"],
       mid: ["value", "missing-factor", "array", "target-expression", "multiplication-table-grid"],
-      high: ["missing-factor", "target-expression", "unknown-rows", "compare-products", "table-missing-cell"]
+      high: ["unknown-rows", "compare-products", "table-missing-cell", "unknown-rows", "compare-products"]
     });
 
     if (mode === "one-zero") {
@@ -2764,8 +2893,12 @@
     }
 
     if (mode === "multiplication-table-grid" || mode === "table-missing-cell") {
-      const row = 2 + ((index + level) % 8);
-      const col = 1 + ((index * 2 + level) % 9);
+      const row = difficulty === "high"
+        ? 6 + ((index + level) % 4)
+        : 2 + ((index + level) % 8);
+      const col = difficulty === "high"
+        ? 6 + ((index * 2 + level) % 4)
+        : 1 + ((index * 2 + level) % 9);
       const answer = row * col;
       return makeQuestion("2-2", difficulty, index, mode === "multiplication-table-grid"
         ? `곱셈표에서 ${row}단의 ${col}번째 칸에 들어갈 수는 무엇인가요?`
@@ -2838,7 +2971,8 @@
       const leftA = a;
       const leftB = b;
       const rightA = Math.max(2, a - 1);
-      const rightB = rightA * (b + 2) === leftA * leftB ? b + 3 : b + 2;
+      const candidateRightB = Math.min(9, b + 2);
+      const rightB = rightA * candidateRightB === leftA * leftB ? Math.max(2, candidateRightB - 1) : candidateRightB;
       const leftValue = leftA * leftB;
       const rightValue = rightA * rightB;
       const answer = leftValue > rightValue ? `${leftA}×${leftB}` : `${rightA}×${rightB}`;
@@ -2878,7 +3012,7 @@
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["unit-choice", "m-to-cm", "cm-to-m", "m-to-cm", "estimate-meter-unit"],
       mid: ["m-to-cm", "compare", "cm-to-m", "unit-choice", "estimate-meter-near"],
-      high: ["two-step-meter", "add-over-meter", "compare-mixed", "missing-extra", "estimate-meter-gap"]
+      high: ["two-step-meter", "add-over-meter", "compare-mixed", "missing-extra", "two-step-meter"]
     });
 
     if (mode === "estimate-meter-unit") {
@@ -3093,7 +3227,7 @@
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["clock-hands", "half-hour", "add-within-hour", "calendar-weekday", "calendar-days-after", "day-hours", "am-pm-read", "calendar-date-difference"],
       mid: ["clock-hands", "elapsed-within-hour", "add-within-hour", "calendar-weekday", "calendar-days-after", "day-hours", "am-pm-read", "calendar-date-difference"],
-      high: ["elapsed-over-hour", "add-over-hour", "later-than", "calendar-weekday", "calendar-days-after", "calendar-date-difference", "day-boundary", "am-pm-read", "clock-hands"]
+      high: ["elapsed-over-hour", "add-over-hour", "later-than", "elapsed-over-hour", "add-over-hour", "later-than"]
     });
     const baseHour = 1 + ((index + difficultyOffset(difficulty)) % 11);
     const lowMinute = [0, 10, 20, 30][index % 4];
@@ -3362,7 +3496,7 @@
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["row-read", "row-match", "most", "survey-to-table", "difference", "table-to-graph"],
       mid: ["row-read", "row-match", "total", "difference", "table-to-graph", "two-items"],
-      high: ["row-match", "pair-vs-one", "difference", "remaining-one", "compare-two-pairs", "survey-missing"]
+      high: ["pair-vs-one", "remaining-one", "compare-two-pairs", "pair-vs-one", "remaining-one"]
     });
 
     if (mode === "survey-to-table" || mode === "survey-missing") {
@@ -3516,7 +3650,7 @@
     const mode = selectDifficultyMode(difficulty, index, {
       low: ["increase", "color-repeat", "action-sound", "color-repeat"],
       mid: ["increase", "decrease", "color-repeat", "addition-table-rule", "stacking-pattern"],
-      high: ["missing-middle", "multiplication-table-rule", "alternating-step", "stacking-pattern", "action-sound"]
+      high: ["missing-middle", "multiplication-table-rule", "alternating-step", "missing-middle", "multiplication-table-rule", "alternating-step"]
     });
     const start = difficulty === "low" ? 2 + (index % 5) : 2 + ((index + level) % 9);
     const step = difficulty === "low" ? [2, 3][index % 2] : [2, 3, 4, 5][(index + level) % 4];
@@ -3541,7 +3675,7 @@
     }
 
     if (mode === "multiplication-table-rule") {
-      const dan = 2 + ((index + level) % 8);
+      const dan = difficulty === "high" ? 6 + ((index + level) % 4) : 2 + ((index + level) % 8);
       const sequence = [dan, dan * 2, dan * 3, dan * 4];
       return makeQuestion("2-6", difficulty, index, `곱셈표 ${dan}단에서 오른쪽으로 한 칸씩 갈 때 수는 어떻게 변하나요?`, `${dan}씩 커집니다`, [`1씩 커집니다`, `${Math.max(1, dan - 1)}씩 커집니다`, `${dan}씩 작아집니다`], patternScene("multiplication-table", [
         `${dan}×1, ${dan}×2, ${dan}×3, ${dan}×4`,
