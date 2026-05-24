@@ -8033,12 +8033,27 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
           limit: 8
         });
   } else {
-    const focusQuestions = pickQuestionsForTypeKeys(targetKeys, baseDifficulty, seen, 5);
+    const exactRetryQuestions = pickExactRetryQuestions(
+      anchorQuestions.filter(isQuestionRecordNeedingSupport),
+      recoveredKeys,
+      seen,
+      1
+    );
+    const similarQuestions = pickSimilarQuestionsForTypeKeys(
+      targetKeys,
+      anchorQuestions,
+      baseDifficulty,
+      seen,
+      new Set(exactRetryQuestions.map((question) => question.prompt).filter(Boolean)),
+      Math.max(0, 5 - exactRetryQuestions.length)
+    );
+    const focusQuestions = [...exactRetryQuestions, ...similarQuestions].slice(0, 5);
     const warmupQuestions = pickWarmupQuestions(cleanCorrectQuestions, baseDifficulty, seen, 2);
     const extensionQuestions = pickDifferentTypeQuestions({
       difficulty: baseDifficulty,
       seen,
-      excludeKeys: new Set([...targetKeys, ...cleanCorrectQuestions.map(getQuestionTypeKey).filter(Boolean)]),
+      excludeKeys: new Set([...cleanCorrectQuestions.map(getQuestionTypeKey).filter(Boolean)]),
+      excludePrompts: new Set(focusQuestions.map((question) => question.prompt).filter(Boolean)),
       limit: 1
     });
     questions = interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions).slice(0, 8);
@@ -8064,6 +8079,7 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
       difficulty: targetDifficulty,
       seen,
       excludeKeys: usedTypeKeys,
+      excludePrompts: new Set(questions.map((question) => question.prompt).filter(Boolean)),
       limit: 8 - questions.length
     }).filter((question) => !usedQuestionIds.has(question.id));
     questions = [...questions, ...fillers].slice(0, 8);
@@ -8183,9 +8199,16 @@ function buildSeenQuestionSet(records) {
   const questionRecords = (records || []).flatMap((record) => (
     Array.isArray(record.questionRecords) ? record.questionRecords : []
   ));
+  const promptCounts = new Map();
+  questionRecords.forEach((question) => {
+    if (question.prompt) {
+      promptCounts.set(question.prompt, (promptCounts.get(question.prompt) || 0) + 1);
+    }
+  });
   return {
     ids: new Set(questionRecords.map((question) => question.questionId).filter(Boolean)),
     prompts: new Set(questionRecords.map((question) => question.prompt).filter(Boolean)),
+    promptCounts,
     typeKeys: new Set(questionRecords.map(getQuestionTypeKey).filter(Boolean)),
     lessonKeys: new Set(questionRecords.map((question) => question.lessonKey).filter(Boolean))
   };
@@ -8205,6 +8228,99 @@ function getAllBankQuestions(difficulty = "") {
   ));
 }
 
+function pickExactRetryQuestions(questionRecords, recoveredKeys, seen, limit) {
+  const picked = [];
+  const usedPrompts = new Set();
+
+  questionRecords.forEach((questionRecord) => {
+    if (picked.length >= limit) {
+      return;
+    }
+
+    const key = getQuestionTypeKey(questionRecord);
+    const prompt = questionRecord.prompt || "";
+    const promptCount = seen.promptCounts?.get(prompt) || 0;
+    if (!prompt || recoveredKeys.has(key) || usedPrompts.has(prompt) || promptCount > 1) {
+      return;
+    }
+
+    const question = resolveStoredQuestionForVisual(questionRecord);
+    picked.push({
+      ...question,
+      reviewSource: "same-missed-question",
+      variantKey: question.variantKey || key
+    });
+    usedPrompts.add(prompt);
+  });
+
+  return picked;
+}
+
+function pickSimilarQuestionsForTypeKeys(typeKeys, anchorQuestions, difficulty, seen, blockedPrompts = new Set(), limit = 5) {
+  const picked = [];
+  const usedIds = new Set();
+  const usedPrompts = new Set(blockedPrompts);
+  const anchorsByKey = new Map();
+
+  anchorQuestions.forEach((questionRecord) => {
+    const key = getQuestionTypeKey(questionRecord);
+    if (key && !anchorsByKey.has(key)) {
+      anchorsByKey.set(key, questionRecord);
+    }
+  });
+
+  typeKeys.forEach((key) => {
+    if (picked.length >= limit) {
+      return;
+    }
+
+    const anchor = anchorsByKey.get(key);
+    const similar = pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit - picked.length);
+    similar.forEach((question) => {
+      picked.push(question);
+      usedIds.add(question.id);
+      usedPrompts.add(question.prompt);
+    });
+  });
+
+  return picked;
+}
+
+function pickSimilarQuestionsForAnchor(anchor, difficulty, seen, usedIds, usedPrompts, limit) {
+  if (!anchor || limit <= 0) {
+    return [];
+  }
+
+  const sameLesson = (question) => (
+    question.category === anchor.category
+    && question.lessonKey
+    && anchor.lessonKey
+    && question.lessonKey === anchor.lessonKey
+  );
+  const sameCategory = (question) => question.category === anchor.category;
+  const notSameQuestion = (question) => question.prompt !== anchor.prompt;
+  const notBlocked = (question) => (
+    !usedIds.has(question.id)
+    && !usedPrompts.has(question.prompt)
+    && !seen.prompts.has(question.prompt)
+  );
+  const banks = [
+    getAllBankQuestions(difficulty).filter((question) => sameLesson(question) && notSameQuestion(question)),
+    getAllBankQuestions().filter((question) => sameLesson(question) && notSameQuestion(question)),
+    getAllBankQuestions(difficulty).filter((question) => sameCategory(question) && notSameQuestion(question)),
+    getAllBankQuestions().filter((question) => sameCategory(question) && notSameQuestion(question))
+  ];
+
+  for (const bank of banks) {
+    const candidates = shuffle([...bank]).filter(notBlocked);
+    if (candidates.length) {
+      return candidates.slice(0, limit);
+    }
+  }
+
+  return [];
+}
+
 function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
   const picked = [];
   const usedIds = new Set();
@@ -8216,7 +8332,7 @@ function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
 
     const sameDifficulty = getAllBankQuestions(difficulty).filter((question) => getQuestionTypeKey(question) === key);
     const anyDifficulty = getAllBankQuestions().filter((question) => getQuestionTypeKey(question) === key);
-    const candidates = preferUnseenQuestions(sameDifficulty.length ? sameDifficulty : anyDifficulty, seen, usedIds);
+    const candidates = preferStrictUnseenQuestions(sameDifficulty.length ? sameDifficulty : anyDifficulty, seen, usedIds);
     if (candidates[0]) {
       picked.push(candidates[0]);
       usedIds.add(candidates[0].id);
@@ -8230,7 +8346,7 @@ function pickQuestionsForTypeKeys(typeKeys, difficulty, seen, limit) {
       }
       const lessonKey = key.split(":")[0];
       const lessonCandidates = getAllBankQuestions(difficulty).filter((question) => question.lessonKey && key.includes(question.lessonKey));
-      preferUnseenQuestions(lessonCandidates, seen, usedIds).slice(0, limit - picked.length).forEach((question) => {
+      preferStrictUnseenQuestions(lessonCandidates, seen, usedIds).slice(0, limit - picked.length).forEach((question) => {
         picked.push(question);
         usedIds.add(question.id);
       });
@@ -8245,18 +8361,52 @@ function pickWarmupQuestions(cleanCorrectQuestions, difficulty, seen, limit) {
   return pickQuestionsForTypeKeys(keys, difficulty, seen, limit);
 }
 
-function pickDifferentTypeQuestions({ difficulty, seen, excludeKeys = new Set(), limit = 8 }) {
+function pickDifferentTypeQuestions({ difficulty, seen, excludeKeys = new Set(), excludePrompts = new Set(), limit = 8 }) {
   const candidates = getAllBankQuestions(difficulty)
     .filter((question) => !excludeKeys.has(getQuestionTypeKey(question)))
+    .filter((question) => !excludePrompts.has(question.prompt))
     .filter((question) => !seen.typeKeys.has(getQuestionTypeKey(question)) || !seen.lessonKeys.has(question.lessonKey));
-  const fallback = getAllBankQuestions(difficulty).filter((question) => !excludeKeys.has(getQuestionTypeKey(question)));
-  return preferUnseenQuestions(candidates.length ? candidates : fallback, seen, new Set()).slice(0, limit);
+  const fallback = getAllBankQuestions(difficulty)
+    .filter((question) => !excludeKeys.has(getQuestionTypeKey(question)))
+    .filter((question) => !excludePrompts.has(question.prompt));
+  const strict = preferStrictUnseenQuestions(candidates.length ? candidates : fallback, seen, new Set());
+  if (strict.length >= limit) {
+    return strict.slice(0, limit);
+  }
+  const usedIds = new Set(strict.map((question) => question.id));
+  const usedPrompts = new Set(strict.map((question) => question.prompt));
+  const fallbackQuestions = preferUnseenQuestions(fallback, seen, usedIds)
+    .filter((question) => !excludePrompts.has(question.prompt))
+    .filter((question) => !usedPrompts.has(question.prompt));
+  return [...strict, ...fallbackQuestions].slice(0, limit);
+}
+
+function preferStrictUnseenQuestions(candidates, seen, usedIds = new Set()) {
+  return uniqueQuestionsByPrompt(shuffle([...candidates]).filter((question) => (
+    !usedIds.has(question.id)
+    && !seen.ids.has(question.id)
+    && !seen.prompts.has(question.prompt)
+  )));
 }
 
 function preferUnseenQuestions(candidates, seen, usedIds = new Set()) {
   const shuffled = shuffle([...candidates]).filter((question) => !usedIds.has(question.id));
   const unseen = shuffled.filter((question) => !seen.ids.has(question.id) && !seen.prompts.has(question.prompt));
-  return unseen.length ? unseen : shuffled;
+  return uniqueQuestionsByPrompt(unseen.length ? unseen : shuffled);
+}
+
+function uniqueQuestionsByPrompt(questions) {
+  const usedIds = new Set();
+  const usedPrompts = new Set();
+  return questions.filter((question) => {
+    const promptKey = question.prompt || question.id || "";
+    if (usedIds.has(question.id) || usedPrompts.has(promptKey)) {
+      return false;
+    }
+    usedIds.add(question.id);
+    usedPrompts.add(promptKey);
+    return true;
+  });
 }
 
 function interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQuestions) {
@@ -8264,7 +8414,7 @@ function interleavePracticeQuestions(focusQuestions, warmupQuestions, extensionQ
   const sources = [warmupQuestions, focusQuestions, focusQuestions.slice(1), extensionQuestions, focusQuestions.slice(2), warmupQuestions.slice(1)];
   sources.forEach((source) => {
     source.forEach((question) => {
-      if (!result.some((item) => item.id === question.id)) {
+      if (!result.some((item) => item.id === question.id || item.prompt === question.prompt)) {
         result.push(question);
       }
     });
