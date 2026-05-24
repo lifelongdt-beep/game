@@ -7779,24 +7779,65 @@ function getPracticeStudentInfoByPlayer() {
 }
 
 function saveLearningRecordsForPlayers(studentInfoByPlayer) {
-  const newRecords = state.players.map((player) => (
+  const draftRecords = state.players.map((player) => (
     buildLearningRecord(player, state.scores[player.id], studentInfoByPlayer[player.id])
   ));
   const savedRecords = loadLearningRecords();
+  const recordsForPlanning = [...savedRecords, ...draftRecords];
+  const nextPlansByPlayer = Object.fromEntries(draftRecords.map((record) => [
+    record.playerId,
+    buildPersonalizedPracticePlan(
+      recordsForPlanning.filter((item) => item.studentKey === record.studentKey),
+      record
+    )
+  ]));
+  const newRecords = draftRecords.map((record) => ({
+    ...record,
+    nextPracticePlan: serializePersonalizedPracticePlan(nextPlansByPlayer[record.playerId])
+  }));
   const allRecords = [...savedRecords, ...newRecords];
   saveLearningRecords(allRecords);
   state.submissionSaved = true;
   state.savedSubmissionRecordsByPlayer = Object.fromEntries(newRecords.map((record) => [record.playerId, record]));
-  state.personalizedPracticePlansByPlayer = Object.fromEntries(newRecords.map((record) => [
-    record.playerId,
-    buildPersonalizedPracticePlan(
-      allRecords.filter((item) => item.studentKey === record.studentKey),
-      record
-    )
-  ]));
+  state.personalizedPracticePlansByPlayer = nextPlansByPlayer;
   saveLearningDataButton.disabled = true;
   saveLearningDataButton.textContent = "저장 완료";
   return newRecords;
+}
+
+function serializePersonalizedPracticePlan(plan) {
+  if (!plan) {
+    return null;
+  }
+
+  return {
+    mode: plan.mode || "review",
+    difficulty: plan.difficulty || "mid",
+    focusText: plan.focusText || "맞춤 복습",
+    targetTypes: cloneLearningRecordData(plan.targetTypes || []),
+    questions: (plan.questions || []).map(serializePracticeQuestion)
+  };
+}
+
+function serializePracticeQuestion(question) {
+  const options = Array.isArray(question.options) ? [...question.options] : [];
+  return {
+    id: question.id || "",
+    questionId: question.id || "",
+    category: question.category || "",
+    categoryName: resolveQuestionCategory(question),
+    difficulty: question.difficulty || "mid",
+    lessonKey: question.lessonKey || "",
+    variantKey: question.variantKey || "",
+    prompt: question.prompt || "",
+    scene: cloneLearningRecordData(question.scene || null),
+    sceneLines: cloneLearningRecordData(question.sceneLines || question.scene?.lines || []),
+    options,
+    answerIndex: Number.isInteger(question.answer) ? question.answer : 0,
+    correctText: compactOptionText(options[question.answer] || ""),
+    explanation: question.explanation || "",
+    practiceMode: question.practiceMode || ""
+  };
 }
 
 function autoSavePersonalizedPracticeResults() {
@@ -8013,6 +8054,19 @@ function buildPersonalizedPracticePlan(studentRecords, anchorRecord) {
 
   if (!questions.length) {
     questions = pickDifferentTypeQuestions({ difficulty: targetDifficulty, seen, excludeKeys: new Set(), limit: 8 });
+  } else if (questions.length < 8) {
+    const usedQuestionIds = new Set(questions.map((question) => question.id).filter(Boolean));
+    const usedTypeKeys = new Set([
+      ...targetKeys,
+      ...questions.map(getQuestionTypeKey).filter(Boolean)
+    ]);
+    const fillers = pickDifferentTypeQuestions({
+      difficulty: targetDifficulty,
+      seen,
+      excludeKeys: usedTypeKeys,
+      limit: 8 - questions.length
+    }).filter((question) => !usedQuestionIds.has(question.id));
+    questions = [...questions, ...fillers].slice(0, 8);
   }
 
   return {

@@ -1181,6 +1181,7 @@ function buildStudentReportSummaries(records) {
       summary.focusTags = getSummaryNeedTags(studentRecords);
       summary.standardStats = analyzeStandardPerformance(studentRecords);
       summary.growthAnalysis = analyzeStudentGrowthByQuestionType(studentRecords);
+      summary.latestPracticePlan = getLatestPracticePlan(studentRecords);
       return summary;
     })
     .sort((a, b) => Number(a.classNumber) - Number(b.classNumber) || Number(a.studentNumber) - Number(b.studentNumber));
@@ -1337,6 +1338,13 @@ function getQuestionTypeLabel(questionRecord, record = {}) {
   const category = questionRecord.categoryName || record.categoryName || resolveQuestionCategoryLabel(questionRecord.category || record.category);
   const lesson = resolveLessonLabel(questionRecord.category || record.category, questionRecord.lessonKey || record.lessonKey);
   return [category, lesson].filter(Boolean).join(" · ") || "맞춤 유형";
+}
+
+function getLatestPracticePlan(records) {
+  const sorted = [...(records || [])]
+    .filter((record) => record?.nextPracticePlan?.questions?.length)
+    .sort((left, right) => new Date(right.savedAt || 0) - new Date(left.savedAt || 0));
+  return sorted[0]?.nextPracticePlan || null;
 }
 
 function resolveQuestionCategoryLabel(category) {
@@ -1766,7 +1774,7 @@ async function downloadStudentFeedbackPdf(studentKey, type = "practice") {
 }
 
 async function createStudentFeedbackPdf(summary, type = "practice") {
-  const questions = getStudentPdfQuestions(summary);
+  const questions = getStudentPdfQuestions(summary, type);
   const visualPayloads = await getStudentPdfVisualPayloads(questions, type);
   const blocks = buildStudentPdfBlocks(summary, type, questions, visualPayloads);
   await prepareStudentPdfVisuals(blocks);
@@ -1775,7 +1783,7 @@ async function createStudentFeedbackPdf(summary, type = "practice") {
   return buildImagePdf(images);
 }
 
-function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions(summary), visualPayloads = []) {
+function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions(summary, type), visualPayloads = []) {
   const questionBlocks = questions.map((questionRecord, index) => {
     const visualPayload = visualPayloads[index] || buildFallbackQuestionVisualPayload(questionRecord, type);
     const explanationSteps = buildQuestionExplanationSteps(questionRecord);
@@ -1821,7 +1829,12 @@ function buildStudentPdfBlocks(summary, type, questions = getStudentPdfQuestions
     : [{ kind: "note", title: "자료 없음", body: "아직 PDF로 만들 문항 기록이 충분하지 않습니다." }];
 }
 
-function getStudentPdfQuestions(summary) {
+function getStudentPdfQuestions(summary, type = "practice") {
+  const plannedQuestions = getLatestPracticePlanPdfQuestions(summary);
+  if (plannedQuestions.length) {
+    return plannedQuestions.slice(0, 8);
+  }
+
   const questions = [...(summary.questionRecords || [])];
   const recoveredKeys = new Set((summary.growthAnalysis?.recovered || []).map((item) => item.key));
   const priorityQuestions = questions.filter((questionRecord) => (
@@ -1830,6 +1843,54 @@ function getStudentPdfQuestions(summary) {
   ));
   const selected = priorityQuestions.length > 0 ? priorityQuestions : questions;
   return selected.slice(0, 8);
+}
+
+function getLatestPracticePlanPdfQuestions(summary) {
+  const plan = summary.latestPracticePlan || null;
+  const questions = Array.isArray(plan?.questions) ? plan.questions : [];
+  return questions.map((question, index) => convertPracticePlanQuestionToRecord(question, plan, index));
+}
+
+function convertPracticePlanQuestionToRecord(question, plan = {}, index = 0) {
+  const options = Array.isArray(question.options) ? question.options : [];
+  const answerIndex = Number.isInteger(question.answerIndex)
+    ? question.answerIndex
+    : Number.isInteger(question.answer)
+      ? question.answer
+      : 0;
+  const correctText = question.correctText || options[answerIndex] || "";
+  return {
+    questionId: question.questionId || question.id || `planned-${index}`,
+    category: question.category || "",
+    categoryName: question.categoryName || resolveQuestionCategoryLabel(question.category || ""),
+    difficulty: question.difficulty || plan.difficulty || "mid",
+    difficultyName: getDifficultyLabel(question.difficulty || plan.difficulty || "mid"),
+    lessonKey: question.lessonKey || "",
+    variantKey: question.variantKey || "",
+    prompt: question.prompt || "맞춤 다시 공부할 문제",
+    scene: question.scene || null,
+    sceneLines: question.sceneLines || question.scene?.lines || [],
+    options,
+    answerIndex,
+    correctText,
+    explanation: question.explanation || "",
+    outcome: "planned-review",
+    finalCorrect: false,
+    attempts: [],
+    attemptCount: 0,
+    wrongSelections: [],
+    elapsedMs: 0,
+    isGeneratedPractice: true,
+    practiceFocusText: plan.focusText || ""
+  };
+}
+
+function getDifficultyLabel(difficulty) {
+  return {
+    low: "기초",
+    mid: "기본",
+    high: "심화"
+  }[difficulty] || "난이도";
 }
 
 function buildQuestionExplanation(questionRecord) {
