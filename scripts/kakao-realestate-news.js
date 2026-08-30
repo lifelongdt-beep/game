@@ -106,6 +106,74 @@ function writeOutput(name, value) {
   fs.appendFileSync(outputPath, `${name}<<KAKAO_EOF\n${value}\nKAKAO_EOF\n`);
 }
 
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// 재부키 오픈채팅방 방장봇 공지에 걸어둘 고정 링크용 페이지.
+// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
+// 링크 하나는 고정해두고 그 안의 내용만 매일 아침 갱신하는 방식으로 우회한다.
+function renderDigestPage(articles, generatedAt) {
+  const itemsHtml = articles.length
+    ? articles
+        .map(
+          (a) => `      <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
+        )
+        .join('\n')
+    : '      <li class="empty">오늘은 새로 조회된 부동산 뉴스가 없어요.</li>';
+
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 부동산 뉴스</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 24px 16px 40px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f7f7f8; color: #1a1a1a; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .updated { color: #666; font-size: 13px; margin: 0 0 20px; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  .article { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
+  .empty { color: #666; padding: 14px 0; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #17181a; color: #eee; }
+    .article { background: #232427; box-shadow: none; }
+    .article a { color: #eee; }
+    .updated { color: #999; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>🏠 오늘의 부동산 뉴스</h1>
+  <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
+  <ul>
+${itemsHtml}
+  </ul>
+</main>
+</body>
+</html>
+`;
+}
+
+function publishDigestPage(articles) {
+  const generatedAt = new Date().toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+  fs.mkdirSync('docs', { recursive: true });
+  fs.writeFileSync('docs/index.html', renderDigestPage(articles, generatedAt));
+  console.log('docs/index.html 갱신 완료 (GitHub Pages로 공개되면 재부키 방 공지 링크로 사용 가능)');
+}
+
 async function main() {
   const tokenData = await refreshAccessToken();
   const accessToken = tokenData.access_token;
@@ -116,6 +184,7 @@ async function main() {
   }
 
   const articles = await fetchNews(ARTICLE_COUNT);
+  publishDigestPage(articles);
 
   if (articles.length === 0) {
     await sendKakaoText(
