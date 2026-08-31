@@ -28,3 +28,7 @@ powershell -ExecutionPolicy Bypass -File .\serve.ps1 4173
 ## 참고 자료
 
 i-Scream 2학년 수학 1학기/2학기 단원평가 HWP 264개를 내려받아 단원 구성과 반복 유형을 분석했고, 원문 문항을 그대로 복사하지 않고 같은 성취기준을 연습하는 생성형 문제로 구성했습니다.
+
+## 부가 기능: 아침 부동산 뉴스 카카오톡 알림
+
+이 게임과는 별개로, 매일 아침 부동산 관련 뉴스를 카카오톡으로 받아보는 개인용 자동화가 포함되어 있습니다. 설정 방법은 [`docs/kakao-realestate-news-setup.md`](docs/kakao-realestate-news-setup.md) 문서를 참고하세요.
