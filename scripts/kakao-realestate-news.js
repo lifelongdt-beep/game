@@ -15,6 +15,16 @@ const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '"검단신도시" (청약 OR
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
+// 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 키가 아직 없으면
+// (발급 전이면) 이 섹션만 조용히 건너뛰고 나머지 뉴스 발송은 그대로 진행한다.
+const DATA_GO_KR_SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
+const LAWD_CD = process.env.LAWD_CD || '28260'; // 인천광역시 서구
+const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '원당동,마전동,불로동,대곡동,당하동,왕길동,오류동,아라동')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 10);
+
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
 const CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || '';
@@ -85,6 +95,80 @@ async function fetchNews(query, limit, requireKeyword) {
     if (articles.length >= limit) break;
   }
   return articles;
+}
+
+function xmlTag(xml, tag) {
+  const m = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+  return m ? decodeEntities(m[1].trim()) : '';
+}
+
+// 계약월 하나에 대해 실거래가 상세 자료를 조회한다. 인증키는 공공데이터포털의
+// '일반 인증키(Encoding)' 값을 그대로 써야 하므로, URLSearchParams로 다시
+// 인코딩하지 않고 URL 문자열에 직접 이어붙인다(이중 인코딩되면 인증에 실패한다).
+async function fetchTransactionsForMonth(dealYmd) {
+  const url =
+    'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev' +
+    `?serviceKey=${DATA_GO_KR_SERVICE_KEY}&LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=1`;
+
+  const res = await fetch(url);
+  const xml = await res.text();
+
+  if (!res.ok || xml.includes('<cmmMsgHeader>')) {
+    const errMsg = xmlTag(xml, 'returnAuthMsg') || xmlTag(xml, 'errMsg') || `HTTP ${res.status}`;
+    throw new Error(`실거래가 API 오류(${dealYmd}): ${errMsg}`);
+  }
+  const resultCode = xmlTag(xml, 'resultCode');
+  if (resultCode && resultCode !== '00') {
+    throw new Error(`실거래가 API 오류(${dealYmd}, ${resultCode}): ${xmlTag(xml, 'resultMsg')}`);
+  }
+
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(([, item]) => ({
+    apt: xmlTag(item, 'aptNm'),
+    dong: xmlTag(item, 'umdNm'),
+    area: xmlTag(item, 'excluUseAr'),
+    amount: xmlTag(item, 'dealAmount').replace(/,/g, ''),
+    floor: xmlTag(item, 'floor'),
+    year: xmlTag(item, 'dealYear'),
+    month: xmlTag(item, 'dealMonth').padStart(2, '0'),
+    day: xmlTag(item, 'dealDay').padStart(2, '0'),
+  }));
+}
+
+// 이번 달 + 지난달을 함께 조회한다(신고 기한 때문에 이번 달 초에는 자료가 거의 없다).
+// 서구 전체 결과 중 umdNm이 검단신도시 관할 법정동(GEOMDAN_DONGS)인 것만 남긴다.
+async function fetchGeomdanTransactions() {
+  if (!DATA_GO_KR_SERVICE_KEY) {
+    console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
+    return [];
+  }
+
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const months = [0, -1].map((offset) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const all = [];
+  for (const dealYmd of months) {
+    try {
+      all.push(...(await fetchTransactionsForMonth(dealYmd)));
+    } catch (err) {
+      console.error(err.message);
+    }
+  }
+
+  const geomdanOnly = all.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
+  geomdanOnly.sort((a, b) => `${b.year}${b.month}${b.day}`.localeCompare(`${a.year}${a.month}${a.day}`));
+  return geomdanOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
+}
+
+function formatAmount(manwonStr) {
+  const n = Number(manwonStr);
+  if (!Number.isFinite(n)) return `${manwonStr}만원`;
+  const eok = Math.floor(n / 10000);
+  const rest = n % 10000;
+  if (eok <= 0) return `${n.toLocaleString('ko-KR')}만원`;
+  return rest > 0 ? `${eok}억 ${rest.toLocaleString('ko-KR')}만원` : `${eok}억원`;
 }
 
 async function sendKakaoTemplate(accessToken, templateObject) {
@@ -161,46 +245,107 @@ function escapeHtml(str) {
 // 재부키 오픈채팅방 방장봇 공지에는 이 중 일반 뉴스 페이지 링크를 걸어둔다.
 // 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
 // 링크는 고정해두고 그 안의 내용만 매일 갱신하는 방식으로 우회한다.
-function renderPage(title, articles, generatedAt) {
-  const itemsHtml = articles.length
+function renderArticlesHtml(articles) {
+  return articles.length
     ? articles
         .map(
           (a) => `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
         )
         .join('\n')
     : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
+}
 
+function renderTransactionsHtml(transactions) {
+  return transactions.length
+    ? transactions
+        .map(
+          (t) => `    <li class="txn">
+      <div class="txn-top"><span class="txn-dong">${escapeHtml(t.dong)}</span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
+      <div class="txn-apt">${escapeHtml(t.apt)}</div>
+      <div class="txn-meta">${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약</div>
+    </li>`
+        )
+        .join('\n')
+    : '    <li class="empty">최근 조회된 실거래 내역이 없어요.</li>';
+}
+
+const PAGE_STYLE = `
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 24px 16px 40px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f7f7f8; color: #1a1a1a; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; }
+  .updated { color: #666; font-size: 13px; margin: 0 0 20px; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  .article, .txn { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
+  .txn { padding: 12px 16px; }
+  .txn-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .txn-dong { font-size: 12px; color: #888; }
+  .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; }
+  .txn-apt { font-size: 15px; margin-top: 2px; }
+  .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .empty { color: #666; padding: 14px 0; }
+  .source { color: #999; font-size: 12px; margin-top: 4px; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #17181a; color: #eee; }
+    .article, .txn { background: #232427; box-shadow: none; }
+    .article a { color: #eee; }
+    .updated, .txn-dong, .txn-meta, .source { color: #999; }
+    .txn-amount { color: #ff8a5c; }
+  }
+`;
+
+function renderPage(title, articles, generatedAt) {
   return `<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; padding: 24px 16px 40px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f7f7f8; color: #1a1a1a; }
-  main { max-width: 560px; margin: 0 auto; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .updated { color: #666; font-size: 13px; margin: 0 0 20px; }
-  ul { list-style: none; margin: 0; padding: 0; }
-  .article { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-  .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
-  .empty { color: #666; padding: 14px 0; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #17181a; color: #eee; }
-    .article { background: #232427; box-shadow: none; }
-    .article a { color: #eee; }
-    .updated { color: #999; }
-  }
-</style>
+<style>${PAGE_STYLE}</style>
 </head>
 <body>
 <main>
   <h1>${escapeHtml(title)}</h1>
   <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
   <ul>
-${itemsHtml}
+${renderArticlesHtml(articles)}
   </ul>
+</main>
+</body>
+</html>
+`;
+}
+
+// 검단신도시 페이지는 뉴스와 실거래가 두 섹션으로 구성한다. 둘 다 검단신도시라는
+// 같은 주제를 다루되 정보의 종류(기사 vs 국토부 공식 거래 기록)만 다르므로 한 페이지
+// 안에서 나눈다 (일반 부동산 뉴스 페이지와는 완전히 분리된 상태를 그대로 유지한다).
+function renderGeomdanPage(articles, transactions, generatedAt) {
+  const title = '🏙️ 인천 검단신도시 청약·거래 소식';
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>${PAGE_STYLE}</style>
+</head>
+<body>
+<main>
+  <h1>${escapeHtml(title)}</h1>
+  <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
+
+  <h2>📰 관련 뉴스</h2>
+  <ul>
+${renderArticlesHtml(articles)}
+  </ul>
+
+  <h2>🏘️ 아파트 실거래가</h2>
+  <ul>
+${renderTransactionsHtml(transactions)}
+  </ul>
+  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털)</p>
 </main>
 </body>
 </html>
@@ -218,6 +363,17 @@ function publishPage(filename, title, articles) {
   console.log(`docs/${filename} 갱신 완료`);
 }
 
+function publishGeomdanPage(articles, transactions) {
+  const generatedAt = new Date().toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+  fs.mkdirSync('docs', { recursive: true });
+  fs.writeFileSync('docs/geomdan.html', renderGeomdanPage(articles, transactions, generatedAt));
+  console.log('docs/geomdan.html 갱신 완료');
+}
+
 async function main() {
   const tokenData = await refreshAccessToken();
   const accessToken = tokenData.access_token;
@@ -229,9 +385,10 @@ async function main() {
 
   const articles = await fetchNews(NEWS_QUERY, ARTICLE_COUNT);
   const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT, GEOMDAN_KEYWORD);
+  const geomdanTransactions = await fetchGeomdanTransactions();
 
   publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
-  publishPage('geomdan.html', '🏙️ 인천 검단신도시 청약·거래 소식', geomdanArticles);
+  publishGeomdanPage(geomdanArticles, geomdanTransactions);
 
   const period = currentPeriodLabel();
 

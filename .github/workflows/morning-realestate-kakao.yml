@@ -36,6 +36,12 @@ jobs:
           GEOMDAN_QUERY: '"검단신도시" (청약 OR 분양 OR 실거래가) when:1d'
           GEOMDAN_KEYWORD: '검단'
           GEOMDAN_PAGE_URL: 'https://lifelongdt-beep.github.io/game/geomdan.html'
+          # 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 시크릿이 없으면
+          # 이 부분만 자동으로 건너뛰고 나머지는 그대로 동작합니다.
+          DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+          LAWD_CD: '28260'
+          GEOMDAN_DONGS: '원당동,마전동,불로동,대곡동,당하동,왕길동,오류동,아라동'
+          GEOMDAN_TRANSACTION_COUNT: '10'
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
