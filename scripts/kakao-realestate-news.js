@@ -11,7 +11,8 @@ const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
-const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d';
+const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '"검단신도시" (청약 OR 분양 OR 실거래가) when:1d';
+const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
@@ -56,7 +57,9 @@ function decodeEntities(str) {
     .replace(/&amp;/g, '&');
 }
 
-async function fetchNews(query, limit) {
+// requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
+// 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
+async function fetchNews(query, limit, requireKeyword) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
   const res = await fetch(url);
   if (!res.ok) {
@@ -75,6 +78,7 @@ async function fetchNews(query, limit) {
     const title = decodeEntities(titleMatch[1].trim());
     const link = decodeEntities(linkMatch[1].trim());
     if (seenTitles.has(title)) continue;
+    if (requireKeyword && !title.includes(requireKeyword)) continue;
     seenTitles.add(title);
 
     articles.push({ title, link });
@@ -224,7 +228,7 @@ async function main() {
   }
 
   const articles = await fetchNews(NEWS_QUERY, ARTICLE_COUNT);
-  const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT);
+  const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT, GEOMDAN_KEYWORD);
 
   publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
   publishPage('geomdan.html', '🏙️ 인천 검단신도시 청약·거래 소식', geomdanArticles);

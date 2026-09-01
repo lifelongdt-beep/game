@@ -33,7 +33,8 @@ jobs:
           NEWS_QUERY: '부동산 when:1d'
           DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
           GEOMDAN_ARTICLE_COUNT: '10'
-          GEOMDAN_QUERY: '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d'
+          GEOMDAN_QUERY: '"검단신도시" (청약 OR 분양 OR 실거래가) when:1d'
+          GEOMDAN_KEYWORD: '검단'
           GEOMDAN_PAGE_URL: 'https://lifelongdt-beep.github.io/game/geomdan.html'
         run: node scripts/kakao-realestate-news.js
 
