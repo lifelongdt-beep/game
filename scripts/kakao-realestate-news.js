@@ -10,6 +10,9 @@ const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
 const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 
+const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
+const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d';
+
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
 const CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || '';
@@ -52,8 +55,8 @@ function decodeEntities(str) {
     .replace(/&amp;/g, '&');
 }
 
-async function fetchNews(limit) {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(NEWS_QUERY)}&hl=ko&gl=KR&ceid=KR:ko`;
+async function fetchNews(query, limit) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`뉴스 조회 실패: ${res.status}`);
@@ -108,24 +111,30 @@ function truncate(str, max) {
   return str.length > max ? `${str.slice(0, max - 1)}…` : str;
 }
 
+function currentPeriodLabel() {
+  const hour = Number(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour: '2-digit', hour12: false })
+  );
+  return hour < 12 ? '오전' : '오후';
+}
+
 // 카카오 '나에게 보내기'는 text 타입(제목 + 링크 1개)만 안정적으로 클릭이 된다.
 // list 타입은 이미지가 있어도 눌리지 않는 평면 카드로만 뜨는 걸 실제 테스트로 확인해서
 // 기사 제목을 전부 한 메시지 본문에 나열하고, 링크는 전체 기사가 있는 다이제스트
 // 페이지 하나로 보내는 방식으로 대신한다. (페이지 안 링크는 각각 정상 클릭됨)
-async function sendArticlesDigest(accessToken, articles) {
-  const header = '🏠 오늘의 부동산 뉴스';
+async function sendArticlesDigest(accessToken, header, articles, link) {
   const maxTotalLen = 180; // 카카오 text 타입 안전 길이
   const lines = [header];
   let used = header.length;
   for (const article of articles) {
-    const line = truncate(`• ${article.title}`, 42);
+    const line = truncate(`${lines.length}. ${article.title}`, 42);
     if (used + line.length + 1 > maxTotalLen) break;
     lines.push(line);
     used += line.length + 1;
   }
 
-  await sendKakaoText(accessToken, lines.join('\n'), DIGEST_PAGE_URL);
-  console.log(`기사 ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
+  await sendKakaoText(accessToken, lines.join('\n'), link);
+  console.log(`[${header}] 기사 ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
 }
 
 function writeOutput(name, value) {
@@ -142,17 +151,28 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// 재부키 오픈채팅방 방장봇 공지에 걸어둘 고정 링크용 페이지.
-// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
-// 링크 하나는 고정해두고 그 안의 내용만 매일 아침 갱신하는 방식으로 우회한다.
-function renderDigestPage(articles, generatedAt) {
+function renderSection(id, title, articles) {
   const itemsHtml = articles.length
     ? articles
         .map(
           (a) => `      <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
         )
         .join('\n')
-    : '      <li class="empty">오늘은 새로 조회된 부동산 뉴스가 없어요.</li>';
+    : '      <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
+
+  return `  <section id="${escapeHtml(id)}">
+    <h2>${escapeHtml(title)}</h2>
+    <ul>
+${itemsHtml}
+    </ul>
+  </section>`;
+}
+
+// 재부키 오픈채팅방 방장봇 공지에 걸어둘 고정 링크용 페이지.
+// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
+// 링크 하나는 고정해두고 그 안의 내용만 매일 아침 갱신하는 방식으로 우회한다.
+function renderDigestPage(sections, generatedAt) {
+  const sectionsHtml = sections.map((s) => renderSection(s.id, s.title, s.articles)).join('\n');
 
   return `<!doctype html>
 <html lang="ko">
@@ -165,7 +185,9 @@ function renderDigestPage(articles, generatedAt) {
   body { margin: 0; padding: 24px 16px 40px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f7f7f8; color: #1a1a1a; }
   main { max-width: 560px; margin: 0 auto; }
   h1 { font-size: 20px; margin: 0 0 4px; }
-  .updated { color: #666; font-size: 13px; margin: 0 0 20px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; }
+  section:first-of-type h2 { margin-top: 20px; }
+  .updated { color: #666; font-size: 13px; margin: 0 0 8px; }
   ul { list-style: none; margin: 0; padding: 0; }
   .article { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
@@ -182,23 +204,21 @@ function renderDigestPage(articles, generatedAt) {
 <main>
   <h1>🏠 오늘의 부동산 뉴스</h1>
   <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
-  <ul>
-${itemsHtml}
-  </ul>
+${sectionsHtml}
 </main>
 </body>
 </html>
 `;
 }
 
-function publishDigestPage(articles) {
+function publishDigestPage(sections) {
   const generatedAt = new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     dateStyle: 'long',
     timeStyle: 'short',
   });
   fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync('docs/index.html', renderDigestPage(articles, generatedAt));
+  fs.writeFileSync('docs/index.html', renderDigestPage(sections, generatedAt));
   console.log('docs/index.html 갱신 완료 (GitHub Pages로 공개되면 재부키 방 공지 링크로 사용 가능)');
 }
 
@@ -211,16 +231,37 @@ async function main() {
     writeOutput('new_refresh_token', tokenData.refresh_token);
   }
 
-  const articles = await fetchNews(ARTICLE_COUNT);
-  publishDigestPage(articles);
+  const articles = await fetchNews(NEWS_QUERY, ARTICLE_COUNT);
+  const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT);
+
+  publishDigestPage([
+    { id: 'general', title: '🏠 오늘의 부동산 뉴스', articles },
+    { id: 'geomdan', title: '🏙️ 인천 검단신도시 청약·거래 소식', articles: geomdanArticles },
+  ]);
+
+  const period = currentPeriodLabel();
 
   if (articles.length === 0) {
-    await sendKakaoText(accessToken, '🏠 오늘은 새로 조회된 부동산 뉴스가 없어요.', DIGEST_PAGE_URL);
+    await sendKakaoText(accessToken, `🏠 ${period}에는 새로 조회된 부동산 뉴스가 없어요.`, DIGEST_PAGE_URL);
     console.log('전송할 기사가 없어 안내 메시지만 보냈습니다.');
-    return;
+  } else {
+    await sendArticlesDigest(accessToken, `🏠 ${period} 부동산 뉴스`, articles, DIGEST_PAGE_URL);
   }
 
-  await sendArticlesDigest(accessToken, articles);
+  // 검단신도시 메시지는 오전 발송에만 포함한다 (오후에는 일반 부동산 뉴스만 보낸다).
+  // 다이제스트 페이지의 검단신도시 섹션은 그와 무관하게 매번 최신으로 갱신해둔다.
+  if (period !== '오전') {
+    console.log('오후 발송에서는 검단신도시 메시지를 보내지 않습니다.');
+  } else if (geomdanArticles.length > 0) {
+    await sendArticlesDigest(
+      accessToken,
+      `🏙️ ${period} 인천 검단신도시 청약·거래 소식`,
+      geomdanArticles,
+      `${DIGEST_PAGE_URL}#geomdan`
+    );
+  } else {
+    console.log('검단신도시 관련 소식이 없어 별도 메시지는 보내지 않았습니다.');
+  }
 }
 
 main().catch((err) => {

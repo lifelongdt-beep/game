@@ -2,8 +2,10 @@ name: Morning Real Estate News to KakaoTalk
 
 on:
   schedule:
-    # 매일 07:30 KST = 전날 22:30 UTC. 시간을 바꾸려면 이 값을 수정하세요.
-    - cron: '30 22 * * *'
+    # 매일 08:00 KST(오전) = 전날 23:00 UTC. 시간을 바꾸려면 이 값을 수정하세요.
+    - cron: '0 23 * * *'
+    # 매일 17:00 KST(오후) = 08:00 UTC.
+    - cron: '0 8 * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -30,6 +32,8 @@ jobs:
           ARTICLE_COUNT: '10'
           NEWS_QUERY: '부동산 when:1d'
           DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
+          GEOMDAN_ARTICLE_COUNT: '10'
+          GEOMDAN_QUERY: '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d'
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
