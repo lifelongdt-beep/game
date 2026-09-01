@@ -101,6 +101,15 @@ async function fetchWithRetry(url, maxAttempts = 5) {
   }
 }
 
+// 구글 뉴스 제목은 "헤드라인 - 언론사명" 형식이라, 같은 기사가 여러 매체에
+// 동시 게재되면 언론사명만 다른 제목으로 중복 노출된다. 마지막 " - "만 잘라내
+// 헤드라인만 비교해야 이런 경우를 같은 기사로 인식한다(헤드라인 자체에 " - "가
+// 있어도 언론사명은 항상 맨 끝에 붙으므로 마지막 구분자만 잘라내는 게 안전하다).
+function newsDedupKey(title) {
+  const idx = title.lastIndexOf(' - ');
+  return idx === -1 ? title : title.slice(0, idx);
+}
+
 // requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
 // 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
 async function fetchNews(query, limit, requireKeyword) {
@@ -121,9 +130,10 @@ async function fetchNews(query, limit, requireKeyword) {
 
     const title = decodeEntities(titleMatch[1].trim());
     const link = decodeEntities(linkMatch[1].trim());
-    if (seenTitles.has(title)) continue;
+    const dedupKey = newsDedupKey(title);
+    if (seenTitles.has(dedupKey)) continue;
     if (requireKeyword && !title.includes(requireKeyword)) continue;
-    seenTitles.add(title);
+    seenTitles.add(dedupKey);
 
     articles.push({ title, link });
     if (articles.length >= limit) break;
