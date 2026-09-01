@@ -9,6 +9,7 @@ const fs = require('fs');
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
 const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
+const THUMBNAIL_URL = process.env.THUMBNAIL_URL || 'https://lifelongdt-beep.github.io/game/assets/news-thumb.png';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -117,6 +118,9 @@ async function sendArticlesDigest(accessToken, articles) {
     header_link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL },
     contents: articles.slice(0, 3).map((a) => ({
       title: truncate(a.title, 50),
+      image_url: THUMBNAIL_URL,
+      image_width: 400,
+      image_height: 400,
       link: { web_url: a.link, mobile_web_url: a.link },
     })),
     buttons: [{ title: '전체 보기', link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL } }],
