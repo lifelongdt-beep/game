@@ -75,25 +75,32 @@ function decodeEntities(str) {
     .replace(/&amp;/g, '&');
 }
 
-// requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
-// 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// 구글 뉴스가 가끔 일시적으로 503 등을 반환해서, 그 한 번의 실패로 전체 발송이
-// 통째로 죽지 않도록 짧게 재시도한다.
-async function fetchNews(query, limit, requireKeyword) {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
-
-  let res;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    res = await fetch(url);
-    if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === 3) break;
+// 구글 뉴스/실거래가 API 둘 다 가끔 일시적으로 실패한다 — HTTP 상태코드로
+// 오기도 하고(503 등), fetch 자체가 예외를 던지며 죽기도 한다(네트워크 오류).
+// 그 한 번의 실패로 전체 발송이 통째로 죽지 않도록 짧게 재시도한다.
+async function fetchWithRetry(url, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === maxAttempts) return res;
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+    }
     await sleep(attempt * 1000);
   }
+}
+
+// requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
+// 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
+async function fetchNews(query, limit, requireKeyword) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+  const res = await fetchWithRetry(url);
   if (!res.ok) {
     throw new Error(`뉴스 조회 실패: ${res.status}`);
   }
@@ -143,7 +150,7 @@ async function fetchTransactionsForMonth(dealYmd) {
     'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev' +
     `?serviceKey=${DATA_GO_KR_SERVICE_KEY}&LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=1`;
 
-  const res = await fetch(url);
+  const res = await fetchWithRetry(url);
   const xml = await res.text();
 
   if (!res.ok || xml.includes('<cmmMsgHeader>')) {
