@@ -10,8 +10,13 @@ const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
 const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 
+// "검단신도시"/"검단구" 둘 중 하나를 포함하면서(2026-07-01 개편 이후 기사는
+// 점점 "검단구"로 부르게 될 것), 부동산 가격에 영향을 주는 폭넓은 주제
+// (거래·가격, 개발·교통 호재, 붕괴·하자 같은 악재까지)를 모두 잡아낸다.
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
-const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '"검단신도시" (청약 OR 분양 OR 실거래가) when:1d';
+const GEOMDAN_QUERY =
+  process.env.GEOMDAN_QUERY ||
+  '("검단신도시" OR "검단구") (청약 OR 분양 OR 실거래가 OR 시세 OR 매매 OR 전세 OR 입주 OR 미분양 OR 개발 OR 도시계획 OR 지구단위계획 OR 택지 OR 재개발 OR 교통 OR 철도 OR 지하철 OR GTX OR 도로 OR 학교 OR 상권 OR 인프라 OR 병원 OR 붕괴 OR 하자 OR 안전진단 OR 침수) when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
