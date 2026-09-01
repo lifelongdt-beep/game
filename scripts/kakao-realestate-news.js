@@ -122,7 +122,11 @@ function charBigrams(title) {
   return grams;
 }
 
-const HEADLINE_SIMILARITY_THRESHOLD = 0.6;
+// 0.45는 실제 검단구 기사로 확인한 값이다: 진짜 같은 사건(세 매체가 각자 다른
+// 문구로 보도한 "소규모 공장 화재예방·안전점검" 캠페인)은 겹침이 0.50 안팎이었고,
+// 서로 다른 사건인데 "검단구" 같은 짧고 흔한 표현만 겹치는 경우는 0.40을 넘지
+// 않았다 — 그 사이인 0.45를 기준으로 삼는다.
+const HEADLINE_SIMILARITY_THRESHOLD = 0.45;
 function isSimilarHeadline(gramsA, gramsB) {
   if (gramsA.size === 0 || gramsB.size === 0) return false;
   const [small, big] = gramsA.size <= gramsB.size ? [gramsA, gramsB] : [gramsB, gramsA];
@@ -142,8 +146,12 @@ async function fetchNews(query, limit, requireKeyword) {
   const xml = await res.text();
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
 
-  const articles = [];
-  const seenGrams = [];
+  // 같은 사건을 다루는 기사가 여러 건 모이면, 그중 헤드라인이 가장 긴(=가장
+  // 자세히 쓴) 기사만 대표로 남긴다. 클러스터를 판정하는 기준(grams)은 그
+  // 클러스터에 처음 들어온 기사로 고정해서, 나중에 대표 기사가 바뀌어도 판정
+  // 기준 자체는 흔들리지 않게 한다. 마지막에 대표만 골라야 하므로 `limit`에
+  // 도달해도 중간에 끊지 않고 전체 기사를 다 훑는다.
+  const clusters = [];
   for (const item of items) {
     const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
     const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
@@ -153,14 +161,18 @@ async function fetchNews(query, limit, requireKeyword) {
     const link = decodeEntities(linkMatch[1].trim());
     if (requireKeyword && !title.includes(requireKeyword)) continue;
 
-    const grams = charBigrams(newsDedupKey(title));
-    if (seenGrams.some((seen) => isSimilarHeadline(grams, seen))) continue;
-    seenGrams.push(grams);
-
-    articles.push({ title, link });
-    if (articles.length >= limit) break;
+    const dedupKey = newsDedupKey(title);
+    const grams = charBigrams(dedupKey);
+    const cluster = clusters.find((c) => isSimilarHeadline(grams, c.grams));
+    if (!cluster) {
+      clusters.push({ grams, title, link, detailLen: dedupKey.length });
+    } else if (dedupKey.length > cluster.detailLen) {
+      cluster.title = title;
+      cluster.link = link;
+      cluster.detailLen = dedupKey.length;
+    }
   }
-  return articles;
+  return clusters.slice(0, limit).map(({ title, link }) => ({ title, link }));
 }
 
 // 재시도까지 다 실패해도(예: 구글 뉴스 장애) 그 쪽 뉴스만 빈 목록으로 처리하고
