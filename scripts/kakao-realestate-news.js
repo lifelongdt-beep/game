@@ -23,14 +23,18 @@ const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-bee
 // 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 키가 아직 없으면
 // (발급 전이면) 이 섹션만 조용히 건너뛰고 나머지 뉴스 발송은 그대로 진행한다.
 //
-// LAWD_CD=28290은 검단구. 2026-07-01 인천시 행정구역 개편으로 검단신도시 일대
-// (오류동/왕길동/금곡동/마전동/당하동/원당동/불로동/대곡동/백석동/시천동 등)가
-// 기존 서구에서 분리된 별도 자치구가 됐다. 예전 서구 코드(28260)는 더 이상 이
-// 지역 실거래를 포함하지 않아 계속 0건으로 조회됐다 — 실제 API 응답을 여러
-// 후보 코드로 스캔해서 확인한 값이다. 이제 검단구 코드로 직접 조회하므로,
-// 이전처럼 반환된 동 이름을 걸러낼 필요가 없다(반환되는 모든 거래가 검단구 소속).
+// LAWD_CD=28290은 검단구. 2026-07-01 인천시 행정구역 개편으로 서구에서 분리된
+// 별도 자치구다(예전 서구 코드 28260은 더 이상 이 지역 실거래를 포함하지 않는다
+// — 실제 API 응답을 여러 후보 코드로 스캔해서 확인한 값이다). 다만 검단구
+// 관할 전체(오류동/왕길동/금곡동/마전동/당하동/원당동/불로동/대곡동/백석동/
+// 시천동)가 "검단신도시"는 아니다 — 신도시로 개발된 지역은 그중 당하동/마전동/
+// 불로동/원당동뿐이라, 검단구 조회 결과를 GEOMDAN_DONGS로 한 번 더 좁힌다.
 const DATA_GO_KR_SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 const LAWD_CD = process.env.LAWD_CD || '28290'; // 인천광역시 검단구
+const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로동,원당동')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 10);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
@@ -179,7 +183,8 @@ async function fetchTransactionsForMonth(dealYmd) {
 }
 
 // 이번 달 + 지난달을 함께 조회한다(신고 기한 때문에 이번 달 초에는 자료가 거의 없다).
-// LAWD_CD가 검단구를 직접 가리키므로 반환되는 거래는 전부 검단구 소속이다.
+// LAWD_CD가 검단구 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만
+// 한 번 더 걸러낸다.
 async function fetchGeomdanTransactions() {
   if (!DATA_GO_KR_SERVICE_KEY) {
     console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
@@ -201,9 +206,10 @@ async function fetchGeomdanTransactions() {
     }
   }
 
-  console.log(`실거래가: 검단구 ${all.length}건 조회`);
-  all.sort((a, b) => `${b.year}${b.month}${b.day}`.localeCompare(`${a.year}${a.month}${a.day}`));
-  return all.slice(0, GEOMDAN_TRANSACTION_COUNT);
+  const newTownOnly = all.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
+  console.log(`실거래가: 검단구 ${all.length}건 중 검단신도시(${GEOMDAN_DONGS.join('/')}) ${newTownOnly.length}건`);
+  newTownOnly.sort((a, b) => `${b.year}${b.month}${b.day}`.localeCompare(`${a.year}${a.month}${a.day}`));
+  return newTownOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
 }
 
 function formatAmount(manwonStr) {
