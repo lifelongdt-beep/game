@@ -8,6 +8,7 @@ const fs = require('fs');
 
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
 const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
+const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -78,14 +79,7 @@ async function fetchNews(limit) {
   return articles;
 }
 
-async function sendKakaoText(accessToken, text, link) {
-  const templateObject = {
-    object_type: 'text',
-    text,
-    link: { web_url: link, mobile_web_url: link },
-    button_title: '기사 보기',
-  };
-
+async function sendKakaoTemplate(accessToken, templateObject) {
   const res = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
     method: 'POST',
     headers: {
@@ -97,6 +91,48 @@ async function sendKakaoText(accessToken, text, link) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(`카카오톡 전송 실패: ${res.status} ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
+async function sendKakaoText(accessToken, text, link) {
+  return sendKakaoTemplate(accessToken, {
+    object_type: 'text',
+    text,
+    link: { web_url: link, mobile_web_url: link },
+    button_title: '기사 보기',
+  });
+}
+
+function truncate(str, max) {
+  return str.length > max ? `${str.slice(0, max - 1)}…` : str;
+}
+
+// 기사 여러 개를 카카오톡 메시지 한 통에 담아 보낸다 (제목 + 링크가 각각 붙어있는 list 템플릿).
+// list 템플릿 전송이 실패하면(예: 카카오 쪽 스펙 변경) 기존처럼 기사별로 나눠서 보낸다.
+async function sendArticlesDigest(accessToken, articles) {
+  const listTemplate = {
+    object_type: 'list',
+    header_title: '🏠 오늘의 부동산 뉴스',
+    header_link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL },
+    contents: articles.slice(0, 3).map((a) => ({
+      title: truncate(a.title, 50),
+      link: { web_url: a.link, mobile_web_url: a.link },
+    })),
+    buttons: [{ title: '전체 보기', link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL } }],
+  };
+
+  try {
+    await sendKakaoTemplate(accessToken, listTemplate);
+    console.log('기사 목록을 메시지 한 통으로 전송했습니다.');
+    return;
+  } catch (err) {
+    console.warn(`list 형식 전송 실패, 기사별 메시지로 대신 보냅니다: ${err.message}`);
+  }
+
+  for (const article of articles) {
+    await sendKakaoText(accessToken, `🏠 부동산 뉴스\n${article.title}`, article.link);
+    console.log(`전송 완료: ${article.title}`);
   }
 }
 
@@ -187,19 +223,12 @@ async function main() {
   publishDigestPage(articles);
 
   if (articles.length === 0) {
-    await sendKakaoText(
-      accessToken,
-      '🏠 오늘은 새로 조회된 부동산 뉴스가 없어요.',
-      `https://news.google.com/search?q=${encodeURIComponent('부동산')}&hl=ko&gl=KR&ceid=KR:ko`
-    );
+    await sendKakaoText(accessToken, '🏠 오늘은 새로 조회된 부동산 뉴스가 없어요.', DIGEST_PAGE_URL);
     console.log('전송할 기사가 없어 안내 메시지만 보냈습니다.');
     return;
   }
 
-  for (const article of articles) {
-    await sendKakaoText(accessToken, `🏠 부동산 뉴스\n${article.title}`, article.link);
-    console.log(`전송 완료: ${article.title}`);
-  }
+  await sendArticlesDigest(accessToken, articles);
 }
 
 main().catch((err) => {

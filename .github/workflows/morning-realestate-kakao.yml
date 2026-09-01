@@ -29,6 +29,7 @@ jobs:
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           ARTICLE_COUNT: '5'
           NEWS_QUERY: '부동산 when:1d'
+          DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
