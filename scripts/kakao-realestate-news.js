@@ -87,8 +87,9 @@ function sleep(ms) {
 
 // 구글 뉴스/실거래가 API 둘 다 가끔 일시적으로 실패한다 — HTTP 상태코드로
 // 오기도 하고(503 등), fetch 자체가 예외를 던지며 죽기도 한다(네트워크 오류).
-// 그 한 번의 실패로 전체 발송이 통째로 죽지 않도록 짧게 재시도한다.
-async function fetchWithRetry(url, maxAttempts = 3) {
+// 특히 실거래가 API(apis.data.go.kr)는 한 번 불안정해지면 시도당 10초 안팎이
+// 걸리며 여러 번 연속 실패하는 걸 실제로 관측해서, 재시도 횟수를 5번으로 늘렸다.
+async function fetchWithRetry(url, maxAttempts = 5) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetch(url);
