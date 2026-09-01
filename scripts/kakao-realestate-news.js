@@ -110,6 +110,27 @@ function newsDedupKey(title) {
   return idx === -1 ? title : title.slice(0, idx);
 }
 
+// 매체마다 같은 사건을 문구·띄어쓰기만 바꿔 보도하는 경우가 많다(예: "검단구,
+// 소규모 공장 밀집지역 찾아 화재 예방…" vs "인천 검단구, 소규모 공장밀집지역
+// 화재예방…"). 완전히 같은 문자열이 아니어도 겹치는 기사로 봐야 하므로, 공백과
+// 인용부호를 지운 뒤 2글자 단위로 쪼갠 부분 문자열(문자 bigram) 집합의 겹치는
+// 비율을 본다 — 단어 단위 비교와 달리 언론사마다 다른 띄어쓰기에 영향을 받지 않는다.
+function charBigrams(title) {
+  const s = title.replace(/[\s'"‘’“”]/g, '');
+  const grams = new Set();
+  for (let i = 0; i < s.length - 1; i++) grams.add(s.slice(i, i + 2));
+  return grams;
+}
+
+const HEADLINE_SIMILARITY_THRESHOLD = 0.6;
+function isSimilarHeadline(gramsA, gramsB) {
+  if (gramsA.size === 0 || gramsB.size === 0) return false;
+  const [small, big] = gramsA.size <= gramsB.size ? [gramsA, gramsB] : [gramsB, gramsA];
+  let overlap = 0;
+  for (const gram of small) if (big.has(gram)) overlap++;
+  return overlap / small.size >= HEADLINE_SIMILARITY_THRESHOLD;
+}
+
 // requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
 // 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
 async function fetchNews(query, limit, requireKeyword) {
@@ -122,7 +143,7 @@ async function fetchNews(query, limit, requireKeyword) {
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
 
   const articles = [];
-  const seenTitles = new Set();
+  const seenGrams = [];
   for (const item of items) {
     const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
     const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
@@ -130,10 +151,11 @@ async function fetchNews(query, limit, requireKeyword) {
 
     const title = decodeEntities(titleMatch[1].trim());
     const link = decodeEntities(linkMatch[1].trim());
-    const dedupKey = newsDedupKey(title);
-    if (seenTitles.has(dedupKey)) continue;
     if (requireKeyword && !title.includes(requireKeyword)) continue;
-    seenTitles.add(dedupKey);
+
+    const grams = charBigrams(newsDedupKey(title));
+    if (seenGrams.some((seen) => isSimilarHeadline(grams, seen))) continue;
+    seenGrams.push(grams);
 
     articles.push({ title, link });
     if (articles.length >= limit) break;
