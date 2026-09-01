@@ -77,9 +77,23 @@ function decodeEntities(str) {
 
 // requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
 // 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 구글 뉴스가 가끔 일시적으로 503 등을 반환해서, 그 한 번의 실패로 전체 발송이
+// 통째로 죽지 않도록 짧게 재시도한다.
 async function fetchNews(query, limit, requireKeyword) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
-  const res = await fetch(url);
+
+  let res;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    res = await fetch(url);
+    if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === 3) break;
+    await sleep(attempt * 1000);
+  }
   if (!res.ok) {
     throw new Error(`뉴스 조회 실패: ${res.status}`);
   }
@@ -103,6 +117,17 @@ async function fetchNews(query, limit, requireKeyword) {
     if (articles.length >= limit) break;
   }
   return articles;
+}
+
+// 재시도까지 다 실패해도(예: 구글 뉴스 장애) 그 쪽 뉴스만 빈 목록으로 처리하고
+// 카카오톡 발송·페이지 갱신 등 나머지 파이프라인은 그대로 진행한다.
+async function fetchNewsSafe(query, limit, requireKeyword) {
+  try {
+    return await fetchNews(query, limit, requireKeyword);
+  } catch (err) {
+    console.error(err.message);
+    return [];
+  }
 }
 
 function xmlTag(xml, tag) {
@@ -395,8 +420,8 @@ async function main() {
     writeOutput('new_refresh_token', tokenData.refresh_token);
   }
 
-  const articles = await fetchNews(NEWS_QUERY, ARTICLE_COUNT);
-  const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT, GEOMDAN_KEYWORD);
+  const articles = await fetchNewsSafe(NEWS_QUERY, ARTICLE_COUNT);
+  const geomdanArticles = await fetchNewsSafe(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT, GEOMDAN_KEYWORD);
   const geomdanTransactions = await fetchGeomdanTransactions();
 
   publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
