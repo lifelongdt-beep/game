@@ -443,11 +443,8 @@ async function main() {
     await sendArticlesDigest(accessToken, `🏠 ${period} 부동산 뉴스`, articles, DIGEST_PAGE_URL);
   }
 
-  // 검단신도시 메시지는 오전 발송에만 포함한다 (오후에는 일반 부동산 뉴스만 보낸다).
-  // 검단신도시 페이지 자체는 그와 무관하게 매번 최신으로 갱신해둔다.
-  if (period !== '오전') {
-    console.log('오후 발송에서는 검단신도시 메시지를 보내지 않습니다.');
-  } else if (geomdanArticles.length > 0) {
+  // 검단신도시 메시지도 일반 부동산 뉴스와 동일하게 오전/오후 발송 모두 보낸다.
+  if (geomdanArticles.length > 0) {
     await sendArticlesDigest(
       accessToken,
       `🏙️ ${period} 인천 검단신도시 청약·거래 소식`,
