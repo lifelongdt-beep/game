@@ -12,6 +12,7 @@ const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.
 
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
 const GEOMDAN_QUERY = process.env.GEOMDAN_QUERY || '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d';
+const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -151,43 +152,32 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function renderSection(id, title, articles) {
+// 일반 부동산 뉴스와 검단신도시 소식은 서로 다른 메시지/독립된 화제라, 페이지도 완전히
+// 분리한다(공유 섹션 없이 각자 자기 내용만 담은 별도 HTML 파일).
+// 재부키 오픈채팅방 방장봇 공지에는 이 중 일반 뉴스 페이지 링크를 걸어둔다.
+// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
+// 링크는 고정해두고 그 안의 내용만 매일 갱신하는 방식으로 우회한다.
+function renderPage(title, articles, generatedAt) {
   const itemsHtml = articles.length
     ? articles
         .map(
-          (a) => `      <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
+          (a) => `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
         )
         .join('\n')
-    : '      <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
-
-  return `  <section id="${escapeHtml(id)}">
-    <h2>${escapeHtml(title)}</h2>
-    <ul>
-${itemsHtml}
-    </ul>
-  </section>`;
-}
-
-// 재부키 오픈채팅방 방장봇 공지에 걸어둘 고정 링크용 페이지.
-// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
-// 링크 하나는 고정해두고 그 안의 내용만 매일 아침 갱신하는 방식으로 우회한다.
-function renderDigestPage(sections, generatedAt) {
-  const sectionsHtml = sections.map((s) => renderSection(s.id, s.title, s.articles)).join('\n');
+    : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
 
   return `<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>오늘의 부동산 뉴스</title>
+<title>${escapeHtml(title)}</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin: 0; padding: 24px 16px 40px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: #f7f7f8; color: #1a1a1a; }
   main { max-width: 560px; margin: 0 auto; }
   h1 { font-size: 20px; margin: 0 0 4px; }
-  h2 { font-size: 16px; margin: 28px 0 10px; }
-  section:first-of-type h2 { margin-top: 20px; }
-  .updated { color: #666; font-size: 13px; margin: 0 0 8px; }
+  .updated { color: #666; font-size: 13px; margin: 0 0 20px; }
   ul { list-style: none; margin: 0; padding: 0; }
   .article { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
@@ -202,24 +192,26 @@ function renderDigestPage(sections, generatedAt) {
 </head>
 <body>
 <main>
-  <h1>🏠 오늘의 부동산 뉴스</h1>
+  <h1>${escapeHtml(title)}</h1>
   <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
-${sectionsHtml}
+  <ul>
+${itemsHtml}
+  </ul>
 </main>
 </body>
 </html>
 `;
 }
 
-function publishDigestPage(sections) {
+function publishPage(filename, title, articles) {
   const generatedAt = new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     dateStyle: 'long',
     timeStyle: 'short',
   });
   fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync('docs/index.html', renderDigestPage(sections, generatedAt));
-  console.log('docs/index.html 갱신 완료 (GitHub Pages로 공개되면 재부키 방 공지 링크로 사용 가능)');
+  fs.writeFileSync(`docs/${filename}`, renderPage(title, articles, generatedAt));
+  console.log(`docs/${filename} 갱신 완료`);
 }
 
 async function main() {
@@ -234,10 +226,8 @@ async function main() {
   const articles = await fetchNews(NEWS_QUERY, ARTICLE_COUNT);
   const geomdanArticles = await fetchNews(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT);
 
-  publishDigestPage([
-    { id: 'general', title: '🏠 오늘의 부동산 뉴스', articles },
-    { id: 'geomdan', title: '🏙️ 인천 검단신도시 청약·거래 소식', articles: geomdanArticles },
-  ]);
+  publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
+  publishPage('geomdan.html', '🏙️ 인천 검단신도시 청약·거래 소식', geomdanArticles);
 
   const period = currentPeriodLabel();
 
@@ -249,7 +239,7 @@ async function main() {
   }
 
   // 검단신도시 메시지는 오전 발송에만 포함한다 (오후에는 일반 부동산 뉴스만 보낸다).
-  // 다이제스트 페이지의 검단신도시 섹션은 그와 무관하게 매번 최신으로 갱신해둔다.
+  // 검단신도시 페이지 자체는 그와 무관하게 매번 최신으로 갱신해둔다.
   if (period !== '오전') {
     console.log('오후 발송에서는 검단신도시 메시지를 보내지 않습니다.');
   } else if (geomdanArticles.length > 0) {
@@ -257,7 +247,7 @@ async function main() {
       accessToken,
       `🏙️ ${period} 인천 검단신도시 청약·거래 소식`,
       geomdanArticles,
-      `${DIGEST_PAGE_URL}#geomdan`
+      GEOMDAN_PAGE_URL
     );
   } else {
     console.log('검단신도시 관련 소식이 없어 별도 메시지는 보내지 않았습니다.');

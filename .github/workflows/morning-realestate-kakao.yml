@@ -34,16 +34,18 @@ jobs:
           DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
           GEOMDAN_ARTICLE_COUNT: '10'
           GEOMDAN_QUERY: '인천 검단신도시 (청약 OR 분양 OR 실거래가) when:1d'
+          GEOMDAN_PAGE_URL: 'https://lifelongdt-beep.github.io/game/geomdan.html'
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
-      # docs/index.html(고정 링크)을 방장봇 공지로 걸어두고 내용만 매일 갱신하는
-      # 방식으로 대신합니다. 자세한 내용은 docs/kakao-realestate-news-setup.md 참고.
-      - name: Publish today's digest page
+      # docs/index.html(고정 링크, 일반 부동산 뉴스)을 방장봇 공지로 걸어두고 내용만
+      # 매일 갱신하는 방식으로 대신합니다. docs/geomdan.html은 검단신도시 전용 페이지로,
+      # 서로 완전히 분리되어 있습니다. 자세한 내용은 docs/kakao-realestate-news-setup.md 참고.
+      - name: Publish today's digest pages
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/index.html
+          git add docs/index.html docs/geomdan.html
           if git diff --cached --quiet; then
             echo "변경 사항 없음, 커밋 생략"
           else
