@@ -117,8 +117,10 @@ async function fetchTransactionsForMonth(dealYmd) {
     const errMsg = xmlTag(xml, 'returnAuthMsg') || xmlTag(xml, 'errMsg') || `HTTP ${res.status}`;
     throw new Error(`실거래가 API 오류(${dealYmd}): ${errMsg}`);
   }
+  // 이 API는 성공 시 resultCode를 '00'이 아니라 '000'으로 내려준다(데이터포털
+  // 공통 규격과 다른, 이 데이터셋 특유의 표기). 실제 응답으로 확인된 값이라 둘 다 허용한다.
   const resultCode = xmlTag(xml, 'resultCode');
-  if (resultCode && resultCode !== '00') {
+  if (resultCode && !['00', '000'].includes(resultCode)) {
     throw new Error(`실거래가 API 오류(${dealYmd}, ${resultCode}): ${xmlTag(xml, 'resultMsg')}`);
   }
 
