@@ -9,7 +9,6 @@ const fs = require('fs');
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
 const NEWS_QUERY = process.env.NEWS_QUERY || '부동산 when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
-const THUMBNAIL_URL = process.env.THUMBNAIL_URL || 'https://lifelongdt-beep.github.io/game/assets/news-thumb.png';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -109,35 +108,24 @@ function truncate(str, max) {
   return str.length > max ? `${str.slice(0, max - 1)}…` : str;
 }
 
-// 기사 여러 개를 카카오톡 메시지 한 통에 담아 보낸다 (제목 + 링크가 각각 붙어있는 list 템플릿).
-// list 템플릿 전송이 실패하면(예: 카카오 쪽 스펙 변경) 기존처럼 기사별로 나눠서 보낸다.
+// 카카오 '나에게 보내기'는 text 타입(제목 + 링크 1개)만 안정적으로 클릭이 된다.
+// list 타입은 이미지가 있어도 눌리지 않는 평면 카드로만 뜨는 걸 실제 테스트로 확인해서
+// 기사 제목을 전부 한 메시지 본문에 나열하고, 링크는 전체 기사가 있는 다이제스트
+// 페이지 하나로 보내는 방식으로 대신한다. (페이지 안 링크는 각각 정상 클릭됨)
 async function sendArticlesDigest(accessToken, articles) {
-  const listTemplate = {
-    object_type: 'list',
-    header_title: '🏠 오늘의 부동산 뉴스',
-    header_link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL },
-    contents: articles.slice(0, 3).map((a) => ({
-      title: truncate(a.title, 50),
-      image_url: THUMBNAIL_URL,
-      image_width: 400,
-      image_height: 400,
-      link: { web_url: a.link, mobile_web_url: a.link },
-    })),
-    buttons: [{ title: '전체 보기', link: { web_url: DIGEST_PAGE_URL, mobile_web_url: DIGEST_PAGE_URL } }],
-  };
-
-  try {
-    await sendKakaoTemplate(accessToken, listTemplate);
-    console.log('기사 목록을 메시지 한 통으로 전송했습니다.');
-    return;
-  } catch (err) {
-    console.warn(`list 형식 전송 실패, 기사별 메시지로 대신 보냅니다: ${err.message}`);
-  }
-
+  const header = '🏠 오늘의 부동산 뉴스';
+  const maxTotalLen = 180; // 카카오 text 타입 안전 길이
+  const lines = [header];
+  let used = header.length;
   for (const article of articles) {
-    await sendKakaoText(accessToken, `🏠 부동산 뉴스\n${article.title}`, article.link);
-    console.log(`전송 완료: ${article.title}`);
+    const line = truncate(`• ${article.title}`, 42);
+    if (used + line.length + 1 > maxTotalLen) break;
+    lines.push(line);
+    used += line.length + 1;
   }
+
+  await sendKakaoText(accessToken, lines.join('\n'), DIGEST_PAGE_URL);
+  console.log(`기사 ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
 }
 
 function writeOutput(name, value) {
