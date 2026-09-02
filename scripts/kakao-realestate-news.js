@@ -14,14 +14,26 @@ const NEWS_QUERY =
   '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급") when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 
-// "검단신도시"/"검단구" 둘 중 하나를 포함하면서(2026-07-01 개편 이후 기사는
-// 점점 "검단구"로 부르게 될 것), 부동산 가격에 영향을 주는 폭넓은 주제
-// (거래·가격, 개발·교통 호재, 붕괴·하자 같은 악재까지)를 모두 잡아낸다.
+// 검단신도시 뉴스는 두 갈래로 찾는다.
+// ① GEOMDAN_QUERY: "검단신도시"/"인천 검단"/"서구 검단"과 반드시 함께 언급된
+//    기사만 — 교통/분양·청약/시세·거래/생활 인프라/정책·금융 각 분야의 구체적인
+//    키워드로 좁힌다. 본문이 아니라 제목 기준으로만 GEOMDAN_KEYWORD를 한 번 더
+//    검사한다(이 스크립트는 기사 본문을 읽지 않고 구글 뉴스 제목/링크만 다룬다).
+// ② GEOMDAN_NEARBY_QUERY: "검단" 언급이 없어도, 생활권·교통망을 공유해 검단신도시에
+//    영향을 줄 만한 인접 지역(3기 신도시·인접 택지지구 등) 개발 이슈는 별도로 찾는다.
+//    ①에는 안 걸리고 ②에서만 걸린 기사는 "인접 지역 호재" 딱지만 붙이고, 실제
+//    영향 내용은 요약하지 않는다(본문 접근·요약 기능이 없어 딱지만 붙이기로
+//    사용자와 합의함).
+// fetchGeomdanArticles가 두 결과를 합쳐 유사 헤드라인은 하나로 묶고, 발행 시각
+// 최신순으로 정리한다.
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
 const GEOMDAN_QUERY =
   process.env.GEOMDAN_QUERY ||
-  '("검단신도시" OR "검단구") (청약 OR 분양 OR 실거래가 OR 시세 OR 매매 OR 전세 OR 입주 OR 미분양 OR 개발 OR 도시계획 OR 지구단위계획 OR 택지 OR 재개발 OR 교통 OR 철도 OR 지하철 OR GTX OR 도로 OR 학교 OR 상권 OR 인프라 OR 병원 OR 붕괴 OR 하자 OR 안전진단 OR 침수) when:1d';
+  '(검단신도시 OR "인천 검단" OR "서구 검단") ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
+const GEOMDAN_NEARBY_QUERY =
+  process.env.GEOMDAN_NEARBY_QUERY ||
+  '(계양신도시 OR "계산지구 도시개발사업" OR "김포 콤팩트시티" OR 청라국제도시 OR 루원시티 OR "왕길1구역 재개발" OR "검단3·5구역 재개발" OR 에코메타시티 OR "한들3구역" OR "인천국제공항고속도로 검단IC 개통" OR "서부권 광역급행철도" OR GTX-D OR "수도권 제2순환고속도로" OR "인천2호선 고양지선" OR 대장신도시 OR 마곡신도시) when:1d';
 const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
 // 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 키가 아직 없으면
@@ -140,23 +152,14 @@ function isSimilarHeadline(gramsA, gramsB) {
   return overlap / small.size >= HEADLINE_SIMILARITY_THRESHOLD;
 }
 
-// requireKeyword를 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예
-// 없는) 무관한 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
-async function fetchNews(query, limit, requireKeyword) {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
-  const res = await fetchWithRetry(url);
-  if (!res.ok) {
-    throw new Error(`뉴스 조회 실패: ${res.status}`);
-  }
-  const xml = await res.text();
+// RSS XML을 기사 후보 목록(제목/링크/발행시각)으로 만든다. 아직 중복 제거는 하지
+// 않는다 — 검단신도시 뉴스는 검색을 두 번(①직접/②인접 지역) 해서 합친 뒤 한
+// 번에 중복을 걸러야 하므로, 파싱과 중복 제거 단계를 분리해뒀다. requireKeyword를
+// 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예 없는) 무관한
+// 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
+function parseNewsItems(xml, requireKeyword) {
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
-
-  // 같은 사건을 다루는 기사가 여러 건 모이면, 그중 헤드라인이 가장 긴(=가장
-  // 자세히 쓴) 기사만 대표로 남긴다. 클러스터를 판정하는 기준(grams)은 그
-  // 클러스터에 처음 들어온 기사로 고정해서, 나중에 대표 기사가 바뀌어도 판정
-  // 기준 자체는 흔들리지 않게 한다. 마지막에 대표만 골라야 하므로 `limit`에
-  // 도달해도 중간에 끊지 않고 전체 기사를 다 훑는다.
-  const clusters = [];
+  const candidates = [];
   for (const item of items) {
     const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
     const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
@@ -166,18 +169,60 @@ async function fetchNews(query, limit, requireKeyword) {
     const link = decodeEntities(linkMatch[1].trim());
     if (requireKeyword && !title.includes(requireKeyword)) continue;
 
-    const dedupKey = newsDedupKey(title);
+    const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+    const pubDate = pubDateMatch ? new Date(pubDateMatch[1].trim()) : null;
+
+    candidates.push({ title, link, pubDate });
+  }
+  return candidates;
+}
+
+async function fetchNewsCandidates(query, requireKeyword) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+  const res = await fetchWithRetry(url);
+  if (!res.ok) {
+    throw new Error(`뉴스 조회 실패: ${res.status}`);
+  }
+  const xml = await res.text();
+  return parseNewsItems(xml, requireKeyword);
+}
+
+// 같은 사건을 다루는 후보가 여러 건 모이면, 그중 헤드라인이 가장 긴(=가장 자세히
+// 쓴) 기사만 대표로 남긴다. 클러스터를 판정하는 기준(grams)은 그 클러스터에 처음
+// 들어온 후보로 고정해서, 나중에 대표가 바뀌어도 판정 기준 자체는 흔들리지 않게
+// 한다. candidate.nearby가 true인 후보만으로 이뤄진 클러스터는 결과에도
+// nearby:true로 남긴다(검단이 직접 언급된 후보가 하나라도 섞이면 더 이상
+// "인접 지역"만의 소식이 아니므로 딱지를 떼어낸다). sortByDate를 주면 각
+// 클러스터 대표 기사의 발행 시각 최신순으로 정리하고, 아니면 구글 뉴스가 이미
+// 준 순서(관련도/최신순)를 그대로 쓴다. 마지막에 대표만 골라야 하므로 `limit`에
+// 도달해도 중간에 끊지 않고 후보를 전부 훑는다.
+function clusterArticles(candidates, limit, { sortByDate = false } = {}) {
+  const clusters = [];
+  for (const candidate of candidates) {
+    const dedupKey = newsDedupKey(candidate.title);
     const grams = charBigrams(dedupKey);
     const cluster = clusters.find((c) => isSimilarHeadline(grams, c.grams));
     if (!cluster) {
-      clusters.push({ grams, title, link, detailLen: dedupKey.length });
-    } else if (dedupKey.length > cluster.detailLen) {
-      cluster.title = title;
-      cluster.link = link;
-      cluster.detailLen = dedupKey.length;
+      clusters.push({ grams, article: candidate, detailLen: dedupKey.length, anyDirect: !candidate.nearby });
+    } else {
+      if (!candidate.nearby) cluster.anyDirect = true;
+      if (dedupKey.length > cluster.detailLen) {
+        cluster.article = candidate;
+        cluster.detailLen = dedupKey.length;
+      }
     }
   }
-  return clusters.slice(0, limit).map(({ title, link }) => ({ title, link }));
+
+  let result = clusters.map((c) => ({ title: c.article.title, link: c.article.link, pubDate: c.article.pubDate, nearby: !c.anyDirect }));
+  if (sortByDate) {
+    result.sort((a, b) => (b.pubDate?.getTime() || 0) - (a.pubDate?.getTime() || 0));
+  }
+  return result.slice(0, limit).map(({ title, link, nearby }) => (nearby ? { title, link, nearby } : { title, link }));
+}
+
+async function fetchNews(query, limit, requireKeyword) {
+  const candidates = await fetchNewsCandidates(query, requireKeyword);
+  return clusterArticles(candidates, limit);
 }
 
 // 재시도까지 다 실패해도(예: 구글 뉴스 장애) 그 쪽 뉴스만 빈 목록으로 처리하고
@@ -189,6 +234,28 @@ async function fetchNewsSafe(query, limit, requireKeyword) {
     console.error(err.message);
     return [];
   }
+}
+
+// 검단신도시 뉴스는 ①직접 언급(GEOMDAN_QUERY, GEOMDAN_KEYWORD로 제목 재검증)과
+// ②인접 지역 호재(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
+// 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
+// 독립적으로 실패를 처리한다.
+async function fetchGeomdanArticles(limit) {
+  const [directCandidates, nearbyCandidates] = await Promise.all([
+    fetchNewsCandidates(GEOMDAN_QUERY, GEOMDAN_KEYWORD).catch((err) => {
+      console.error(`검단신도시 뉴스(직접) 조회 실패: ${err.message}`);
+      return [];
+    }),
+    fetchNewsCandidates(GEOMDAN_NEARBY_QUERY, null).then(
+      (candidates) => candidates.map((c) => ({ ...c, nearby: true })),
+      (err) => {
+        console.error(`검단신도시 뉴스(인접 지역) 조회 실패: ${err.message}`);
+        return [];
+      }
+    ),
+  ]);
+
+  return clusterArticles([...directCandidates, ...nearbyCandidates], limit, { sortByDate: true });
 }
 
 function xmlTag(xml, tag) {
@@ -326,7 +393,8 @@ async function sendArticlesDigest(accessToken, header, articles, link) {
   const lines = [header];
   let used = header.length;
   for (const article of articles) {
-    const line = truncate(`${lines.length}. ${article.title}`, 42);
+    const prefix = article.nearby ? '🔗 ' : '';
+    const line = truncate(`${lines.length}. ${prefix}${article.title}`, 42);
     if (used + line.length + 1 > maxTotalLen) break;
     lines.push(line);
     used += line.length + 1;
@@ -358,9 +426,10 @@ function escapeHtml(str) {
 function renderArticlesHtml(articles) {
   return articles.length
     ? articles
-        .map(
-          (a) => `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></li>`
-        )
+        .map((a) => {
+          const badge = a.nearby ? '<span class="tag-nearby">🔗 인접 지역 호재</span>' : '';
+          return `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
+        })
         .join('\n')
     : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
 }
@@ -397,12 +466,14 @@ const PAGE_STYLE = `
   .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
   .empty { color: #666; padding: 14px 0; }
   .source { color: #999; font-size: 12px; margin-top: 4px; }
+  .tag-nearby { display: inline-block; font-size: 11px; font-weight: 700; color: #3b6fd6; background: rgba(59,111,214,.12); border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
   @media (prefers-color-scheme: dark) {
     body { background: #17181a; color: #eee; }
     .article, .txn { background: #232427; box-shadow: none; }
     .article a { color: #eee; }
     .updated, .txn-dong, .txn-meta, .source { color: #999; }
     .txn-amount { color: #ff8a5c; }
+    .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }
   }
 `;
 
@@ -494,7 +565,7 @@ async function main() {
   }
 
   const articles = await fetchNewsSafe(NEWS_QUERY, ARTICLE_COUNT);
-  const geomdanArticles = await fetchNewsSafe(GEOMDAN_QUERY, GEOMDAN_ARTICLE_COUNT, GEOMDAN_KEYWORD);
+  const geomdanArticles = await fetchGeomdanArticles(GEOMDAN_ARTICLE_COUNT);
   const geomdanTransactions = await fetchGeomdanTransactions();
 
   publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
