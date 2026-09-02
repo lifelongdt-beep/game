@@ -34,6 +34,18 @@ const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_NEARBY_QUERY =
   process.env.GEOMDAN_NEARBY_QUERY ||
   '(계양신도시 OR "계산지구 도시개발사업" OR "김포 콤팩트시티" OR 청라국제도시 OR 루원시티 OR "왕길1구역 재개발" OR "검단3·5구역 재개발" OR 에코메타시티 OR "한들3구역" OR "인천국제공항고속도로 검단IC 개통" OR "서부권 광역급행철도" OR GTX-D OR "수도권 제2순환고속도로" OR "인천2호선 고양지선" OR 대장신도시 OR 마곡신도시) when:1d';
+// GEOMDAN_NEARBY_QUERY는 "검단" 언급이 없어도 매칭되므로, 구글의 느슨한 OR
+// 매칭에만 기대면 무관한 기사가 섞인다(위 titleMatchesKeyword 설명 참고). 검색
+// 뒤 제목이 이 목록 중 하나라도 실제로 포함하는지 다시 검증한다 — 쿼리보다 짧은
+// 핵심 단어를 쓴 항목도 있다(예: 전체 문구 대신 "검단IC"만), 매체마다 문구가
+// 조금씩 달라도 걸리게 하려는 의도다. GEOMDAN_NEARBY_QUERY를 커스터마이즈하면
+// 이 목록도 함께 맞춰야 한다.
+const GEOMDAN_NEARBY_TERMS = [
+  '계양신도시', '계산지구', '김포 콤팩트시티', '청라국제도시', '루원시티',
+  '왕길1구역', '검단3·5구역', '에코메타시티', '한들3구역', '검단IC',
+  '서부권 광역급행철도', 'GTX-D', '수도권 제2순환고속도로', '인천2호선 고양지선',
+  '대장신도시', '마곡신도시',
+];
 const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
 // 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 키가 아직 없으면
@@ -152,11 +164,21 @@ function isSimilarHeadline(gramsA, gramsB) {
   return overlap / small.size >= HEADLINE_SIMILARITY_THRESHOLD;
 }
 
+// 구글 뉴스는 OR로 묶은 키워드를 정확히 일치가 아니라 느슨하게(의미 기반)
+// 매칭한다 — 예를 들어 GEOMDAN_NEARBY_QUERY에 "인천국제공항고속도로 검단IC
+// 개통"을 넣었더니 라코스테 인천공항 매장 오픈, 유류할증료 인상처럼 전혀 무관한
+// "인천국제공항" 관련 기사까지 걸린 걸 실제 라이브 데이터로 확인했다. 그래서
+// 제목에 requireKeyword(문자열 또는 배열 중 하나)가 실제로 포함돼 있는지 다시
+// 검증한다.
+function titleMatchesKeyword(title, requireKeyword) {
+  if (!requireKeyword) return true;
+  const keywords = Array.isArray(requireKeyword) ? requireKeyword : [requireKeyword];
+  return keywords.some((k) => title.includes(k));
+}
+
 // RSS XML을 기사 후보 목록(제목/링크/발행시각)으로 만든다. 아직 중복 제거는 하지
 // 않는다 — 검단신도시 뉴스는 검색을 두 번(①직접/②인접 지역) 해서 합친 뒤 한
-// 번에 중복을 걸러야 하므로, 파싱과 중복 제거 단계를 분리해뒀다. requireKeyword를
-// 주면, 구글 뉴스 검색이 느슨하게 매칭한(제목에 그 키워드가 아예 없는) 무관한
-// 기사를 한 번 더 걸러낸다. 검단신도시처럼 좁은 주제에서 특히 필요하다.
+// 번에 중복을 걸러야 하므로, 파싱과 중복 제거 단계를 분리해뒀다.
 function parseNewsItems(xml, requireKeyword) {
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
   const candidates = [];
@@ -167,7 +189,7 @@ function parseNewsItems(xml, requireKeyword) {
 
     const title = decodeEntities(titleMatch[1].trim());
     const link = decodeEntities(linkMatch[1].trim());
-    if (requireKeyword && !title.includes(requireKeyword)) continue;
+    if (!titleMatchesKeyword(title, requireKeyword)) continue;
 
     const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
     const pubDate = pubDateMatch ? new Date(pubDateMatch[1].trim()) : null;
@@ -246,7 +268,7 @@ async function fetchGeomdanArticles(limit) {
       console.error(`검단신도시 뉴스(직접) 조회 실패: ${err.message}`);
       return [];
     }),
-    fetchNewsCandidates(GEOMDAN_NEARBY_QUERY, null).then(
+    fetchNewsCandidates(GEOMDAN_NEARBY_QUERY, GEOMDAN_NEARBY_TERMS).then(
       (candidates) => candidates.map((c) => ({ ...c, nearby: true })),
       (err) => {
         console.error(`검단신도시 뉴스(인접 지역) 조회 실패: ${err.message}`);
