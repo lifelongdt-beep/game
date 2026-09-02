@@ -47,6 +47,7 @@ jobs:
           LAWD_CD: '28290'
           GEOMDAN_DONGS: '당하동,마전동,불로동,원당동'
           GEOMDAN_TRANSACTION_COUNT: '20'
+          GEOMDAN_TRANSACTION_DAYS: '14'
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
