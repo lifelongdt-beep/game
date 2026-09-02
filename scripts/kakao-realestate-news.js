@@ -36,6 +36,7 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .map((s) => s.trim())
   .filter(Boolean);
 const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 20);
+const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 14);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -252,9 +253,19 @@ async function fetchGeomdanTransactions() {
   }
 
   const newTownOnly = all.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
-  console.log(`실거래가: 검단구 ${all.length}건 중 검단신도시(${GEOMDAN_DONGS.join('/')}) ${newTownOnly.length}건`);
-  newTownOnly.sort((a, b) => Number(b.amount) - Number(a.amount));
-  return newTownOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
+
+  // 오늘(KST) 포함 최근 GEOMDAN_TRANSACTION_DAYS일 안에 계약된 건만 남긴다.
+  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (GEOMDAN_TRANSACTION_DAYS - 1));
+  const recentOnly = newTownOnly.filter(
+    (t) => new Date(Number(t.year), Number(t.month) - 1, Number(t.day)) >= cutoff
+  );
+
+  console.log(
+    `실거래가: 검단구 ${all.length}건 중 검단신도시(${GEOMDAN_DONGS.join('/')}) ${newTownOnly.length}건, ` +
+      `최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 ${recentOnly.length}건`
+  );
+  recentOnly.sort((a, b) => Number(b.amount) - Number(a.amount));
+  return recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
 }
 
 function formatAmount(manwonStr) {
