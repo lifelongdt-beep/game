@@ -30,7 +30,9 @@ jobs:
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           ARTICLE_COUNT: '10'
-          NEWS_QUERY: '부동산 when:1d'
+          # "부동산"이라는 단어 없이 지표명만으로 쓰이는 기사(예: "전세가율 60%
+          # 돌파")도 잡아내려고 시장 지표·정책·거래 관련 키워드를 폭넓게 추가했다.
+          NEWS_QUERY: '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급") when:1d'
           DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
           GEOMDAN_ARTICLE_COUNT: '10'
           # 거래·가격(청약/분양/실거래가/시세 등)뿐 아니라 개발·교통 호재, 붕괴·하자
