@@ -22,30 +22,32 @@
   .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
   .empty { color: #666; padding: 14px 0; }
   .source { color: #999; font-size: 12px; margin-top: 4px; }
+  .tag-nearby { display: inline-block; font-size: 11px; font-weight: 700; color: #3b6fd6; background: rgba(59,111,214,.12); border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
   @media (prefers-color-scheme: dark) {
     body { background: #17181a; color: #eee; }
     .article, .txn { background: #232427; box-shadow: none; }
     .article a { color: #eee; }
     .updated, .txn-dong, .txn-meta, .source { color: #999; }
     .txn-amount { color: #ff8a5c; }
+    .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }
   }
 </style>
 </head>
 <body>
 <main>
   <h1>🏠 오늘의 부동산 뉴스</h1>
-  <p class="updated">2026년 9월 2일 AM 11:11 기준 자동 업데이트</p>
+  <p class="updated">2026년 9월 2일 AM 11:29 기준 자동 업데이트</p>
   <ul>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMibkFVX3lxTE9Hb1c1TXBQUHRaV2J3QXlfWE5oWU5jZzhvVGlGNzVMYW1kUnNpd3JCd1lJX3g3NHFQN1oxQ3R5WVpUSm5JYVctS3l3RGtUbWNtTGRFeFFOaDZZZTBiUndqeEozM041MlZNbUdWNGp3?oc=5" target="_blank" rel="noopener">매출·상권 활용해 소상공인 대출 문턱 낮춘다…은행권 특화 신용평가 시범운영 - 아시아투데이</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE0wa0JtcEpocGdlWF9TTnNvMTV3d1JBQk1xQk1zVWlBYkJzd2hSMVIxSFBqdnE4TnIwbnFpcnBwNXJwNC1CcmZNeHd3bllYM2c5WXlfQUZ4LTRObDR6Y1Rmcw?oc=5" target="_blank" rel="noopener">[2026 정기국회]②與 &quot;메가특구&quot; 野 &quot;부동산&quot; 입법 의지…세법은 시각차 - 아시아경제</a></li>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMiXEFVX3lxTE9yN01vVjZ4VlF0MFFXdjBsMjU4QmFxYlNWN1R4WFpmd08yTkFXVVdsbjdOODd2MEpqTkswSHA0LVRCalZzMzZIU0hEWFI4bnJSV3poX3VnUkl0RDVf?oc=5" target="_blank" rel="noopener">부동산중개법인코리아, 서비스 본격화 - 뉴스핌</a></li>
-    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE5pMy13ajM2NXUwQnhtRGl6THpablZNOXZjV1pEMjhWbzJtLWVjbmUxajRZY0xFbURCNFJVdVpuRjd5SVdacDV5RWtLT3FpLWFDRXJqbFBIanhfWlM0emV0Yg?oc=5" target="_blank" rel="noopener">통합위, '부동산 및 주거 안정화' 대토론 개최 - newsprime.co.kr</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE5pMy13ajM2NXUwQnhtRGl6THpablZNOXZjV1pEMjhWbzJtLWVjbmUxajRZY0xFbURCNFJVdVpuRjd5SVdacDV5RWtLT3FpLWFDRXJqbFBIanhfWlM0emV0Yg?oc=5" target="_blank" rel="noopener">통합위, '부동산 및 주거 안정화' 대토론 개최 - 프라임경제</a></li>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMibEFVX3lxTE85R19MdnBZdTNZdW40QW9vRzVJcENYekkwREo1dE9QVm1zNDNVLURKLTlxX3hSMTdYLTJRNTkxUm42LU5MbHZCNkRTdmtieHRNYk0yemUwNFlrSU1yVExGNXIyNTJYVHRLbjBXNg?oc=5" target="_blank" rel="noopener">소상공인 대출 심사에 매출이나 상권, 성장성을 봅니다! - 영상 | 멀티미디어 - 대한민국 정책브리핑</a></li>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMiW0FVX3lxTE5SWGNvU3VoY0xRYTlTZlNOalUxcG9HMjEzNEY4NmhmU2M5MlRPX3QwQm16RGEyWWJITXl3SkxpUXlVc3NUekphNFpvYWt5Unc4WVduTzZxZlJGSVk?oc=5" target="_blank" rel="noopener">“삼성맨은 대출 5억 더”…한국 경제, 네덜란드병 따라가나 [잇슈 머니] - KBS 뉴스</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE5IYVpoMld2akJMYXBtYzloYjdlVmE2TUo2WHFzT3o3aTRpWG5oZ0pIVVhsMDdib0xwUF9ieWZJd3VpeUNRY2x1TzZiTkt3cG1qeUZvNHJJbm13X1ZsTFE?oc=5" target="_blank" rel="noopener">&quot;부동산 타파&quot; 외치던 용혜인, 단타 시세차익...진실은? [Y녹취록] - YTN</a></li>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMickFVX3lxTE0wNXVNR0dYWnRMRVM4ZVNCczNWQllTMlFod3FUZUJpUy1DMzI3c3p0WTdobEo4ZXNBeXRhb19jN0hNS3VKSmZ5aDVDNTN0X1VPYzdoYVJfTFZOTXZ5MnZHRV9MdVNFWkl1cy1ycXNGQmdlZw?oc=5" target="_blank" rel="noopener">집단대출 2년새 최대…대단지 잔금수요도 몰려온다 - KB Think</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTE1kQ0ZIbVpJU1NrNzBpdG8zOXZYUkpvMjFvTUpxdlFvZlA1SXotZEtKX3htY1RuZW1iQ041TEVaRzY1OHlQOUVSYnNUWUNNQ19vQUN1Y2Ftb2NrdTFLQnJuc2dCVmJoSkpJbm5rOWljRnc?oc=5" target="_blank" rel="noopener">신한·하나은행, 대출모집인 통한 주담대 접수 재개 By 알파경제 alphabiz - Investing.com 한국어</a></li>
     <li class="article"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE82Z2tvSGdONHZjdXNYRlkzcmZNT0FPV01WTGduYm9Vb0dkQ1BSTlBCM182MWk1UHdWRWxydlh0dVgtUzhvZFdlS3hYVF9vbXhBSkNVY0xadllvZw?oc=5" target="_blank" rel="noopener">이지혜 유튜브 PD, 6억 대출받아 9억 아파트 매입…현재 14억 - 한국경제</a></li>
-    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE5tYmFTempjVkoweDhVdzBEb25FZlNUWExraE1qdWhyNzdRR2Yyc094RWlzc0liWjJ4YnV4OWVITm5rVlhLdnpsMVJJMVdxTkoyTHlERzJNeWxrbzZuUGhJUA?oc=5" target="_blank" rel="noopener">시중은행 가계대출 3조원 늘었다…모집인대출도 재개 - 아시아경제</a></li>
-    <li class="article"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBFNThOTlpVdTVsWXBEYWM2U3JOZkxRbXN3LV81a2VEN2MzOEptQ0VfTmNaUzhBVXBBVkNMODJTQ1FvN0tFSEhyM3RXN1FROS1BTFBaM0xidHB2d9IBX0FVX3lxTFA5bjVIRU5heDVBclAybFhwY1I2N0ZvbTJlNGtOdHJLSjROUkZJdmZEcWtXdVJWb0hBRm0yaTdIUm1iU1FSazBQSWpQZjQwREM5cld1cVRlRDVoX09NTGpF?oc=5" target="_blank" rel="noopener">삼성전자, 최대 5억 임직원에 주택대출 - 경향신문</a></li>
-    <li class="article"><a href="https://news.google.com/rss/articles/CBMiX0FVX3lxTE9POWNHT1g4NEZjaTlGWGljY1B0M1B0VHgtSHJYemtNZjJxUUVrRWI5YjI2QzNFQ2hYR0JRVEVySlBJa1QyWVV4UFYta2dhSkREZHpCaFpnck1xRlp4VTRz0gFTQVVfeXFMUGJEZmdFRW9DU2dxbjlKOGZabVBWdExYcHpWQzFObTRtUVRpWGtXNkVhaEZKd29DLUVEU3d6OWJUSEhxTXhJS0dQVXFxeDVxczVrQjg?oc=5" target="_blank" rel="noopener">저축銀 절반은 부동산 연체율 10% 이상…부실 장기화 - 서울경제</a></li>
   </ul>
 </main>
 </body>
