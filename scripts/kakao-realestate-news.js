@@ -46,7 +46,6 @@ const GEOMDAN_NEARBY_TERMS = [
   '서부권 광역급행철도', 'GTX-D', '수도권 제2순환고속도로', '인천2호선 고양지선',
   '대장신도시', '마곡신도시',
 ];
-const GEOMDAN_PAGE_URL = process.env.GEOMDAN_PAGE_URL || 'https://lifelongdt-beep.github.io/game/geomdan.html';
 
 // 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 키가 아직 없으면
 // (발급 전이면) 이 섹션만 조용히 건너뛰고 나머지 뉴스 발송은 그대로 진행한다.
@@ -214,19 +213,24 @@ async function fetchNewsCandidates(query, requireKeyword) {
 // 들어온 후보로 고정해서, 나중에 대표가 바뀌어도 판정 기준 자체는 흔들리지 않게
 // 한다. candidate.nearby가 true인 후보만으로 이뤄진 클러스터는 결과에도
 // nearby:true로 남긴다(검단이 직접 언급된 후보가 하나라도 섞이면 더 이상
-// "인접 지역"만의 소식이 아니므로 딱지를 떼어낸다). sortByDate를 주면 각
-// 클러스터 대표 기사의 발행 시각 최신순으로 정리하고, 아니면 구글 뉴스가 이미
-// 준 순서(관련도/최신순)를 그대로 쓴다. 마지막에 대표만 골라야 하므로 `limit`에
-// 도달해도 중간에 끊지 않고 후보를 전부 훑는다.
-function clusterArticles(candidates, limit, { sortByDate = false } = {}) {
+// "인접 지역"만의 소식이 아니므로 딱지를 떼어낸다).
+//
+// 구글 뉴스 RSS는 조회수를 전혀 제공하지 않는다(그런 필드 자체가 없다) — 그래서
+// "화제성" 대신 같은 사건을 보도한 매체 수(클러스터에 모인 후보 개수)를 우선
+// 정렬 기준으로 쓴다. 여러 매체가 동시에 보도할수록 더 중요한 사건일 가능성이
+// 높다는, 조회수의 현실적인 대체 지표다. 매체 수가 같으면 최신순(pubDate)으로
+// 다음 기준을 삼는다. 마지막에 대표만 골라야 하므로 `limit`에 도달해도 중간에
+// 끊지 않고 후보를 전부 훑는다.
+function clusterArticles(candidates, limit) {
   const clusters = [];
   for (const candidate of candidates) {
     const dedupKey = newsDedupKey(candidate.title);
     const grams = charBigrams(dedupKey);
     const cluster = clusters.find((c) => isSimilarHeadline(grams, c.grams));
     if (!cluster) {
-      clusters.push({ grams, article: candidate, detailLen: dedupKey.length, anyDirect: !candidate.nearby });
+      clusters.push({ grams, article: candidate, detailLen: dedupKey.length, anyDirect: !candidate.nearby, sourceCount: 1 });
     } else {
+      cluster.sourceCount += 1;
       if (!candidate.nearby) cluster.anyDirect = true;
       if (dedupKey.length > cluster.detailLen) {
         cluster.article = candidate;
@@ -235,10 +239,14 @@ function clusterArticles(candidates, limit, { sortByDate = false } = {}) {
     }
   }
 
-  let result = clusters.map((c) => ({ title: c.article.title, link: c.article.link, pubDate: c.article.pubDate, nearby: !c.anyDirect }));
-  if (sortByDate) {
-    result.sort((a, b) => (b.pubDate?.getTime() || 0) - (a.pubDate?.getTime() || 0));
-  }
+  const result = clusters.map((c) => ({
+    title: c.article.title,
+    link: c.article.link,
+    pubDate: c.article.pubDate,
+    nearby: !c.anyDirect,
+    sourceCount: c.sourceCount,
+  }));
+  result.sort((a, b) => b.sourceCount - a.sourceCount || (b.pubDate?.getTime() || 0) - (a.pubDate?.getTime() || 0));
   return result.slice(0, limit).map(({ title, link, nearby }) => (nearby ? { title, link, nearby } : { title, link }));
 }
 
@@ -277,7 +285,7 @@ async function fetchGeomdanArticles(limit) {
     ),
   ]);
 
-  return clusterArticles([...directCandidates, ...nearbyCandidates], limit, { sortByDate: true });
+  return clusterArticles([...directCandidates, ...nearbyCandidates], limit);
 }
 
 function xmlTag(xml, tag) {
@@ -370,6 +378,17 @@ function formatAmount(manwonStr) {
   return rest > 0 ? `${eok}억 ${rest.toLocaleString('ko-KR')}만원` : `${eok}억원`;
 }
 
+// 1평 = 3.3058㎡(공식 환산값). 전용면적(㎡) 기준 평단가라 실제 부동산 시장에서
+// 통용되는 "평당가"와는 약간 다를 수 있다(전용/공급면적 차이) — 이 API가
+// 제공하는 값이 전용면적뿐이라 그 기준으로 계산한다.
+const SQM_PER_PYEONG = 3.3058;
+function pricePerPyeong(amountManwonStr, areaM2Str) {
+  const amount = Number(amountManwonStr);
+  const area = Number(areaM2Str);
+  if (!Number.isFinite(amount) || !Number.isFinite(area) || area <= 0) return null;
+  return Math.round(amount / (area / SQM_PER_PYEONG));
+}
+
 async function sendKakaoTemplate(accessToken, templateObject) {
   const res = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
     method: 'POST',
@@ -408,22 +427,36 @@ function currentPeriodLabel() {
 
 // 카카오 '나에게 보내기'는 text 타입(제목 + 링크 1개)만 안정적으로 클릭이 된다.
 // list 타입은 이미지가 있어도 눌리지 않는 평면 카드로만 뜨는 걸 실제 테스트로 확인해서
-// 기사 제목을 전부 한 메시지 본문에 나열하고, 링크는 전체 기사가 있는 다이제스트
+// 기사 제목을 전부 한 메시지 본문에 나열하고, 링크는 전체 목록이 있는 다이제스트
 // 페이지 하나로 보내는 방식으로 대신한다. (페이지 안 링크는 각각 정상 클릭됨)
-async function sendArticlesDigest(accessToken, header, articles, link) {
-  const maxTotalLen = 180; // 카카오 text 타입 안전 길이
+//
+// 부동산 뉴스·검단신도시 뉴스·검단신도시 실거래가를 메시지 한 통에 다 담기로
+// 하면서, 섹션마다 [라벨]을 붙여 순서대로 채워 넣는다. 카카오 text 타입 안전
+// 길이(180자) 안에서는 각 섹션 전체를 다 넣을 수 없으므로 앞쪽 몇 건만 들어가고
+// 나머지는 링크로 연결된 페이지에서 확인하게 된다.
+async function sendCombinedDigest(accessToken, header, sections, link) {
+  const maxTotalLen = 180;
   const lines = [header];
   let used = header.length;
-  for (const article of articles) {
-    const prefix = article.nearby ? '🔗 ' : '';
-    const line = truncate(`${lines.length}. ${prefix}${article.title}`, 42);
-    if (used + line.length + 1 > maxTotalLen) break;
-    lines.push(line);
-    used += line.length + 1;
+  let sentAny = false;
+
+  sectionLoop: for (const section of sections) {
+    for (const itemText of section.items) {
+      const prefix = section.nearbyItems && section.nearbyItems.has(itemText) ? '🔗 ' : '';
+      const line = truncate(`[${section.label}] ${prefix}${itemText}`, 45);
+      if (used + line.length + 1 > maxTotalLen) break sectionLoop;
+      lines.push(line);
+      used += line.length + 1;
+      sentAny = true;
+    }
+  }
+
+  if (!sentAny) {
+    lines.push(truncate('오늘은 새로 조회된 소식이 없어요.', 45));
   }
 
   await sendKakaoText(accessToken, lines.join('\n'), link);
-  console.log(`[${header}] 기사 ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
+  console.log(`[${header}] ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
 }
 
 function writeOutput(name, value) {
@@ -440,11 +473,9 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// 일반 부동산 뉴스와 검단신도시 소식은 서로 다른 메시지/독립된 화제라, 페이지도 완전히
-// 분리한다(공유 섹션 없이 각자 자기 내용만 담은 별도 HTML 파일).
-// 재부키 오픈채팅방 방장봇 공지에는 이 중 일반 뉴스 페이지 링크를 걸어둔다.
-// 카카오는 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로,
-// 링크는 고정해두고 그 안의 내용만 매일 갱신하는 방식으로 우회한다.
+// 재부키 오픈채팅방 방장봇 공지에는 이 페이지 링크를 걸어둔다. 카카오는
+// 오픈채팅방에 대신 글을 올려주는 API를 제공하지 않으므로, 링크는 고정해두고
+// 그 안의 내용만 매일 갱신하는 방식으로 우회한다.
 function renderArticlesHtml(articles) {
   return articles.length
     ? articles
@@ -459,13 +490,15 @@ function renderArticlesHtml(articles) {
 function renderTransactionsHtml(transactions) {
   return transactions.length
     ? transactions
-        .map(
-          (t) => `    <li class="txn">
+        .map((t) => {
+          const perPyeong = pricePerPyeong(t.amount, t.area);
+          const perPyeongText = perPyeong ? ` · 평당 ${perPyeong.toLocaleString('ko-KR')}만원` : '';
+          return `    <li class="txn">
       <div class="txn-top"><span class="txn-dong">${escapeHtml(t.dong)}</span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
       <div class="txn-apt">${escapeHtml(t.apt)}</div>
-      <div class="txn-meta">${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약</div>
-    </li>`
-        )
+      <div class="txn-meta">${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
+    </li>`;
+        })
         .join('\n')
     : '    <li class="empty">최근 조회된 실거래 내역이 없어요.</li>';
 }
@@ -499,7 +532,13 @@ const PAGE_STYLE = `
   }
 `;
 
-function renderPage(title, articles, generatedAt) {
+// 부동산 뉴스·검단신도시 뉴스·검단신도시 실거래가를 한 페이지에 모은다(이전에는
+// 일반 뉴스/검단신도시를 별도 페이지로 분리했지만, 카카오톡 메시지 하나에 세
+// 내용을 다 담기로 하면서 링크로 연결되는 페이지도 하나로 합쳤다). docs/index.html
+// 과 docs/geomdan.html 둘 다 같은 내용을 담아서, 예전에 geomdan.html을 따로
+// 북마크/공지해둔 경우에도 링크가 깨지지 않게 한다.
+function renderCombinedPage(articles, geomdanArticles, transactions, generatedAt) {
+  const title = '🏠 오늘의 부동산 종합';
   return `<!doctype html>
 <html lang="ko">
 <head>
@@ -511,40 +550,19 @@ function renderPage(title, articles, generatedAt) {
 <body>
 <main>
   <h1>${escapeHtml(title)}</h1>
-  <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
-  <ul>
-${renderArticlesHtml(articles)}
-  </ul>
-</main>
-</body>
-</html>
-`;
-}
+  <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트 · 보도 매체 수 많은 순</p>
 
-// 검단신도시 페이지는 뉴스와 실거래가 두 섹션으로 구성한다. 둘 다 검단신도시라는
-// 같은 주제를 다루되 정보의 종류(기사 vs 국토부 공식 거래 기록)만 다르므로 한 페이지
-// 안에서 나눈다 (일반 부동산 뉴스 페이지와는 완전히 분리된 상태를 그대로 유지한다).
-function renderGeomdanPage(articles, transactions, generatedAt) {
-  const title = '🏙️ 인천 검단신도시 청약·거래 소식';
-  return `<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)}</title>
-<style>${PAGE_STYLE}</style>
-</head>
-<body>
-<main>
-  <h1>${escapeHtml(title)}</h1>
-  <p class="updated">${escapeHtml(generatedAt)} 기준 자동 업데이트</p>
-
-  <h2>📰 관련 뉴스</h2>
+  <h2>📰 부동산 뉴스</h2>
   <ul>
 ${renderArticlesHtml(articles)}
   </ul>
 
-  <h2>🏘️ 아파트 실거래가</h2>
+  <h2>🏙️ 검단신도시 뉴스</h2>
+  <ul>
+${renderArticlesHtml(geomdanArticles)}
+  </ul>
+
+  <h2>🏘️ 검단신도시 아파트 실거래가</h2>
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
@@ -555,26 +573,15 @@ ${renderTransactionsHtml(transactions)}
 `;
 }
 
-function publishPage(filename, title, articles) {
+function publishCombinedPage(filename, articles, geomdanArticles, transactions) {
   const generatedAt = new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     dateStyle: 'long',
     timeStyle: 'short',
   });
   fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync(`docs/${filename}`, renderPage(title, articles, generatedAt));
+  fs.writeFileSync(`docs/${filename}`, renderCombinedPage(articles, geomdanArticles, transactions, generatedAt));
   console.log(`docs/${filename} 갱신 완료`);
-}
-
-function publishGeomdanPage(articles, transactions) {
-  const generatedAt = new Date().toLocaleString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    dateStyle: 'long',
-    timeStyle: 'short',
-  });
-  fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync('docs/geomdan.html', renderGeomdanPage(articles, transactions, generatedAt));
-  console.log('docs/geomdan.html 갱신 완료');
 }
 
 async function main() {
@@ -590,29 +597,31 @@ async function main() {
   const geomdanArticles = await fetchGeomdanArticles(GEOMDAN_ARTICLE_COUNT);
   const geomdanTransactions = await fetchGeomdanTransactions();
 
-  publishPage('index.html', '🏠 오늘의 부동산 뉴스', articles);
-  publishGeomdanPage(geomdanArticles, geomdanTransactions);
+  publishCombinedPage('index.html', articles, geomdanArticles, geomdanTransactions);
+  publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanTransactions);
 
   const period = currentPeriodLabel();
 
-  if (articles.length === 0) {
-    await sendKakaoText(accessToken, `🏠 ${period}에는 새로 조회된 부동산 뉴스가 없어요.`, DIGEST_PAGE_URL);
-    console.log('전송할 기사가 없어 안내 메시지만 보냈습니다.');
-  } else {
-    await sendArticlesDigest(accessToken, `🏠 ${period} 부동산 뉴스`, articles, DIGEST_PAGE_URL);
-  }
+  // 부동산 뉴스·검단신도시 뉴스·검단신도시 실거래가를 메시지 한 통에 모아 보낸다
+  // (예전에는 뉴스 두 종류를 메시지 두 통으로 나눠 보냈다). 실거래 한 줄은
+  // "동 금액(평당 X만)" 형태로 압축한다.
+  const nearbyGeomdanTitles = new Set(geomdanArticles.filter((a) => a.nearby).map((a) => a.title));
+  const transactionLines = geomdanTransactions.map((t) => {
+    const perPyeong = pricePerPyeong(t.amount, t.area);
+    const perPyeongText = perPyeong ? `(평당${perPyeong.toLocaleString('ko-KR')}만)` : '';
+    return `${t.dong} ${formatAmount(t.amount)}${perPyeongText}`;
+  });
 
-  // 검단신도시 메시지도 일반 부동산 뉴스와 동일하게 오전/오후 발송 모두 보낸다.
-  if (geomdanArticles.length > 0) {
-    await sendArticlesDigest(
-      accessToken,
-      `🏙️ ${period} 인천 검단신도시 청약·거래 소식`,
-      geomdanArticles,
-      GEOMDAN_PAGE_URL
-    );
-  } else {
-    console.log('검단신도시 관련 소식이 없어 별도 메시지는 보내지 않았습니다.');
-  }
+  await sendCombinedDigest(
+    accessToken,
+    `🏠 ${period} 부동산 종합`,
+    [
+      { label: '뉴스', items: articles.map((a) => a.title) },
+      { label: '검단', items: geomdanArticles.map((a) => a.title), nearbyItems: nearbyGeomdanTitles },
+      { label: '실거래', items: transactionLines },
+    ],
+    DIGEST_PAGE_URL
+  );
 }
 
 main().catch((err) => {

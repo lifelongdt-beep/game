@@ -2,17 +2,16 @@ name: Morning Real Estate News to KakaoTalk
 
 on:
   schedule:
-    # 매일 08:00 KST(오전) = 전날 23:00 UTC. 시간을 바꾸려면 이 값을 수정하세요.
+    # 매일 06:07 KST(오전) = 전날 21:07 UTC. 시간을 바꾸려면 이 값을 수정하세요.
     # 분을 0이 아닌 값(07)으로 둔 이유: GitHub Actions의 schedule 트리거는
     # "최선 노력"이라 정시(매시 0분)에 몰리는 요청이 특히 밀린다고 공식 문서에
-    # 명시돼 있다. 실제로 이 저장소도 정시 예약 이후 오전 실행은 매번 1시간
-    # 45분~55분, 오후 실행은 4시간 40분~5시간 25분씩 늦게 실행된 것을 실행
-    # 이력으로 확인했다. 정시를 피하면 혼잡이 줄어 지연이 완화될 수 있다는
-    # GitHub 공식 권고에 따라 07분으로 옮겼다 — 다만 GitHub가 정확한 시각 실행을
-    # 보장하지는 않으므로, 이 조정 후에도 지연이 계속되면 알려달라고 안내했다.
-    - cron: '7 23 * * *'
-    # 매일 17:00 KST(오후) = 08:00 UTC.
-    - cron: '7 8 * * *'
+    # 명시돼 있다. 실제로 이 저장소도 정시 예약 실행이 매번 1~5시간씩 늦게
+    # 실행된 것을 실행 이력으로 확인해서, 07분으로 옮겼다 — 다만 GitHub가
+    # 정확한 시각 실행을 보장하지는 않으므로 이 조정만으로 지연이 완전히
+    # 사라진다는 보장은 없다.
+    - cron: '7 21 * * *'
+    # 매일 18:07 KST(오후) = 09:07 UTC.
+    - cron: '7 9 * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -52,7 +51,6 @@ jobs:
           # 카카오톡 메시지에 "인접 지역 호재" 딱지만 붙인다(본문을 읽지 못해 실제
           # 영향 내용까지 요약하지는 않는다).
           GEOMDAN_NEARBY_QUERY: '(계양신도시 OR "계산지구 도시개발사업" OR "김포 콤팩트시티" OR 청라국제도시 OR 루원시티 OR "왕길1구역 재개발" OR "검단3·5구역 재개발" OR 에코메타시티 OR "한들3구역" OR "인천국제공항고속도로 검단IC 개통" OR "서부권 광역급행철도" OR GTX-D OR "수도권 제2순환고속도로" OR "인천2호선 고양지선" OR 대장신도시 OR 마곡신도시) when:1d'
-          GEOMDAN_PAGE_URL: 'https://lifelongdt-beep.github.io/game/geomdan.html'
           # 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털). 시크릿이 없으면
           # 이 부분만 자동으로 건너뛰고 나머지는 그대로 동작합니다.
           # LAWD_CD=28290은 검단구(2026-07-01 인천시 행정구역 개편으로 서구에서
@@ -66,9 +64,10 @@ jobs:
         run: node scripts/kakao-realestate-news.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
-      # docs/index.html(고정 링크, 일반 부동산 뉴스)을 방장봇 공지로 걸어두고 내용만
-      # 매일 갱신하는 방식으로 대신합니다. docs/geomdan.html은 검단신도시 전용 페이지로,
-      # 서로 완전히 분리되어 있습니다. 자세한 내용은 docs/kakao-realestate-news-setup.md 참고.
+      # docs/index.html(고정 링크)을 방장봇 공지로 걸어두고 내용만 매일 갱신하는
+      # 방식으로 대신합니다. docs/geomdan.html도 같은 내용(부동산 뉴스+검단신도시
+      # 뉴스+검단신도시 실거래가)을 담아서, 예전에 geomdan.html을 따로 북마크/공지
+      # 해둔 경우에도 링크가 깨지지 않습니다. 자세한 내용은 docs/kakao-realestate-news-setup.md 참고.
       - name: Publish today's digest pages
         run: |
           git config user.name "github-actions[bot]"
