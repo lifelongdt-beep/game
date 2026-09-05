@@ -12,7 +12,12 @@ on:
     - cron: '7 21 * * *'
     # 매일 18:07 KST(오후) = 09:07 UTC.
     - cron: '7 9 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      notify_message:
+        description: '입력하면 평소 뉴스/실거래가 대신 이 문구만 카카오톡으로 즉시 전송합니다(점검 결과 알림 등 1회성 메시지용).'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -35,6 +40,7 @@ jobs:
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          NOTIFY_MESSAGE: ${{ github.event.inputs.notify_message }}
           ARTICLE_COUNT: '10'
           # "부동산"이라는 단어 없이 지표명만으로 쓰이는 기사(예: "전세가율 60%
           # 돌파")도 잡아내려고 시장 지표·정책·거래 관련 키워드를 폭넓게 추가했다.
