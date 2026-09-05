@@ -17,6 +17,13 @@ const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.
 // 보낸다(점검 결과 등을 즉석에서 알릴 때 workflow_dispatch 입력으로 채운다).
 const NOTIFY_MESSAGE = process.env.NOTIFY_MESSAGE || '';
 
+// 매일 보내는 다이제스트 메시지 맨 아래에 항상 붙는 오픈채팅방 초대 문구.
+const OPENCHAT_INVITE_TEXT =
+  process.env.OPENCHAT_INVITE_TEXT ||
+  '이 메세지를 매일 보고 검단신도시 관련 집단지성을 느끼고 싶으시면 재부키 오픈채팅방으로 오세요.';
+const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHroBKh';
+const OPENCHAT_FOOTER = `${OPENCHAT_INVITE_TEXT}\n${OPENCHAT_URL}`;
+
 // 검단신도시 뉴스는 두 갈래로 찾는다.
 // ① GEOMDAN_QUERY: "검단신도시"/"인천 검단"/"서구 검단"과 반드시 함께 언급된
 //    기사만 — 교통/분양·청약/시세·거래/생활 인프라/정책·금융 각 분야의 구체적인
@@ -460,9 +467,11 @@ function currentPeriodLabel() {
 // 부동산 뉴스·검단신도시 뉴스·검단신도시 실거래가를 메시지 한 통에 다 담기로
 // 하면서, 섹션마다 [라벨]을 붙여 순서대로 채워 넣는다. 카카오 text 타입 안전
 // 길이(180자) 안에서는 각 섹션 전체를 다 넣을 수 없으므로 앞쪽 몇 건만 들어가고
-// 나머지는 링크로 연결된 페이지에서 확인하게 된다.
+// 나머지는 링크로 연결된 페이지에서 확인하게 된다. 맨 아래 오픈채팅방 초대
+// 문구(OPENCHAT_FOOTER)는 항상 붙어야 하므로, 그만큼을 먼저 예산에서 빼둔다.
 async function sendCombinedDigest(accessToken, header, sections, link) {
   const maxTotalLen = 180;
+  const contentBudget = maxTotalLen - (OPENCHAT_FOOTER.length + 1);
   const lines = [header];
   let used = header.length;
   let sentAny = false;
@@ -471,7 +480,7 @@ async function sendCombinedDigest(accessToken, header, sections, link) {
     for (const itemText of section.items) {
       const prefix = section.nearbyItems && section.nearbyItems.has(itemText) ? '🔗 ' : '';
       const line = truncate(`[${section.label}] ${prefix}${itemText}`, 45);
-      if (used + line.length + 1 > maxTotalLen) break sectionLoop;
+      if (used + line.length + 1 > contentBudget) break sectionLoop;
       lines.push(line);
       used += line.length + 1;
       sentAny = true;
@@ -482,8 +491,11 @@ async function sendCombinedDigest(accessToken, header, sections, link) {
     lines.push(truncate('오늘은 새로 조회된 소식이 없어요.', 45));
   }
 
+  const contentCount = lines.length - 1;
+  lines.push(OPENCHAT_FOOTER);
+
   await sendKakaoText(accessToken, lines.join('\n'), link);
-  console.log(`[${header}] ${lines.length - 1}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
+  console.log(`[${header}] ${contentCount}건을 메시지 한 통으로 전송했습니다 (전체 목록은 링크로 연결).`);
 }
 
 function writeOutput(name, value) {
