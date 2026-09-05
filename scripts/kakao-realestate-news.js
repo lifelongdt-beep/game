@@ -62,7 +62,7 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 20);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 30);
 const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 14);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
@@ -365,7 +365,9 @@ async function fetchGeomdanTransactions() {
     `실거래가: 검단구 ${all.length}건 중 검단신도시(${GEOMDAN_DONGS.join('/')}) ${newTownOnly.length}건, ` +
       `최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 ${recentOnly.length}건`
   );
-  recentOnly.sort((a, b) => Number(b.amount) - Number(a.amount));
+  // 거래금액이 아니라 평당가(공급면적 추정치 기준) 높은 순으로 정렬한다 —
+  // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록.
+  recentOnly.sort((a, b) => (pricePerPyeong(b.amount, b.area) || 0) - (pricePerPyeong(a.amount, a.area) || 0));
   return recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
 }
 
