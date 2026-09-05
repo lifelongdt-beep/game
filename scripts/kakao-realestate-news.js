@@ -378,15 +378,35 @@ function formatAmount(manwonStr) {
   return rest > 0 ? `${eok}억 ${rest.toLocaleString('ko-KR')}만원` : `${eok}억원`;
 }
 
-// 1평 = 3.3058㎡(공식 환산값). 전용면적(㎡) 기준 평단가라 실제 부동산 시장에서
-// 통용되는 "평당가"와는 약간 다를 수 있다(전용/공급면적 차이) — 이 API가
-// 제공하는 값이 전용면적뿐이라 그 기준으로 계산한다.
+// 1평 = 3.3058㎡(공식 환산값).
 const SQM_PER_PYEONG = 3.3058;
+
+// 국토교통부 실거래가 API(RTMSDataSvcAptTradeDev)는 전용면적만 제공하지만,
+// 국내에서 통용되는 "평당가"·"OO평형" 표기는 전용면적이 아니라 공급면적
+// (전용면적 + 계단실·복도 등 주거공용면적) 기준이다. 검단신도시 여러 단지의
+// 실제 분양·관리비 고지 면적을 찾아 전용률(전용면적÷공급면적)을 확인해보니
+// 전용면적 구간별로 74~79% 안팎에 모여 있었다(예: 검단신도시푸르지오더베뉴
+// 전용 75.84㎡→공급 99.07㎡, 유승한내들에듀파크 전용 84.24㎡→공급
+// 109.43㎡, 검단신도시예미지트리플에듀 전용 102.85㎡→공급 130.65㎡). 이
+// 구간별 전용률로 공급면적을 역산해서 평당가를 계산한다. 단지마다 등록된
+// 정확한 공급면적과는 소수점 단위로 다를 수 있는 추정값이다.
+const EXCLUSIVE_RATIO_BANDS = [
+  { belowM2: 60, ratio: 0.75 },
+  { belowM2: 80, ratio: 0.765 },
+  { belowM2: 95, ratio: 0.768 },
+  { belowM2: 120, ratio: 0.785 },
+  { belowM2: Infinity, ratio: 0.8 },
+];
+function estimateSupplyArea(exclusiveAreaM2) {
+  const band = EXCLUSIVE_RATIO_BANDS.find((b) => exclusiveAreaM2 < b.belowM2);
+  return exclusiveAreaM2 / band.ratio;
+}
 function pricePerPyeong(amountManwonStr, areaM2Str) {
   const amount = Number(amountManwonStr);
-  const area = Number(areaM2Str);
-  if (!Number.isFinite(amount) || !Number.isFinite(area) || area <= 0) return null;
-  return Math.round(amount / (area / SQM_PER_PYEONG));
+  const exclusiveArea = Number(areaM2Str);
+  if (!Number.isFinite(amount) || !Number.isFinite(exclusiveArea) || exclusiveArea <= 0) return null;
+  const supplyArea = estimateSupplyArea(exclusiveArea);
+  return Math.round(amount / (supplyArea / SQM_PER_PYEONG));
 }
 
 async function sendKakaoTemplate(accessToken, templateObject) {
@@ -496,7 +516,7 @@ function renderTransactionsHtml(transactions) {
           return `    <li class="txn">
       <div class="txn-top"><span class="txn-dong">${escapeHtml(t.dong)}</span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
       <div class="txn-apt">${escapeHtml(t.apt)}</div>
-      <div class="txn-meta">${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
+      <div class="txn-meta">전용 ${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
     </li>`;
         })
         .join('\n')
@@ -566,7 +586,7 @@ ${renderArticlesHtml(geomdanArticles)}
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
-  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털)</p>
+  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>
 </main>
 </body>
 </html>
