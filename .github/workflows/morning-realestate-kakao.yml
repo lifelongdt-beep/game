@@ -44,12 +44,12 @@ jobs:
           # 매일 보내는 다이제스트 메시지 맨 아래에 항상 붙는 오픈채팅방 초대 문구.
           OPENCHAT_INVITE_TEXT: '이 메세지를 매일 보고 검단신도시 관련 집단지성을 느끼고 싶으시면 재부키 오픈채팅방으로 오세요.'
           OPENCHAT_URL: 'https://open.kakao.com/o/gSHroBKh'
-          ARTICLE_COUNT: '10'
+          ARTICLE_COUNT: '20'
           # "부동산"이라는 단어 없이 지표명만으로 쓰이는 기사(예: "전세가율 60%
           # 돌파")도 잡아내려고 시장 지표·정책·거래 관련 키워드를 폭넓게 추가했다.
           NEWS_QUERY: '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급") when:1d'
           DIGEST_PAGE_URL: 'https://lifelongdt-beep.github.io/game/'
-          GEOMDAN_ARTICLE_COUNT: '10'
+          GEOMDAN_ARTICLE_COUNT: '20'
           # ① 검단신도시/인천 검단/서구 검단과 반드시 함께 언급된 기사만, 교통·분양청약·
           # 시세거래·생활인프라·정책금융 분야의 구체적인 키워드로 좁혀서 찾는다.
           GEOMDAN_QUERY: '(검단신도시 OR "인천 검단" OR "서구 검단") ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d'
