@@ -517,11 +517,11 @@ function renderArticlesHtml(articles) {
 function renderTransactionsHtml(transactions) {
   return transactions.length
     ? transactions
-        .map((t) => {
+        .map((t, i) => {
           const perPyeong = pricePerPyeong(t.amount, t.area);
           const perPyeongText = perPyeong ? ` · 평당 ${perPyeong.toLocaleString('ko-KR')}만원` : '';
           return `    <li class="txn">
-      <div class="txn-top"><span class="txn-dong">${escapeHtml(t.dong)}</span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
+      <div class="txn-top"><span class="txn-left"><span class="txn-rank">${i + 1}</span><span class="txn-dong">${escapeHtml(t.dong)}</span></span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
       <div class="txn-apt">${escapeHtml(t.apt)}</div>
       <div class="txn-meta">전용 ${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
     </li>`;
@@ -542,10 +542,13 @@ const PAGE_STYLE = `
   .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
   .txn { padding: 12px 16px; }
   .txn-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .txn-left { display: flex; align-items: baseline; gap: 6px; }
+  .txn-rank { font-size: 12px; color: #888; font-weight: 700; }
   .txn-dong { font-size: 12px; color: #888; }
   .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; }
   .txn-apt { font-size: 15px; margin-top: 2px; }
   .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
   .empty { color: #666; padding: 14px 0; }
   .source { color: #999; font-size: 12px; margin-top: 4px; }
   .tag-nearby { display: inline-block; font-size: 11px; font-weight: 700; color: #3b6fd6; background: rgba(59,111,214,.12); border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
@@ -553,7 +556,7 @@ const PAGE_STYLE = `
     body { background: #17181a; color: #eee; }
     .article, .txn { background: #232427; box-shadow: none; }
     .article a { color: #eee; }
-    .updated, .txn-dong, .txn-meta, .source { color: #999; }
+    .updated, .txn-rank, .txn-dong, .txn-meta, .source, .section-note { color: #999; }
     .txn-amount { color: #ff8a5c; }
     .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }
   }
@@ -590,6 +593,7 @@ ${renderArticlesHtml(geomdanArticles)}
   </ul>
 
   <h2>🏘️ 검단신도시 아파트 실거래가</h2>
+  <p class="section-note">최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬 · 번호는 순위</p>
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
