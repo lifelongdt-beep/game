@@ -600,6 +600,8 @@ const PAGE_STYLE = `
   .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
   .empty { color: #666; padding: 14px 0; }
   .source { color: #999; font-size: 12px; margin-top: 4px; }
+  .openchat-invite { margin: 20px 0 0; padding-top: 14px; border-top: 1px solid rgba(0,0,0,.08); font-size: 13px; color: #444; line-height: 1.6; }
+  .openchat-invite a { color: #3b6fd6; text-decoration: none; word-break: break-all; }
   .tag-nearby { display: inline-block; font-size: 11px; font-weight: 700; color: #3b6fd6; background: rgba(59,111,214,.12); border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
   @media (prefers-color-scheme: dark) {
     body { background: #17181a; color: #eee; }
@@ -608,6 +610,8 @@ const PAGE_STYLE = `
     .updated, .txn-rank, .txn-dong, .txn-meta, .source, .section-note { color: #999; }
     .txn-amount { color: #ff8a5c; }
     .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }
+    .openchat-invite { color: #ccc; border-top-color: rgba(255,255,255,.12); }
+    .openchat-invite a { color: #7ea6ff; }
   }
 `;
 
@@ -647,6 +651,8 @@ ${renderArticlesHtml(geomdanArticles)}
 ${renderTransactionsHtml(transactions)}
   </ul>
   <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>
+
+  <p class="openchat-invite">${escapeHtml(OPENCHAT_INVITE_TEXT)}<br><a href="${escapeHtml(OPENCHAT_URL)}" target="_blank" rel="noopener">${escapeHtml(OPENCHAT_URL)}</a></p>
 </main>
 </body>
 </html>
