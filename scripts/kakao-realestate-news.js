@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 
-const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 5);
+const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 // "부동산" 같은 일반 언급뿐 아니라, 그 단어 없이 지표명만으로 쓰이는 기사도
 // 잡아내려고 시장 지표·정책·거래 관련 키워드를 폭넓게 OR로 추가했다.
 const NEWS_QUERY =
@@ -36,7 +36,7 @@ const OPENCHAT_FOOTER = `${OPENCHAT_INVITE_TEXT}\n${OPENCHAT_URL}`;
 //    사용자와 합의함).
 // fetchGeomdanArticles가 두 결과를 합쳐 유사 헤드라인은 하나로 묶고, 발행 시각
 // 최신순으로 정리한다.
-const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 5);
+const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
 const GEOMDAN_QUERY =
   process.env.GEOMDAN_QUERY ||
   '(검단신도시 OR "인천 검단" OR "서구 검단") ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d';
@@ -74,6 +74,14 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .filter(Boolean);
 const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 100);
 const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
+// data.go.kr가 일시적으로 통째로 응답하지 않는 경우(개별 요청 재시도인
+// fetchWithRetry를 다 써도 실패)를 대비해, 실거래가 조회 전체를 이 횟수만큼
+// 더 긴 간격(GEOMDAN_TRANSACTION_RETRY_DELAY_MS)을 두고 다시 시도한다. 무한
+// 재시도는 워크플로가 몇 시간이고 끝나지 않을 위험이 있어(뉴스까지 못 보내게
+// 됨) 두지 않았고, 최대 시도를 다 써도 실패하면 그때는 실거래가 없이 나머지
+// 내용(뉴스 등)만 발송한다.
+const GEOMDAN_TRANSACTION_RETRY_ATTEMPTS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_ATTEMPTS || 6);
+const GEOMDAN_TRANSACTION_RETRY_DELAY_MS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_DELAY_MS || 120000);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -343,13 +351,9 @@ async function fetchTransactionsForMonth(dealYmd) {
 // 자료가 거의 없고, GEOMDAN_TRANSACTION_DAYS가 두 달치로도 못 채울 만큼 길면
 // 달 경계에 걸린 날짜를 놓칠 수 있어 세 달로 여유를 둔다). LAWD_CD가 검단구
 // 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만 한 번 더
-// 걸러낸다.
-async function fetchGeomdanTransactions() {
-  if (!DATA_GO_KR_SERVICE_KEY) {
-    console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
-    return [];
-  }
-
+// 걸러낸다. hadError는 개별 달 조회가 fetchWithRetry를 다 쓰고도 실패했는지를
+// 나타낸다(실거래가 정말 0건인 정상적인 경우와 구분하기 위해).
+async function fetchGeomdanTransactionsAttempt() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
   const months = [0, -1, -2].map((offset) => {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
@@ -357,11 +361,13 @@ async function fetchGeomdanTransactions() {
   });
 
   const all = [];
+  let hadError = false;
   for (const dealYmd of months) {
     try {
       all.push(...(await fetchTransactionsForMonth(dealYmd)));
     } catch (err) {
       console.error(err.message);
+      hadError = true;
     }
   }
 
@@ -380,7 +386,38 @@ async function fetchGeomdanTransactions() {
   // 거래금액이 아니라 평당가(공급면적 추정치 기준) 높은 순으로 정렬한다 —
   // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록.
   recentOnly.sort((a, b) => (pricePerPyeong(b.amount, b.area) || 0) - (pricePerPyeong(a.amount, a.area) || 0));
-  return recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT);
+  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), hadError };
+}
+
+// data.go.kr가 통째로 응답하지 않아 세 달 조회가 전부 실패하면(정말 거래가
+// 0건인 정상적인 경우와 달리 hadError가 true) GEOMDAN_TRANSACTION_RETRY_ATTEMPTS
+// 번까지 간격을 두고 전체를 다시 시도한다. 다 실패해도 무한정 기다리지는
+// 않고 실거래가 없이 나머지(뉴스 등)는 정상 발송한다.
+async function fetchGeomdanTransactions() {
+  if (!DATA_GO_KR_SERVICE_KEY) {
+    console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
+    return [];
+  }
+
+  for (let attempt = 1; attempt <= GEOMDAN_TRANSACTION_RETRY_ATTEMPTS; attempt++) {
+    const { transactions, hadError } = await fetchGeomdanTransactionsAttempt();
+    const failed = hadError && transactions.length === 0;
+    if (!failed) return transactions;
+
+    if (attempt === GEOMDAN_TRANSACTION_RETRY_ATTEMPTS) {
+      console.error(
+        `실거래가 조회가 ${GEOMDAN_TRANSACTION_RETRY_ATTEMPTS}번 시도에도 계속 실패해 실거래가 없이 나머지 내용만 발송합니다.`
+      );
+      return transactions;
+    }
+
+    console.error(
+      `실거래가 조회 실패(${attempt}/${GEOMDAN_TRANSACTION_RETRY_ATTEMPTS}차 시도) — ` +
+        `${Math.round(GEOMDAN_TRANSACTION_RETRY_DELAY_MS / 1000)}초 후 다시 시도합니다.`
+    );
+    await sleep(GEOMDAN_TRANSACTION_RETRY_DELAY_MS);
+  }
+  return [];
 }
 
 function formatAmount(manwonStr) {
