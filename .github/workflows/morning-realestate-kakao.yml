@@ -59,7 +59,7 @@ jobs:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
           LAWD_CD: '28290'
           GEOMDAN_DONGS: '당하동,마전동,불로동,원당동'
-          GEOMDAN_TRANSACTION_COUNT: '20'
+          GEOMDAN_TRANSACTION_COUNT: '30'
           GEOMDAN_TRANSACTION_DAYS: '14'
         run: node scripts/kakao-realestate-news.js
 
