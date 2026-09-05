@@ -62,8 +62,8 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 30);
-const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 14);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 50);
+const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -329,9 +329,11 @@ async function fetchTransactionsForMonth(dealYmd) {
   }));
 }
 
-// 이번 달 + 지난달을 함께 조회한다(신고 기한 때문에 이번 달 초에는 자료가 거의 없다).
-// LAWD_CD가 검단구 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만
-// 한 번 더 걸러낸다.
+// 이번 달 + 지난달 + 지지난달을 함께 조회한다(신고 기한 때문에 이번 달 초에는
+// 자료가 거의 없고, GEOMDAN_TRANSACTION_DAYS가 두 달치로도 못 채울 만큼 길면
+// 달 경계에 걸린 날짜를 놓칠 수 있어 세 달로 여유를 둔다). LAWD_CD가 검단구
+// 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만 한 번 더
+// 걸러낸다.
 async function fetchGeomdanTransactions() {
   if (!DATA_GO_KR_SERVICE_KEY) {
     console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
@@ -339,7 +341,7 @@ async function fetchGeomdanTransactions() {
   }
 
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const months = [0, -1].map((offset) => {
+  const months = [0, -1, -2].map((offset) => {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
