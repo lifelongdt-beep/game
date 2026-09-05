@@ -65,7 +65,7 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 50);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 100);
 const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
