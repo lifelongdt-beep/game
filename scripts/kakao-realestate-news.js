@@ -285,6 +285,21 @@ async function fetchNewsSafe(query, limit, requireKeyword) {
   }
 }
 
+// 구글 뉴스의 when:1d는 정확한 자정 기준이 아니라 24시간 롤링 윈도우라, 저녁
+// 실행분에는 어제 발행된 기사가 섞여 들어올 수 있다. 검단신도시 뉴스는 KST
+// 기준 "오늘" 날짜에 발행된 기사만 남기도록 한 번 더 걸러낸다(발행시각을 못
+// 읽은 기사는 오늘자인지 확인할 수 없으므로 제외한다).
+function isTodayKst(date) {
+  if (!date || Number.isNaN(date.getTime())) return false;
+  const kstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const kstDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  return (
+    kstDate.getFullYear() === kstNow.getFullYear() &&
+    kstDate.getMonth() === kstNow.getMonth() &&
+    kstDate.getDate() === kstNow.getDate()
+  );
+}
+
 // 검단신도시 뉴스는 ①직접 언급(GEOMDAN_QUERY, GEOMDAN_KEYWORD로 제목 재검증)과
 // ②인접 지역 호재(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
 // 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
@@ -304,7 +319,8 @@ async function fetchGeomdanArticles(limit) {
     ),
   ]);
 
-  return clusterArticles([...directCandidates, ...nearbyCandidates], limit);
+  const todaysCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isTodayKst(c.pubDate));
+  return clusterArticles(todaysCandidates, limit);
 }
 
 function xmlTag(xml, tag) {
