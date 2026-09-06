@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>검단 부동산 브리핑</title>
+<title>재부키 부동산 분석</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
@@ -119,29 +119,6 @@
     margin: 0 0 12px;
   }
   .intro strong { color: var(--ink); font-weight: 600; }
-  details.method {
-    margin-top: 10px;
-  }
-  details.method summary {
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--blue);
-    font-weight: 500;
-    list-style: none;
-  }
-  details.method summary::-webkit-details-marker { display: none; }
-  details.method summary::before { content: '선별 기준 자세히 보기 '; }
-  details.method[open] summary::before { content: '선별 기준 접기 '; }
-  details.method p {
-    font-size: 13.5px;
-    color: var(--ink-soft);
-    max-width: 62ch;
-    margin: 10px 0 0;
-    padding: 12px 14px;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-  }
 
   /* Nav pills */
   .pillnav {
@@ -328,17 +305,11 @@
 
   <div class="masthead">
     <p class="kicker">Daily Briefing · 2026.09.06</p>
-    <h1>검단 부동산 브리핑</h1>
+    <h1>재부키 부동산 분석</h1>
     <p class="dateline">오늘(9월 6일, 일요일) 오전 8:06 기준 수집분 중 사람이 직접 읽고 고른 20건</p>
     <p class="intro">
       매일 아침 자동으로 모이는 오늘자 부동산 기사 후보 중에서, <strong>제가 직접 제목과 본문을 읽고 부동산 흐름을 이해하는 데 실질적으로 도움이 되는 것만</strong> 골라 제 말로 요약했습니다. 일반 부동산 동향과 검단신도시 소식을 나눠서 정리했습니다.
     </p>
-    <details class="method">
-      <summary></summary>
-      <p>
-        후보는 오늘(2026-09-06) 하루 안에 나온 기사만 대상으로 했고, 검단 관련 기사는 한국 시간 기준 당일 발행분만 남겼습니다. 시행사·중개업소 홍보 문구가 짙거나 상담 유도가 목적으로 보이는 글, 실제 내용과 무관한 키워드로 걸려든 기사(예: '거래량' 때문에 함께 걸린 암호화폐 시세 기사)는 제외했습니다. 다만 기사 페이지를 직접 열어 광고량을 확인하지는 못해, 매체 성격과 문구 톤을 보고 판단했다는 한계는 있습니다.
-      </p>
-    </details>
     <nav class="pillnav">
       <a href="#general">일반 부동산 뉴스</a>
       <a href="#geomdan">검단신도시 뉴스</a>
