@@ -80,9 +80,11 @@ const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 
 // 더 긴 간격(GEOMDAN_TRANSACTION_RETRY_DELAY_MS)을 두고 다시 시도한다. 무한
 // 재시도는 워크플로가 몇 시간이고 끝나지 않을 위험이 있어(뉴스까지 못 보내게
 // 됨) 두지 않았고, 최대 시도를 다 써도 실패하면 그때는 실거래가 없이 나머지
-// 내용(뉴스 등)만 발송한다.
-const GEOMDAN_TRANSACTION_RETRY_ATTEMPTS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_ATTEMPTS || 6);
-const GEOMDAN_TRANSACTION_RETRY_DELAY_MS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_DELAY_MS || 120000);
+// 내용(뉴스 등)만 발송한다. FETCH_TIMEOUT_MS로 매 시도가 실제로 끝나는 것을
+// 보장하므로, 최악의 경우도 대략 (시도 횟수 × 3개월 × fetchWithRetry 최대
+// 소요시간) + (시도 간 대기)로 유한하게 끝난다(기본값 기준 최대 약 20분).
+const GEOMDAN_TRANSACTION_RETRY_ATTEMPTS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_ATTEMPTS || 4);
+const GEOMDAN_TRANSACTION_RETRY_DELAY_MS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_DELAY_MS || 60000);
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -105,7 +107,7 @@ async function refreshAccessToken() {
   });
   if (CLIENT_SECRET) body.set('client_secret', CLIENT_SECRET);
 
-  const res = await fetch('https://kauth.kakao.com/oauth/token', {
+  const res = await fetchWithTimeout('https://kauth.kakao.com/oauth/token', FETCH_TIMEOUT_MS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
     body,
@@ -127,9 +129,24 @@ function decodeEntities(str) {
 }
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+// 연결은 되지만 응답이 영영 안 오는 경우(hang) fetch() 자체가 끝나지 않아
+// 재시도 로직이 통째로 멈춰버릴 수 있다 — 실제로 실거래가 조회 재시도
+// 도중 25분 넘게 멈춘 사고가 있었다. 시도마다 이 시간 안에 응답이 없으면
+// 강제로 중단시켜 재시도가 실제로 돌아가게 한다.
+const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 15000);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, timeoutMs, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // 구글 뉴스/실거래가 API 둘 다 가끔 일시적으로 실패한다 — HTTP 상태코드로
@@ -139,7 +156,7 @@ function sleep(ms) {
 async function fetchWithRetry(url, maxAttempts = 5) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
       if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === maxAttempts) return res;
     } catch (err) {
       if (attempt === maxAttempts) throw err;
@@ -478,7 +495,7 @@ function pricePerPyeong(amountManwonStr, areaM2Str) {
 }
 
 async function sendKakaoTemplate(accessToken, templateObject) {
-  const res = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
+  const res = await fetchWithTimeout('https://kapi.kakao.com/v2/api/talk/memo/default/send', FETCH_TIMEOUT_MS, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
