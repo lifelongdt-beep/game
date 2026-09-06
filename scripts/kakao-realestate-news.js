@@ -16,6 +16,12 @@ const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.
 // 설정돼 있으면 평소 뉴스/실거래가 수집·발송을 건너뛰고 이 문구만 카카오톡으로
 // 보낸다(점검 결과 등을 즉석에서 알릴 때 workflow_dispatch 입력으로 채운다).
 const NOTIFY_MESSAGE = process.env.NOTIFY_MESSAGE || '';
+// 뉴스·실거래가를 평소대로 수집해 docs/index.html·docs/geomdan.html·실거래가
+// 캐시는 그대로 갱신하되, 카카오톡 자동 다이제스트 발송만 건너뛴다. 사람이 그
+// 데이터를 직접 읽고 골라 만드는 별도 큐레이션 브리핑(docs/briefing.html)을
+// 새로 실행할 때, 자동 다이제스트 메시지가 중복으로 한 번 더 나가는 것을
+// 막기 위한 용도다.
+const SKIP_KAKAO_SEND = process.env.SKIP_KAKAO_SEND === 'true';
 
 // 다이제스트 페이지(renderCombinedPage) 맨 아래에 항상 붙는 오픈채팅방 초대
 // 문구. 카카오톡 메시지 첫 화면에는 넣지 않는다(링크가 여러 개 섞이면
@@ -780,6 +786,11 @@ async function main() {
 
   publishCombinedPage('index.html', articles, geomdanArticles, geomdanResult);
   publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanResult);
+
+  if (SKIP_KAKAO_SEND) {
+    console.log('SKIP_KAKAO_SEND가 설정돼 있어 카카오톡 자동 다이제스트 발송을 건너뜁니다.');
+    return;
+  }
 
   const period = currentPeriodLabel();
 
