@@ -46,7 +46,11 @@ jobs:
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           NOTIFY_MESSAGE: ${{ github.event.inputs.notify_message }}
-          SKIP_KAKAO_SEND: ${{ github.event.inputs.skip_kakao_send }}
+          # 정기 스케줄(schedule) 실행은 뉴스·실거래가 수집과 페이지 갱신만 하고
+          # 카카오톡 자동 다이제스트는 보내지 않는다 — 이제는 사람이 직접 고른
+          # "재부키 부동산 분석" 큐레이션 브리핑(오전 7시·오후 7시)이 그 자리를
+          # 대신하기 때문. 수동 실행(workflow_dispatch)은 기존처럼 입력값을 따른다.
+          SKIP_KAKAO_SEND: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.skip_kakao_send }}
           # 매일 보내는 다이제스트 메시지 맨 아래에 항상 붙는 오픈채팅방 초대 문구.
           OPENCHAT_INVITE_TEXT: '이 메세지를 매일 보고 검단신도시 관련 집단지성을 느끼고 싶으시면 재부키 오픈채팅방으로 오세요.'
           OPENCHAT_URL: 'https://open.kakao.com/o/gSHroBKh'
