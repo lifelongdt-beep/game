@@ -75,16 +75,15 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .filter(Boolean);
 const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 100);
 const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
-// data.go.kr가 일시적으로 통째로 응답하지 않는 경우(개별 요청 재시도인
-// fetchWithRetry를 다 써도 실패)를 대비해, 실거래가 조회 전체를 이 횟수만큼
-// 더 긴 간격(GEOMDAN_TRANSACTION_RETRY_DELAY_MS)을 두고 다시 시도한다. 무한
-// 재시도는 워크플로가 몇 시간이고 끝나지 않을 위험이 있어(뉴스까지 못 보내게
-// 됨) 두지 않았고, 최대 시도를 다 써도 실패하면 그때는 실거래가 없이 나머지
-// 내용(뉴스 등)만 발송한다. FETCH_TIMEOUT_MS로 매 시도가 실제로 끝나는 것을
-// 보장하므로, 최악의 경우도 대략 (시도 횟수 × 3개월 × fetchWithRetry 최대
-// 소요시간) + (시도 간 대기)로 유한하게 끝난다(기본값 기준 최대 약 20분).
-const GEOMDAN_TRANSACTION_RETRY_ATTEMPTS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_ATTEMPTS || 4);
-const GEOMDAN_TRANSACTION_RETRY_DELAY_MS = Number(process.env.GEOMDAN_TRANSACTION_RETRY_DELAY_MS || 60000);
+// data.go.kr가 통째로 응답하지 않을 때 실거래가 조회에만 무한정 시간을 쓰면
+// 뉴스·카카오톡 발송까지 덩달아 늦어진다. 이 시간(기본 30초) 안에 끝나지 않으면
+// 남은 달·재시도를 더 쌓지 않고 그 자리에서 조회를 포기하고, 대신 가장 최근에
+// 성공했던 조회 결과(TRANSACTIONS_CACHE_PATH)를 "임시 데이터"라고 표시해서
+// 보여준다 — 없는 것보다는 어제 시세라도 보여주는 편이 낫다는 판단. 다음 실행이
+// API에 정상적으로 접근되면 그때 새로 받아온 데이터로 캐시와 페이지가 자동
+// 갱신된다.
+const GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS = Number(process.env.GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS || 30000);
+const TRANSACTIONS_CACHE_PATH = 'docs/geomdan-transactions-cache.json';
 
 const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
 const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
@@ -153,13 +152,18 @@ async function fetchWithTimeout(url, timeoutMs, options = {}) {
 // 오기도 하고(503 등), fetch 자체가 예외를 던지며 죽기도 한다(네트워크 오류).
 // 특히 실거래가 API(apis.data.go.kr)는 한 번 불안정해지면 시도당 10초 안팎이
 // 걸리며 여러 번 연속 실패하는 걸 실제로 관측해서, 재시도 횟수를 5번으로 늘렸다.
-async function fetchWithRetry(url, maxAttempts = 5) {
+// deadline(Date.now() 기준 타임스탬프)을 넘기면, 시도 횟수가 남아 있어도 더
+// 이상 재시도하지 않고 그 자리에서 끝낸다 — 실거래가 조회처럼 예산이 걸린
+// 호출이 새 시도·대기를 계속 쌓아 예산을 크게 초과하는 것을 막기 위함이다
+// (이미 날아간 개별 요청 자체는 fetchWithTimeout이 보장하는 시간 안에 끝난다).
+// 뉴스 조회처럼 예산이 없는 호출은 deadline을 안 넘겨 기존과 동일하게 동작한다.
+async function fetchWithRetry(url, maxAttempts = 5, deadline = Infinity) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
-      if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === maxAttempts) return res;
+      if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === maxAttempts || Date.now() >= deadline) return res;
     } catch (err) {
-      if (attempt === maxAttempts) throw err;
+      if (attempt === maxAttempts || Date.now() >= deadline) throw err;
     }
     await sleep(attempt * 1000);
   }
@@ -348,12 +352,12 @@ function xmlTag(xml, tag) {
 // 계약월 하나에 대해 실거래가 상세 자료를 조회한다. 인증키는 공공데이터포털의
 // '일반 인증키(Encoding)' 값을 그대로 써야 하므로, URLSearchParams로 다시
 // 인코딩하지 않고 URL 문자열에 직접 이어붙인다(이중 인코딩되면 인증에 실패한다).
-async function fetchTransactionsForMonth(dealYmd) {
+async function fetchTransactionsForMonth(dealYmd, deadline) {
   const url =
     'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev' +
     `?serviceKey=${DATA_GO_KR_SERVICE_KEY}&LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=1`;
 
-  const res = await fetchWithRetry(url);
+  const res = await fetchWithRetry(url, 5, deadline);
   const xml = await res.text();
 
   if (!res.ok || xml.includes('<cmmMsgHeader>')) {
@@ -387,7 +391,7 @@ async function fetchTransactionsForMonth(dealYmd) {
 // 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만 한 번 더
 // 걸러낸다. hadError는 개별 달 조회가 fetchWithRetry를 다 쓰고도 실패했는지를
 // 나타낸다(실거래가 정말 0건인 정상적인 경우와 구분하기 위해).
-async function fetchGeomdanTransactionsAttempt() {
+async function fetchGeomdanTransactionsAttempt(deadline) {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
   const months = [0, -1, -2].map((offset) => {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
@@ -397,8 +401,14 @@ async function fetchGeomdanTransactionsAttempt() {
   const all = [];
   let hadError = false;
   for (const dealYmd of months) {
+    // 앞선 달 조회가 이미 예산을 다 써버렸으면, 남은 달은 시도조차 하지 않고
+    // 바로 실패로 처리한다(호출부가 예산 초과를 조회 실패와 동일하게 다룬다).
+    if (Date.now() >= deadline) {
+      hadError = true;
+      break;
+    }
     try {
-      all.push(...(await fetchTransactionsForMonth(dealYmd)));
+      all.push(...(await fetchTransactionsForMonth(dealYmd, deadline)));
     } catch (err) {
       console.error(err.message);
       hadError = true;
@@ -423,35 +433,75 @@ async function fetchGeomdanTransactionsAttempt() {
   return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), hadError };
 }
 
-// data.go.kr가 통째로 응답하지 않아 세 달 조회가 전부 실패하면(정말 거래가
-// 0건인 정상적인 경우와 달리 hadError가 true) GEOMDAN_TRANSACTION_RETRY_ATTEMPTS
-// 번까지 간격을 두고 전체를 다시 시도한다. 다 실패해도 무한정 기다리지는
-// 않고 실거래가 없이 나머지(뉴스 등)는 정상 발송한다.
+// data.go.kr가 세 달 조회 전부 실패하거나 예산을 넘기면(정말 거래가 0건인
+// 정상적인 경우와 달리 hadError가 true) 그 사실을 예외로 알려서 호출부가
+// "실패"로 인식하게 한다.
+async function fetchGeomdanTransactionsLive(deadline) {
+  const { transactions, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
+  if (hadError && transactions.length === 0) {
+    throw new Error('실거래가 API가 예산 시간 안에 응답하지 않았거나 세 달치 조회에서 모두 실패했습니다.');
+  }
+  return transactions;
+}
+
+// 이전에 성공한 실거래가 조회 결과를 docs/에 함께 커밋해두고, 이번 조회가
+// 실패했을 때 "없음" 대신 보여줄 임시 데이터로 쓴다. 조회가 진짜로 0건인
+// 정상적인 결과까지 캐시로 덮어쓰면, 다음에 API가 또 실패했을 때 그 빈
+// 캐시를 대신 보여주게 되어 오히려 더 못 쓰게 되므로 비어있지 않은 결과만 저장한다.
+function loadCachedTransactions() {
+  try {
+    const data = JSON.parse(fs.readFileSync(TRANSACTIONS_CACHE_PATH, 'utf8'));
+    return Array.isArray(data.transactions) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedTransactions(transactions) {
+  if (transactions.length === 0) return;
+  const data = {
+    generatedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'long', timeStyle: 'short' }),
+    transactions,
+  };
+  fs.mkdirSync('docs', { recursive: true });
+  fs.writeFileSync(TRANSACTIONS_CACHE_PATH, JSON.stringify(data, null, 2));
+}
+
+// 실거래가 조회에 GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS만큼만 예산을 준다.
+// deadline은 fetchWithRetry까지 그대로 전달돼, 예산을 넘기면 남은 달·재시도를
+// 더 쌓지 않고 그 자리에서 실패로 끝난다(이미 날아간 개별 요청은
+// FETCH_TIMEOUT_MS 안에 끝나므로 실제 초과 시간은 예산 + 한 번의 요청 시간
+// 정도로 짧게 묶인다). 예산 안에 성공하면 그 결과를 쓰고 캐시도 갱신한다.
+// 실패하면 마지막으로 성공했던 캐시를 "임시 데이터"로 대신 보여준다 — 이건
+// 이번 실행 한정 응급 처치이고, 다음 실행이 API에 정상적으로 접근되면 그때
+// 새로 받아온 데이터로 자동 교체된다.
 async function fetchGeomdanTransactions() {
   if (!DATA_GO_KR_SERVICE_KEY) {
     console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래가 조회를 건너뜁니다.');
-    return [];
+    return { transactions: [], stale: false };
   }
 
-  for (let attempt = 1; attempt <= GEOMDAN_TRANSACTION_RETRY_ATTEMPTS; attempt++) {
-    const { transactions, hadError } = await fetchGeomdanTransactionsAttempt();
-    const failed = hadError && transactions.length === 0;
-    if (!failed) return transactions;
+  const budgetSec = Math.round(GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS / 1000);
+  const deadline = Date.now() + GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS;
+  try {
+    const transactions = await fetchGeomdanTransactionsLive(deadline);
+    saveCachedTransactions(transactions);
+    return { transactions, stale: false };
+  } catch (err) {
+    console.error(`실거래가 조회 실패: ${err.message}`);
+  }
 
-    if (attempt === GEOMDAN_TRANSACTION_RETRY_ATTEMPTS) {
-      console.error(
-        `실거래가 조회가 ${GEOMDAN_TRANSACTION_RETRY_ATTEMPTS}번 시도에도 계속 실패해 실거래가 없이 나머지 내용만 발송합니다.`
-      );
-      return transactions;
-    }
-
+  const cached = loadCachedTransactions();
+  if (!cached) {
     console.error(
-      `실거래가 조회 실패(${attempt}/${GEOMDAN_TRANSACTION_RETRY_ATTEMPTS}차 시도) — ` +
-        `${Math.round(GEOMDAN_TRANSACTION_RETRY_DELAY_MS / 1000)}초 후 다시 시도합니다.`
+      `실거래가 조회가 ${budgetSec}초 예산 안에 끝나지 않았고 대체할 이전 데이터도 없어, 실거래가 없이 나머지 내용만 발송합니다.`
     );
-    await sleep(GEOMDAN_TRANSACTION_RETRY_DELAY_MS);
+    return { transactions: [], stale: false };
   }
-  return [];
+  console.error(
+    `실거래가 조회가 ${budgetSec}초 예산 안에 끝나지 않아, ${cached.generatedAt} 기준으로 마지막에 성공했던 데이터를 임시로 보여줍니다.`
+  );
+  return { transactions: cached.transactions, stale: true, cachedAt: cached.generatedAt };
 }
 
 function formatAmount(manwonStr) {
@@ -629,6 +679,7 @@ const PAGE_STYLE = `
   .txn-apt { font-size: 15px; margin-top: 2px; }
   .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
   .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
+  .stale-notice { background: #fff6e5; color: #8a5a00; border: 1px solid #f0d999; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
   .empty { color: #666; padding: 14px 0; }
   .source { color: #999; font-size: 12px; margin-top: 4px; }
   .openchat-invite { margin: 20px 0 0; padding-top: 14px; border-top: 1px solid rgba(0,0,0,.08); font-size: 13px; color: #444; line-height: 1.6; }
@@ -639,6 +690,7 @@ const PAGE_STYLE = `
     .article, .txn { background: #232427; box-shadow: none; }
     .article a { color: #eee; }
     .updated, .txn-rank, .txn-dong, .txn-meta, .source, .section-note { color: #999; }
+    .stale-notice { background: rgba(240,185,0,.12); color: #e0b23c; border-color: rgba(240,185,0,.3); }
     .txn-amount { color: #ff8a5c; }
     .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }
     .openchat-invite { color: #ccc; border-top-color: rgba(255,255,255,.12); }
@@ -651,7 +703,11 @@ const PAGE_STYLE = `
 // 내용을 다 담기로 하면서 링크로 연결되는 페이지도 하나로 합쳤다). docs/index.html
 // 과 docs/geomdan.html 둘 다 같은 내용을 담아서, 예전에 geomdan.html을 따로
 // 북마크/공지해둔 경우에도 링크가 깨지지 않게 한다.
-function renderCombinedPage(articles, geomdanArticles, transactions, generatedAt) {
+function renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt) {
+  const { transactions, stale, cachedAt } = transactionsResult;
+  const staleNotice = stale
+    ? `<p class="stale-notice">⚠️ 지금 국토부 실거래가 조회가 원활하지 않아, ${escapeHtml(cachedAt)} 기준으로 마지막에 성공했던 데이터를 임시로 보여드리고 있어요. 다음 자동 갱신 때 정상 데이터로 바뀝니다.</p>`
+    : '';
   const title = '🏠 오늘의 부동산 종합';
   return `<!doctype html>
 <html lang="ko">
@@ -678,6 +734,7 @@ ${renderArticlesHtml(geomdanArticles)}
 
   <h2>🏘️ 검단신도시 아파트 실거래가</h2>
   <p class="section-note">최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬 · 번호는 순위</p>
+${staleNotice}
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
@@ -690,14 +747,14 @@ ${renderTransactionsHtml(transactions)}
 `;
 }
 
-function publishCombinedPage(filename, articles, geomdanArticles, transactions) {
+function publishCombinedPage(filename, articles, geomdanArticles, transactionsResult) {
   const generatedAt = new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     dateStyle: 'long',
     timeStyle: 'short',
   });
   fs.mkdirSync('docs', { recursive: true });
-  fs.writeFileSync(`docs/${filename}`, renderCombinedPage(articles, geomdanArticles, transactions, generatedAt));
+  fs.writeFileSync(`docs/${filename}`, renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt));
   console.log(`docs/${filename} 갱신 완료`);
 }
 
@@ -718,10 +775,11 @@ async function main() {
 
   const articles = await fetchNewsSafe(NEWS_QUERY, ARTICLE_COUNT);
   const geomdanArticles = await fetchGeomdanArticles(GEOMDAN_ARTICLE_COUNT);
-  const geomdanTransactions = await fetchGeomdanTransactions();
+  const geomdanResult = await fetchGeomdanTransactions();
+  const geomdanTransactions = geomdanResult.transactions;
 
-  publishCombinedPage('index.html', articles, geomdanArticles, geomdanTransactions);
-  publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanTransactions);
+  publishCombinedPage('index.html', articles, geomdanArticles, geomdanResult);
+  publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanResult);
 
   const period = currentPeriodLabel();
 
@@ -741,7 +799,7 @@ async function main() {
     [
       { label: '뉴스', items: articles.map((a) => a.title) },
       { label: '검단', items: geomdanArticles.map((a) => a.title), nearbyItems: nearbyGeomdanTitles },
-      { label: '실거래', items: transactionLines },
+      { label: geomdanResult.stale ? '실거래(임시)' : '실거래', items: transactionLines },
     ],
     DIGEST_PAGE_URL
   );
