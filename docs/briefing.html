@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>검단 부동산 브리핑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f6f2ea;
+    --paper-raised: #ffffff;
+    --ink: #1c2536;
+    --ink-soft: #5b6470;
+    --ink-faint: #9099a5;
+    --accent: #c9502f;
+    --accent-soft: rgba(201,80,47,.10);
+    --blue: #3b6fd6;
+    --blue-soft: rgba(59,111,214,.10);
+    --line: rgba(28,37,54,.12);
+    --shadow: 0 1px 2px rgba(28,37,54,.05), 0 10px 28px -20px rgba(28,37,54,.35);
+    --font-display: 'Gowun Batang', Georgia, 'Nanum Myeongjo', serif;
+    --font-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181f;
+      --paper-raised: #1d232c;
+      --ink: #eef0f3;
+      --ink-soft: #9aa2ae;
+      --ink-faint: #6b7280;
+      --accent: #ff8a5c;
+      --accent-soft: rgba(255,138,92,.14);
+      --blue: #7ea6ff;
+      --blue-soft: rgba(126,166,255,.14);
+      --line: rgba(255,255,255,.11);
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14181f;
+    --paper-raised: #1d232c;
+    --ink: #eef0f3;
+    --ink-soft: #9aa2ae;
+    --ink-faint: #6b7280;
+    --accent: #ff8a5c;
+    --accent-soft: rgba(255,138,92,.14);
+    --blue: #7ea6ff;
+    --blue-soft: rgba(126,166,255,.14);
+    --line: rgba(255,255,255,.11);
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 44px 20px 80px;
+  }
+
+  a { color: inherit; }
+  a:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 2px; }
+
+  /* Masthead */
+  .masthead {
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  .kicker::before {
+    content: '';
+    width: 16px;
+    height: 2px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 6vw, 42px);
+    line-height: 1.2;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+  .dateline {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .intro {
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 12px;
+  }
+  .intro strong { color: var(--ink); font-weight: 600; }
+  details.method {
+    margin-top: 10px;
+  }
+  details.method summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 500;
+    list-style: none;
+  }
+  details.method summary::-webkit-details-marker { display: none; }
+  details.method summary::before { content: '선별 기준 자세히 보기 '; }
+  details.method[open] summary::before { content: '선별 기준 접기 '; }
+  details.method p {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  /* Nav pills */
+  .pillnav {
+    display: flex;
+    gap: 8px;
+    margin: 22px 0 0;
+    flex-wrap: wrap;
+  }
+  .pillnav a {
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+
+  /* Section */
+  .section { margin-top: 52px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+    scroll-margin-top: 20px;
+  }
+  .section-head .num {
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 28px;
+    max-width: 58ch;
+  }
+
+  /* Stat strip */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0 0 30px;
+  }
+  .stat-tile {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .stat-rank {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .04em;
+  }
+  .stat-apt {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 0 2px;
+    line-height: 1.3;
+  }
+  .stat-price {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .stat-meta {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-foot {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin: -18px 0 30px;
+  }
+  .stat-foot a { color: var(--blue); text-decoration: none; }
+
+  /* Group */
+  .group { margin-bottom: 30px; }
+  .group-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: var(--blue);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tag-nearby {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--blue);
+    background: var(--blue-soft);
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* Card */
+  .card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-meta .outlet { font-weight: 600; color: var(--ink-soft); }
+  .card-meta .dot { opacity: .5; }
+  .card-body {
+    font-size: 15px;
+    margin: 0 0 10px;
+    color: var(--ink);
+  }
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .card-link:hover { text-decoration: underline; }
+  .card-link::after { content: '→'; transition: transform .15s; }
+  .card-link:hover::after { transform: translateX(2px); }
+
+  /* Footer */
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .footer-note {
+    font-size: 13px;
+    color: var(--ink-faint);
+    max-width: 60ch;
+    margin: 0 0 16px;
+  }
+  .footer-link {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    text-decoration: none;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper-raised);
+  }
+
+  @media (max-width: 480px) {
+    .stat-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <div class="masthead">
+    <p class="kicker">Daily Briefing · 2026.09.06</p>
+    <h1>검단 부동산 브리핑</h1>
+    <p class="dateline">오늘(9월 6일, 일요일) 오전 8:06 기준 수집분 중 사람이 직접 읽고 고른 20건</p>
+    <p class="intro">
+      매일 아침 자동으로 모이는 오늘자 부동산 기사 후보 중에서, <strong>제가 직접 제목과 본문을 읽고 부동산 흐름을 이해하는 데 실질적으로 도움이 되는 것만</strong> 골라 제 말로 요약했습니다. 일반 부동산 동향과 검단신도시 소식을 나눠서 정리했습니다.
+    </p>
+    <details class="method">
+      <summary></summary>
+      <p>
+        후보는 오늘(2026-09-06) 하루 안에 나온 기사만 대상으로 했고, 검단 관련 기사는 한국 시간 기준 당일 발행분만 남겼습니다. 시행사·중개업소 홍보 문구가 짙거나 상담 유도가 목적으로 보이는 글, 실제 내용과 무관한 키워드로 걸려든 기사(예: '거래량' 때문에 함께 걸린 암호화폐 시세 기사)는 제외했습니다. 다만 기사 페이지를 직접 열어 광고량을 확인하지는 못해, 매체 성격과 문구 톤을 보고 판단했다는 한계는 있습니다.
+      </p>
+    </details>
+    <nav class="pillnav">
+      <a href="#general">일반 부동산 뉴스</a>
+      <a href="#geomdan">검단신도시 뉴스</a>
+    </nav>
+  </div>
+
+  <section class="section" id="general">
+    <div class="section-head"><span class="num">01</span><h2>일반 부동산 뉴스</h2></div>
+    <p class="section-desc">오늘의 흐름을 세 갈래로 정리했습니다: 금리·대출 환경, 서울 집값의 지역별 양극화, 그리고 공급·미분양 리스크.</p>
+
+    <div class="group">
+      <p class="group-label">금리 · 대출</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">연합뉴스TV</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">한국은행 기준금리가 1년 9개월 만에 3%대에 올라섰고, 추가 인상 가능성까지 거론되고 있습니다. 대출금리에 곧바로 반영되는 지표라 매수 심리와 기존 대출자의 상환 부담에 동시에 영향을 줄 수 있는, 오늘 가장 무게감 있는 소식입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9pb3VVM1dQYXpjb24tWDNja0VKQm1Nc3pyYk9zMVp2QWM5ajdHZ3YwZi01RGdPeTM4eXh6WFdmdU9VOUxDUDhmbVh4TVJOVFdzSmhQZHFkdG1VWlg5cVNiNWZBRW02LWM?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">동아일보</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">같은 서울 안에서도 강남권 아파트 매입자의 대출 의존도는 20% 안팎인 반면, 노원·도봉·강북은 50%대에 이른다는 분석입니다. 금리가 오를 때 어느 지역 집값이 더 크게 흔들릴지 가늠하게 해주는 근거 자료입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMidkFVX3lxTFBhYXk4ZkRmeWtJU1hkYWVSb250MWxJSUh2RkFYR1BGR2hUU3RwZzg4emVMMWZxb1NLVGZIQW5tZU1ac3RrV2Y3dzE3Zmp1YVJxUUQyOWZLekZ2ZXE4RXhrcFZCQzVBT2FhZlpBUm4xNEltamlWY3fSAWZBVV95cUxNLUlfRGlXVHA0Zy1RcVRpQ195aDRKNEg0cjY1LUFYTjAtZzBFY3Y0ZTJaOGU0Z0hoYTZtdjNGMzduaDlaLXpZZzJCQUFpZEhkcFFCc2FOYUlGRGs5dVlmbzVsaVVWZ3c?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">네이트뉴스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">은행권 가계대출 총액이 반년 만에 줄었다는 헤드라인 뒤에는, 디딤돌·보금자리론 같은 정책대출을 빼고 보면 증가세가 여전하다는 이면이 있습니다. 숫자 하나만 보고 넘기기 쉬운 통계의 함정을 짚은 기사입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiU0FVX3lxTE5RNlE1TzJUV2w4ME1nTzROSkJMaGRtUFZNR2tySkJpOGRYMTZ3Ump4TW1EUE04d3Vhc0VtN0w0UklvSXNHa00wQ0ZPeFFNbm5ENm4w?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">이투데이</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">삼성전자가 무주택 임직원에게 최대 5억원을 저리로 빌려주는 제도를 내놓으면서, 동탄·영통·천안 등 사업장 인접 지역 '삼세권' 수요가 다시 주목받고 있습니다. 대기업 복지 제도가 특정 지역 수요를 움직이는 사례입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiVEFVX3lxTE82emQ2R1JkOV94ektzLXgzbVZNbUdNcnY5YnZvU01RQ1k5eUQzN3oxbXMzUWlyWGc3UHRMc3JmQlNkVTVpTW43ZzdqbWcxYWlITnRUcA?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+
+    <div class="group">
+      <p class="group-label">서울 집값 양극화</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">한국경제</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">부동산 정책 후퇴 비판이 일자 대통령이 직접 "강남이 왜 급락했는지 살펴보라"고 지시했다는 소식입니다. 정책 기조가 어느 방향으로 움직일지 가늠할 수 있는 정치적 신호로 읽힙니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE9JelUwZmN3UVk1azJzcTNvY1N0emxJVzVuX2I2dzFfa0g5Tm5Lb01FTmlHVE1aeTVPWi0ydFFiZzUxODIxTlg3a2NGY0xiYXQ5QmJ4OEwzOVEzdw?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">연합인포맥스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">정작 8월 한 달 상승폭은 비강남권이 강남권의 두 배였습니다. 이사철을 앞두고 핵심지보다 외곽 지역이 더 뜨거워지는 역전 현상이 뚜렷해지고 있습니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMicEFVX3lxTE1nUXo5SDZucWg0UWtLYkxILXNxS3BlVkNSLTlDYXlMbzJobHB3QTRVSEx6R1JCVHBSbzhpZEhIckZ1Mk10b2dTamJsWTBBREwxQ05hSzFZdDlvQ1prem90NVAwUG1Xc2R1Y1BDNDdYZG0?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+
+    <div class="group">
+      <p class="group-label">공급 · 미분양</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">연합인포맥스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">주택도시보증공사(HUG)가 9월 미분양관리지역 4곳을 새로 지정했습니다. 천안·부산 강서가 신규 편입되면서, 해당 지역에 공급 과잉 경고등이 켜졌습니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMicEFVX3lxTE54NXBOUlJhSTJIVFhMY3BkaEp0bTRyNG03dWRtaGNUb2ZTRmI5bzVONjZlT3lJeTRNWkw1M0VZamlLV2ZnaW1MeWduX1pVU0FTcHNsSlY1a0tfemNxMWF0bUp4ekpyRHlWdXNVRks4aUQ?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">KBS 뉴스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">강원 분양시장 침체가 이어지며 미분양이 두 달 연속 3천 가구를 넘어섰습니다. 수도권과 대비되는 지방 시장의 온도차를 보여줍니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiW0FVX3lxTE5MMGY4cUExekpMZXlERWpHZGpITnplTTZwNWVfai0xSjQ1dHFsTHVXaFRyT0FHMnZyckkxNF8yQ3NjdUE2N2ZlVGhDdDE1UzhkTEhOQ1hTeTdiNkE?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">뉴시안</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">국정감사를 앞두고, "집을 더 짓겠다"는 공급 확대 기조와 갈수록 조여지는 대출 규제가 서로 엇박자를 내고 있다는 지적이 나왔습니다. 공급 정책과 금융 정책의 방향이 어긋나 있다는 진단입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiakFVX3lxTE5xZ2tQYmtmTmZIQTdzaWNuM3lRMExPQzZPVGtKSUQ1dTJ5NjFQQkw5dUlqcXBwSGNqZEJYTklHYVd5ZzN2RU1hUDNNWkJsOEMzR2FKSGNlWGgzR1hoU1dxYXk3S01YbDA5VmfSAW5BVV95cUxPRDJHU1JMN2RGN3pXUFZsNS1NTWc4SVZ2azNmUUJSYVZmWWlHRVJScnBxa2N1WDhfaU52VFVCenBWU0xTOF9sLVpGTktMY0xFRFVTQUtXb0s1R25SQWY0cGhkdW9scm14QnV1ZjlEQQ?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="geomdan">
+    <div class="section-head"><span class="num">02</span><h2>검단신도시 뉴스</h2></div>
+    <p class="section-desc">시세·분양 동향, 준공·입주, 교통·인프라, 그리고 생활권을 공유하는 인접 지역 소식까지 네 갈래로 정리했습니다.</p>
+
+    <div class="stat-strip">
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 1위</p>
+        <p class="stat-apt">힐스테이트신검단센트럴</p>
+        <p class="stat-price">8억 7,500만원</p>
+        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,619만원</p>
+      </div>
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 2위</p>
+        <p class="stat-apt">힐스테이트신검단센트럴</p>
+        <p class="stat-price">9억 7,500만원</p>
+        <p class="stat-meta">불로동 · 전용 99.5㎡ · 평당 2,544만원</p>
+      </div>
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 3위</p>
+        <p class="stat-apt">신검단중앙역풍경채어바니티</p>
+        <p class="stat-price">8억 4,800만원</p>
+        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,540만원</p>
+      </div>
+    </div>
+    <p class="stat-foot">최근 30일 계약분을 평당가(공급면적 추정치) 기준으로 정렬한 순위입니다 · <a href="./geomdan.html">전체 순위 보기 →</a></p>
+
+    <div class="group">
+      <p class="group-label">시세 · 분양 동향</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">땅집고</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">서울역까지 30분대라는 입지를 앞세워 검단호수공원역 중흥S-클래스가 옆 단지보다 1억가량 비싸게 시세가 형성됐습니다. 다만 입주 예정자들 사이에서는 "커뮤니티 시설은 오히려 부실하다"는 불만도 함께 나옵니다. 프리미엄이 실제 가치와 맞는지를 둘러싼 현장 취재입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMif0FVX3lxTFBCZzYyVml5Mzk2VlBDb0tZUllBM0MwV0dsdXE3cWJldlg5U1lOcjB5LU5FVjJnMS1qWVRuTFhEN2RZZXNrUVJ3T2hYMkF5dDRjSXdFdnhFVkpCdnRmX3ZOSnFPOVNtRmJkLW1rdWFseUNxTzNnMlBtLVNKaDBZQWvSAXNBVV95cUxOQzN3dUZDVzRRV1ktSlp3N01GSUxuOXJtYUtPbmpieWFwVjBVYnhaX21IZnpjblJGa0R4a3VDLU5HSkNJazRoY2lIb3V2Mi1IYWppbEVKNDFjZHhPX1BobnR2ZG8xdFJMOEI3LS1heWhwWE5z?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">스트레이트뉴스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">인근 미분양 이슈가 남아 있는데도 검단호수공원역 파라곤은 오히려 역대 최고가로 분양가를 책정하는 승부수를 던졌습니다. 공급 과잉 우려와 사업자의 실수요 자신감이 동시에 읽히는 대목입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMic0FVX3lxTFBvVzB4Uk9GNzFKbHpPQnhyNmVyeVhuaG1hOHJfS2tEc3FBdzF3dmhmdUpHMVFuckp6dTZvSGFWZElFVE1neVRvQ280b2lfWnpnbkJraEVhdXlmWU9Qa19CT01NWUZOVDlWRzQ1cDJsYmp3Q03SAXdBVV95cUxOVWs3ZjJ1ZUlKVl9YM0o0SUJKMXVEcXpOaWlKSnJUVXVzbnRhblJTLXU1aElVckh0TDJOUFRBY0NwQjNVeXpmMHNVOW1ONE84czVLM2dtRnZKSVYzWUlock9YbWNBRnlDeXAtNkl3ZjMxampHS0dYZw?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">국토일보</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">검단호수공원역 풍경채 어바니티 2차에서는 국민평형(84㎡)보다 작은 전용 59㎡형에 관심이 몰리고 있습니다. 대출 규제 국면에서 총액 부담이 작은 소형을 찾는 흐름이 뚜렷해지고 있다는 신호입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiZEFVX3lxTFBTVTAySEIyb2UtOEd1cDZSZUFjN3R4YXJsWTdYbHhYZEVOQ3NnX1VuYWZIaGpmOXZ2VURxQ1BCN1REUFFCRXIyeVpTRFREUjJfLXg3cGo1VGZJb0RPNFhXOTZZdUg?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">다음뉴스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">동양건설산업이 검단호수공원역 인근에 주거단지 '파라곤 메트로파크'와 스트리트형 상가를 연내 동시 분양할 예정입니다. 검단 내 공급 파이프라인이 아직 이어지고 있음을 보여줍니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiRkFVX3lxTE5yRHM1ZkhLS3dZMDBlRGJ4TzhTYmpvRlBPSEFuamhXOXlQMWN4Q2l4YjhWOHFZb3dhMkV2cFM5cFMzZ2tPOEE?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+
+    <div class="group">
+      <p class="group-label">준공 · 입주</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">이코노미스트</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">대방건설의 신검단중앙역 디에트르 더 에듀가 준공을 마쳤습니다. 신검단중앙역 인근 브랜드 단지 라인업이 하나 더 완성되면서, 실입주 가능한 물량이 계속 늘고 있습니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiYkFVX3lxTFBrU21IeHZrUVp4QjltaThzQ0lCeUpmSGpGX3JJSWw3QXBTS0E1cEhoelB3OWpGTkt1RGdkLXVNYWFJQnpTOWFwMU5RdWw0LWFsOTIyZTJoWDhsZk9hS2pwNzhn?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">서울경제</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">금강주택의 신검단중앙역 금강펜테리움 센트럴파크가 입주를 시작했습니다. 같은 역세권에서 대단지 입주가 이어지며 생활 인프라 수요도 함께 늘어날 것으로 보입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiUkFVX3lxTE1yeDlROVMtZ1lXSDA1Qk1lSGp3X2plVzJFdXlZY3Vzd0JfWVV1blpaajdzWGFPV2RWZHhaelhFd2ZKVF84U3ppOEd0c0lFUlhja0HSAVNBVV95cUxOelp4YVZQYlhlQS1nUUpuOVlKR2lwTndSU1FoR2pTdFRJTW5GSUlKVVZ6dHZZTXZjNGJ0N1pEdjNEOERoaFJaQ3laWGdEckJIWXpRVQ?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+
+    <div class="group">
+      <p class="group-label">교통 · 인프라</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">인천투데이</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">인천1호선 검단연장 개통 이후, 관심은 다음 단계인 GTX-D 정차역 위치로 옮겨가고 있습니다. 정차역이 확정되면 역세권 프리미엄 지도가 다시 그려질 수 있는 변수입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMicEFVX3lxTE03VVVWZ1VfVHAzOGNCVENUelh4WFF4bE5FWTdUTXQtVmdHRzZ6bjgzbVZBeWlrUGdTZ1VXMzgzQWxKOUV6MHJycEFtV055QUVkZ3VjQlpFZ3IyT05pODYtck5SV2dZYzRfWVI2WG8xR0k?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">SK브로드밴드뉴스</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">유정복 인천시장이 GTX-D·E, 서울지하철 5호선 연장 등 검단구를 포함한 광역 교통망 확충 계획을 재확인했습니다. 아직 확정 전이지만, 인천시가 계속 추진 의지를 밝히고 있다는 점은 확인할 수 있습니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBXb2lwSWNFVVFXSFROX1VsMUpXclhJSWdNNjg2NGVCcE1TYi1MUG4yM1cycFEtU3BvODNSOU1ERFhxY2JOSGJaa1JpTi1uQTZrNmdKNDFKNUtxT3JDQkNOTklGNDVDQjl5T0JmOTYwU2M?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">포커스인천</span><span class="dot">·</span><span>2026.09.06</span></p>
+        <p class="card-body">개통 초기부터 아라역 주변 정체가 심해지자 서구의장과 지역 국회의원이 직접 현장을 점검했습니다. 역세권 인기의 이면에 있는 성장통을 보여주는 소식입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMibEFVX3lxTE1SbVpMRF9ncFlJMmRRbV93SWY4bGlyZ3NlVlVmWF9YcmhqZG0zaVFNZ3NxSTNWX2F1ZFRSUC1ObzBBZkhyTExNZnY4Z1VoX0QwRVdyNEloNDkwZ0pLaWFIbUgxdkVPRDhydmd0dtIBcEFVX3lxTE5tWHZhaVhBSXZtd2FkQkpjQ2J4ckFDcURsR0xVb0pxQzFXd1hoUUk3UGlSNmhBVEw4OWlZd3hqcE15OVNPTWZRUm5MMjdXTDkxWkE0dF9keS1CbXk5NTBGMjRUcDhvSFVaM2JCT3dCeFU?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+
+    <div class="group">
+      <p class="group-label">인접 지역 호재</p>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">뉴시안</span><span class="dot">·</span><span>2026.09.06</span><span class="tag-nearby">인접 지역</span></p>
+        <p class="card-body">검단과 같은 인천 서북부 생활권에 속한 계양신도시가 12월 첫 입주와 10월 민간분양을 앞두고 속도를 내고 있습니다. A6블록·AC3·AC4 등 여러 블록에서 비슷한 시점에 공급이 몰리는 흐름입니다. '검단' 자체를 언급하진 않지만, 생활권을 공유하는 만큼 수요·교통 흐름에 영향을 줄 수 있어 함께 담았습니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiakFVX3lxTE9WdDUxOWxGbTdmOS1uWUFYRlprZngxVXZnNlRFWm5JX2dpRG9FWHF4U0JqZHFmOVdZeG9tVGVYSE9oTlBOdDdGdGRJRmRqcW92V3BwaGNPOWgzZC0wMk1nZEV6UWZ0WlBlb2fSAW5BVV95cUxPa0hxVFU5MDJ2cFFldURTb0ZKaWFjelBZQU5zYWFOdWFqUlBvUnFNY0o4aFEtdld5STA0Rlg0VUpXVnlNTUEtS1RzNldxUFVsc1ZNd3dnUVFBMlV4aThpQWFLdTU4VkFhYmNXTEhIUQ?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+
+      <article class="card">
+        <p class="card-meta"><span class="outlet">아시아경제</span><span class="dot">·</span><span>2026.09.06</span><span class="tag-nearby">인접 지역</span></p>
+        <p class="card-body">규제지역 지정을 비켜간 청라국제도시가 반사이익을 누리며 '청라 아크원 푸르지오' 분양에 나섰습니다. 규제 여부에 따라 자금이 인천 서북부 권역 안에서 어떻게 이동하는지를 보여주는 사례입니다.</p>
+        <a class="card-link" href="https://news.google.com/rss/articles/CBMiYEFVX3lxTFAwQmN2bmc2Ym5lV0N2YW1PVkp1aFZJZXlOT1lHQmZYd3huSGxUN2dKSnlGcy0zTV9BR296WXVpNndYb2RRRmlaSU9ScDY5UGtIaDIyYnJLLV9SYkF4UmItMw?oc=5" target="_blank" rel="noopener">기사 보기</a>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    <p class="footer-note">이 브리핑은 검단 부동산 자동 다이제스트의 오늘자 수집 데이터를 바탕으로 사람이 한 번 더 골라 요약한 버전입니다. 실거래가 전체 순위, 매일 자동 갱신되는 뉴스 원문 목록은 아래 다이제스트 페이지에서 볼 수 있습니다.</p>
+    <a class="footer-link" href="./index.html">검단 부동산 일일 다이제스트 보러가기 →</a>
+  </footer>
+
+</main>
+</body>
+</html>
