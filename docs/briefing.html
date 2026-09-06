@@ -203,12 +203,67 @@
     margin-top: 3px;
     font-variant-numeric: tabular-nums;
   }
-  .stat-foot {
-    font-size: 12.5px;
-    color: var(--ink-faint);
-    margin: -18px 0 30px;
+  /* Rank list */
+  .rank-list {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
   }
-  .stat-foot a { color: var(--blue); text-decoration: none; }
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-num {
+    flex: 0 0 22px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-info { flex: 1 1 auto; min-width: 0; }
+  .rank-apt {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rank-meta {
+    display: block;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-price { flex: 0 0 auto; text-align: right; }
+  .rank-amount {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .rank-pp {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-source {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 14px 0 0;
+  }
 
   /* Group */
   .group { margin-bottom: 30px; }
@@ -277,22 +332,17 @@
     padding-top: 24px;
     border-top: 1px solid var(--line);
   }
-  .footer-note {
-    font-size: 13px;
-    color: var(--ink-faint);
-    max-width: 60ch;
-    margin: 0 0 16px;
+  .openchat-invite {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin: 0;
   }
-  .footer-link {
-    display: inline-block;
-    font-size: 14px;
-    font-weight: 600;
+  .openchat-invite a {
     color: var(--blue);
     text-decoration: none;
-    padding: 10px 16px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--paper-raised);
+    font-weight: 600;
+    word-break: break-all;
   }
 
   @media (max-width: 480px) {
@@ -308,11 +358,12 @@
     <h1>재부키 부동산 분석</h1>
     <p class="dateline">오늘(9월 6일, 일요일) 오전 8:06 기준 수집분 중 사람이 직접 읽고 고른 20건</p>
     <p class="intro">
-      매일 아침 자동으로 모이는 오늘자 부동산 기사 후보 중에서, <strong>제가 직접 제목과 본문을 읽고 부동산 흐름을 이해하는 데 실질적으로 도움이 되는 것만</strong> 골라 제 말로 요약했습니다. 일반 부동산 동향과 검단신도시 소식을 나눠서 정리했습니다.
+      매일 아침 자동으로 모이는 오늘자 부동산 기사 후보 중에서, <strong>제가 직접 제목과 본문을 읽고 부동산 흐름을 이해하는 데 실질적으로 도움이 되는 것만</strong> 골라 제 말로 요약했습니다. 일반 부동산 동향, 검단신도시 소식, 그리고 검단신도시 시세 순위까지 나눠서 정리했습니다.
     </p>
     <nav class="pillnav">
       <a href="#general">일반 부동산 뉴스</a>
       <a href="#geomdan">검단신도시 뉴스</a>
+      <a href="#ranking">시세 순위</a>
     </nav>
   </div>
 
@@ -390,28 +441,6 @@
   <section class="section" id="geomdan">
     <div class="section-head"><span class="num">02</span><h2>검단신도시 뉴스</h2></div>
     <p class="section-desc">시세·분양 동향, 준공·입주, 교통·인프라, 그리고 생활권을 공유하는 인접 지역 소식까지 네 갈래로 정리했습니다.</p>
-
-    <div class="stat-strip">
-      <div class="stat-tile">
-        <p class="stat-rank">평당가 1위</p>
-        <p class="stat-apt">힐스테이트신검단센트럴</p>
-        <p class="stat-price">8억 7,500만원</p>
-        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,619만원</p>
-      </div>
-      <div class="stat-tile">
-        <p class="stat-rank">평당가 2위</p>
-        <p class="stat-apt">힐스테이트신검단센트럴</p>
-        <p class="stat-price">9억 7,500만원</p>
-        <p class="stat-meta">불로동 · 전용 99.5㎡ · 평당 2,544만원</p>
-      </div>
-      <div class="stat-tile">
-        <p class="stat-rank">평당가 3위</p>
-        <p class="stat-apt">신검단중앙역풍경채어바니티</p>
-        <p class="stat-price">8억 4,800만원</p>
-        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,540만원</p>
-      </div>
-    </div>
-    <p class="stat-foot">최근 30일 계약분을 평당가(공급면적 추정치) 기준으로 정렬한 순위입니다 · <a href="./geomdan.html">전체 순위 보기 →</a></p>
 
     <div class="group">
       <p class="group-label">시세 · 분양 동향</p>
@@ -496,9 +525,105 @@
     </div>
   </section>
 
+  <section class="section" id="ranking">
+    <div class="section-head"><span class="num">03</span><h2>시세 순위</h2></div>
+    <p class="section-desc">검단신도시 아파트 최근 30일 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬했습니다.</p>
+
+    <div class="stat-strip">
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 1위</p>
+        <p class="stat-apt">힐스테이트신검단센트럴</p>
+        <p class="stat-price">8억 7,500만원</p>
+        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,619만원</p>
+      </div>
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 2위</p>
+        <p class="stat-apt">힐스테이트신검단센트럴</p>
+        <p class="stat-price">9억 7,500만원</p>
+        <p class="stat-meta">불로동 · 전용 99.5㎡ · 평당 2,544만원</p>
+      </div>
+      <div class="stat-tile">
+        <p class="stat-rank">평당가 3위</p>
+        <p class="stat-apt">신검단중앙역풍경채어바니티</p>
+        <p class="stat-price">8억 4,800만원</p>
+        <p class="stat-meta">불로동 · 전용 84.8㎡ · 평당 2,540만원</p>
+      </div>
+    </div>
+
+    <div class="rank-list">
+      <div class="rank-row"><span class="rank-num">1</span><div class="rank-info"><span class="rank-apt">힐스테이트신검단센트럴</span><span class="rank-meta">불로동 · 전용 84.8216㎡ · 15층 · 2026.08.17</span></div><div class="rank-price"><span class="rank-amount">8억 7,500만원</span><span class="rank-pp">평당 2,619만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">2</span><div class="rank-info"><span class="rank-apt">힐스테이트신검단센트럴</span><span class="rank-meta">불로동 · 전용 99.4559㎡ · 6층 · 2026.08.21</span></div><div class="rank-price"><span class="rank-amount">9억 7,500만원</span><span class="rank-pp">평당 2,544만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">3</span><div class="rank-info"><span class="rank-apt">신검단중앙역풍경채어바니티</span><span class="rank-meta">불로동 · 전용 84.7571㎡ · 5층 · 2026.08.28</span></div><div class="rank-price"><span class="rank-amount">8억 4,800만원</span><span class="rank-pp">평당 2,540만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">4</span><div class="rank-info"><span class="rank-apt">우미린더시그니처</span><span class="rank-meta">원당동 · 전용 74.0973㎡ · 22층 · 2026.08.29</span></div><div class="rank-price"><span class="rank-amount">7억 3,000만원</span><span class="rank-pp">평당 2,491만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">5</span><div class="rank-info"><span class="rank-apt">검단신도시모아엘가그랑데</span><span class="rank-meta">원당동 · 전용 59.5224㎡ · 24층 · 2026.08.14</span></div><div class="rank-price"><span class="rank-amount">5억 9,300만원</span><span class="rank-pp">평당 2,470만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">6</span><div class="rank-info"><span class="rank-apt">우미린더시그니처</span><span class="rank-meta">원당동 · 전용 84.9732㎡ · 10층 · 2026.08.22</span></div><div class="rank-price"><span class="rank-amount">8억 2,500만원</span><span class="rank-pp">평당 2,465만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">7</span><div class="rank-info"><span class="rank-apt">우미린더시그니처</span><span class="rank-meta">원당동 · 전용 74.3179㎡ · 17층 · 2026.08.27</span></div><div class="rank-price"><span class="rank-amount">7억 2,300만원</span><span class="rank-pp">평당 2,460만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">8</span><div class="rank-info"><span class="rank-apt">검단신도시모아엘가그랑데</span><span class="rank-meta">원당동 · 전용 59.5224㎡ · 25층 · 2026.08.25</span></div><div class="rank-price"><span class="rank-amount">5억 9,000만원</span><span class="rank-pp">평당 2,458만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">9</span><div class="rank-info"><span class="rank-apt">우미린더시그니처</span><span class="rank-meta">원당동 · 전용 74.3179㎡ · 17층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">7억 2,000만원</span><span class="rank-pp">평당 2,450만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">10</span><div class="rank-info"><span class="rank-apt">우미린더헤리티지</span><span class="rank-meta">원당동 · 전용 59.8229㎡ · 17층 · 2026.09.02</span></div><div class="rank-price"><span class="rank-amount">5억 8,800만원</span><span class="rank-pp">평당 2,437만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">11</span><div class="rank-info"><span class="rank-apt">우미린더시그니처</span><span class="rank-meta">원당동 · 전용 74.3179㎡ · 12층 · 2026.09.01</span></div><div class="rank-price"><span class="rank-amount">7억 1,400만원</span><span class="rank-pp">평당 2,430만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">12</span><div class="rank-info"><span class="rank-apt">검단 금호어울림 센트럴</span><span class="rank-meta">원당동 · 전용 74.84㎡ · 17층 · 2026.08.21</span></div><div class="rank-price"><span class="rank-amount">7억 1,200만원</span><span class="rank-pp">평당 2,406만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">13</span><div class="rank-info"><span class="rank-apt">검단신도시대방디에트르리버파크</span><span class="rank-meta">원당동 · 전용 59.9971㎡ · 29층 · 2026.08.31</span></div><div class="rank-price"><span class="rank-amount">5억 8,000만원</span><span class="rank-pp">평당 2,397만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">14</span><div class="rank-info"><span class="rank-apt">검단 금호어울림 센트럴</span><span class="rank-meta">원당동 · 전용 74.84㎡ · 23층 · 2026.08.17</span></div><div class="rank-price"><span class="rank-amount">7억원</span><span class="rank-pp">평당 2,365만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">15</span><div class="rank-info"><span class="rank-apt">우미린더헤리티지</span><span class="rank-meta">원당동 · 전용 59.8221㎡ · 14층 · 2026.08.15</span></div><div class="rank-price"><span class="rank-amount">5억 6,500만원</span><span class="rank-pp">평당 2,342만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">16</span><div class="rank-info"><span class="rank-apt">검단신도시대방디에트르리버파크</span><span class="rank-meta">원당동 · 전용 59.9368㎡ · 16층 · 2026.08.21</span></div><div class="rank-price"><span class="rank-amount">5억 6,500만원</span><span class="rank-pp">평당 2,337만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">17</span><div class="rank-info"><span class="rank-apt">검단 금호어울림 센트럴</span><span class="rank-meta">원당동 · 전용 84.52㎡ · 6층 · 2026.08.18</span></div><div class="rank-price"><span class="rank-amount">7억 6,500만원</span><span class="rank-pp">평당 2,298만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">18</span><div class="rank-info"><span class="rank-apt">검단신도시대방디에트르리버파크</span><span class="rank-meta">원당동 · 전용 59.9834㎡ · 15층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">5억 5,200만원</span><span class="rank-pp">평당 2,282만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">19</span><div class="rank-info"><span class="rank-apt">검단신도시대방디에트르리버파크</span><span class="rank-meta">원당동 · 전용 59.9971㎡ · 17층 · 2026.08.30</span></div><div class="rank-price"><span class="rank-amount">5억 4,700만원</span><span class="rank-pp">평당 2,260만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">20</span><div class="rank-info"><span class="rank-apt">검단 금호어울림 센트럴</span><span class="rank-meta">원당동 · 전용 84.52㎡ · 10층 · 2026.08.16</span></div><div class="rank-price"><span class="rank-amount">7억 4,500만원</span><span class="rank-pp">평당 2,238만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">21</span><div class="rank-info"><span class="rank-apt">호반써밋1차</span><span class="rank-meta">원당동 · 전용 84.8917㎡ · 4층 · 2026.08.26</span></div><div class="rank-price"><span class="rank-amount">7억 4,500만원</span><span class="rank-pp">평당 2,228만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">22</span><div class="rank-info"><span class="rank-apt">호반써밋1차</span><span class="rank-meta">원당동 · 전용 84.8981㎡ · 9층 · 2026.08.21</span></div><div class="rank-price"><span class="rank-amount">7억 4,500만원</span><span class="rank-pp">평당 2,228만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">23</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.93㎡ · 26층 · 2026.09.01</span></div><div class="rank-price"><span class="rank-amount">7억 4,000만원</span><span class="rank-pp">평당 2,212만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">24</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 75.84㎡ · 20층 · 2026.08.28</span></div><div class="rank-price"><span class="rank-amount">6억 6,200만원</span><span class="rank-pp">평당 2,207만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">25</span><div class="rank-info"><span class="rank-apt">신검단중앙역풍경채어바니티2차</span><span class="rank-meta">불로동 · 전용 74.9169㎡ · 24층 · 2026.08.20</span></div><div class="rank-price"><span class="rank-amount">6억 5,000만원</span><span class="rank-pp">평당 2,194만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">26</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.93㎡ · 8층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">7억 3,250만원</span><span class="rank-pp">평당 2,190만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">27</span><div class="rank-info"><span class="rank-apt">검단신도시대방디에트르리버파크</span><span class="rank-meta">원당동 · 전용 59.9971㎡ · 3층 · 2026.09.01</span></div><div class="rank-price"><span class="rank-amount">5억 2,500만원</span><span class="rank-pp">평당 2,170만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">28</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.93㎡ · 11층 · 2026.08.20</span></div><div class="rank-price"><span class="rank-amount">7억 2,600만원</span><span class="rank-pp">평당 2,170만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">29</span><div class="rank-info"><span class="rank-apt">호반써밋1차</span><span class="rank-meta">원당동 · 전용 84.8917㎡ · 23층 · 2026.09.03</span></div><div class="rank-price"><span class="rank-amount">7억 2,300만원</span><span class="rank-pp">평당 2,162만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">30</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.93㎡ · 26층 · 2026.08.30</span></div><div class="rank-price"><span class="rank-amount">7억 1,000만원</span><span class="rank-pp">평당 2,122만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">31</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.93㎡ · 17층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">7억 1,000만원</span><span class="rank-pp">평당 2,122만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">32</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 84.98㎡ · 17층 · 2026.08.29</span></div><div class="rank-price"><span class="rank-amount">7억 1,000만원</span><span class="rank-pp">평당 2,121만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">33</span><div class="rank-info"><span class="rank-apt">아라역금강펜테리움더시글로1차</span><span class="rank-meta">당하동 · 전용 84.906㎡ · 22층 · 2026.09.04</span></div><div class="rank-price"><span class="rank-amount">7억원</span><span class="rank-pp">평당 2,093만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">34</span><div class="rank-info"><span class="rank-apt">아라역금강펜테리움더시글로1차</span><span class="rank-meta">당하동 · 전용 84.906㎡ · 23층 · 2026.08.22</span></div><div class="rank-price"><span class="rank-amount">7억원</span><span class="rank-pp">평당 2,093만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">35</span><div class="rank-info"><span class="rank-apt">우미린파크뷰1단지</span><span class="rank-meta">당하동 · 전용 59.938㎡ · 8층 · 2026.09.04</span></div><div class="rank-price"><span class="rank-amount">5억원</span><span class="rank-pp">평당 2,068만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">36</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 19층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">6억 8,400만원</span><span class="rank-pp">평당 2,044만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">37</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 105.52㎡ · 12층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">8억 3,000만원</span><span class="rank-pp">평당 2,041만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">38</span><div class="rank-info"><span class="rank-apt">우미린파크뷰2단지</span><span class="rank-meta">당하동 · 전용 59.938㎡ · 8층 · 2026.08.20</span></div><div class="rank-price"><span class="rank-amount">4억 9,000만원</span><span class="rank-pp">평당 2,027만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">39</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.986㎡ · 9층 · 2026.08.25</span></div><div class="rank-price"><span class="rank-amount">6억 7,800만원</span><span class="rank-pp">평당 2,025만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">40</span><div class="rank-info"><span class="rank-apt">검단신도시푸르지오더베뉴</span><span class="rank-meta">원당동 · 전용 105.52㎡ · 8층 · 2026.08.24</span></div><div class="rank-price"><span class="rank-amount">8억 2,000만원</span><span class="rank-pp">평당 2,017만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">41</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.986㎡ · 10층 · 2026.08.22</span></div><div class="rank-price"><span class="rank-amount">6억 7,400만원</span><span class="rank-pp">평당 2,013만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">42</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 12층 · 2026.08.16</span></div><div class="rank-price"><span class="rank-amount">6억 7,000만원</span><span class="rank-pp">평당 2,002만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">43</span><div class="rank-info"><span class="rank-apt">신검단중앙역디에트르더에듀</span><span class="rank-meta">불로동 · 전용 59.8701㎡ · 10층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">4억 7,800만원</span><span class="rank-pp">평당 1,980만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">44</span><div class="rank-info"><span class="rank-apt">신검단중앙역디에트르더에듀</span><span class="rank-meta">불로동 · 전용 59.8554㎡ · 15층 · 2026.08.31</span></div><div class="rank-price"><span class="rank-amount">4억 7,700만원</span><span class="rank-pp">평당 1,976만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">45</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 6층 · 2026.08.20</span></div><div class="rank-price"><span class="rank-amount">6억 5,500만원</span><span class="rank-pp">평당 1,957만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">46</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 76.357㎡ · 8층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">5억 8,950만원</span><span class="rank-pp">평당 1,952만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">47</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 76.357㎡ · 8층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">5억 8,900만원</span><span class="rank-pp">평당 1,951만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">48</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 10층 · 2026.08.15</span></div><div class="rank-price"><span class="rank-amount">6억 5,000만원</span><span class="rank-pp">평당 1,942만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">49</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 17층 · 2026.08.30</span></div><div class="rank-price"><span class="rank-amount">6억 4,800만원</span><span class="rank-pp">평당 1,936만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">50</span><div class="rank-info"><span class="rank-apt">검단신도시한신더휴캐널파크</span><span class="rank-meta">당하동 · 전용 84.1588㎡ · 6층 · 2026.08.15</span></div><div class="rank-price"><span class="rank-amount">6억 4,000만원</span><span class="rank-pp">평당 1,931만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">51</span><div class="rank-info"><span class="rank-apt">검단신도시디에트르더펠리체</span><span class="rank-meta">당하동 · 전용 75.7971㎡ · 14층 · 2026.08.27</span></div><div class="rank-price"><span class="rank-amount">5억 7,300만원</span><span class="rank-pp">평당 1,912만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">52</span><div class="rank-info"><span class="rank-apt">검단신도시한신더휴캐널파크</span><span class="rank-meta">당하동 · 전용 84.34㎡ · 21층 · 2026.08.20</span></div><div class="rank-price"><span class="rank-amount">6억 3,000만원</span><span class="rank-pp">평당 1,896만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">53</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.5075㎡ · 21층 · 2026.08.18</span></div><div class="rank-price"><span class="rank-amount">6억 2,000만원</span><span class="rank-pp">평당 1,863만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">54</span><div class="rank-info"><span class="rank-apt">파라곤센트럴파크</span><span class="rank-meta">당하동 · 전용 84.9595㎡ · 3층 · 2026.08.10</span></div><div class="rank-price"><span class="rank-amount">6억 2,000만원</span><span class="rank-pp">평당 1,853만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">55</span><div class="rank-info"><span class="rank-apt">검단신도시디에트르더힐</span><span class="rank-meta">원당동 · 전용 75.8458㎡ · 6층 · 2026.08.31</span></div><div class="rank-price"><span class="rank-amount">5억 5,500만원</span><span class="rank-pp">평당 1,851만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">56</span><div class="rank-info"><span class="rank-apt">신검단중앙역디에트르더에듀</span><span class="rank-meta">불로동 · 전용 59.8448㎡ · 12층 · 2026.08.11</span></div><div class="rank-price"><span class="rank-amount">4억 4,500만원</span><span class="rank-pp">평당 1,844만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">57</span><div class="rank-info"><span class="rank-apt">검단신도시디에트르더힐</span><span class="rank-meta">원당동 · 전용 75.8458㎡ · 14층 · 2026.08.18</span></div><div class="rank-price"><span class="rank-amount">5억 5,000만원</span><span class="rank-pp">평당 1,834만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">58</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.5075㎡ · 18층 · 2026.08.22</span></div><div class="rank-price"><span class="rank-amount">6억 1,000만원</span><span class="rank-pp">평당 1,833만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">59</span><div class="rank-info"><span class="rank-apt">신검단중앙역디에트르더에듀</span><span class="rank-meta">불로동 · 전용 59.8448㎡ · 10층 · 2026.08.08</span></div><div class="rank-price"><span class="rank-amount">4억 4,200만원</span><span class="rank-pp">평당 1,831만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">60</span><div class="rank-info"><span class="rank-apt">신검단중앙역디에트르더에듀</span><span class="rank-meta">불로동 · 전용 59.8448㎡ · 9층 · 2026.08.31</span></div><div class="rank-price"><span class="rank-amount">4억 3,985만원</span><span class="rank-pp">평당 1,822만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">61</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.9227㎡ · 9층 · 2026.08.25</span></div><div class="rank-price"><span class="rank-amount">6억 700만원</span><span class="rank-pp">평당 1,815만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">62</span><div class="rank-info"><span class="rank-apt">유승한내들 에듀파크</span><span class="rank-meta">당하동 · 전용 84.2411㎡ · 11층 · 2026.08.24</span></div><div class="rank-price"><span class="rank-amount">6억원</span><span class="rank-pp">평당 1,808만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">63</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 102.8576㎡ · 24층 · 2026.08.28</span></div><div class="rank-price"><span class="rank-amount">7억 1,500만원</span><span class="rank-pp">평당 1,804만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">64</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.9227㎡ · 6층 · 2026.08.27</span></div><div class="rank-price"><span class="rank-amount">6억원</span><span class="rank-pp">평당 1,794만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">65</span><div class="rank-info"><span class="rank-apt">검단신도시디에트르더힐</span><span class="rank-meta">원당동 · 전용 76.1198㎡ · 16층 · 2026.08.17</span></div><div class="rank-price"><span class="rank-amount">5억 4,000만원</span><span class="rank-pp">평당 1,794만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">66</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.5075㎡ · 3층 · 2026.08.29</span></div><div class="rank-price"><span class="rank-amount">5억 9,600만원</span><span class="rank-pp">평당 1,791만원</span></div></div>
+      <div class="rank-row"><span class="rank-num">67</span><div class="rank-info"><span class="rank-apt">검단신도시예미지트리플에듀</span><span class="rank-meta">원당동 · 전용 84.5075㎡ · 22층 · 2026.08.23</span></div><div class="rank-price"><span class="rank-amount">5억 9,500만원</span><span class="rank-pp">평당 1,788만원</span></div></div>
+    </div>
+    <p class="rank-source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>
+  </section>
+
   <footer>
-    <p class="footer-note">이 브리핑은 검단 부동산 자동 다이제스트의 오늘자 수집 데이터를 바탕으로 사람이 한 번 더 골라 요약한 버전입니다. 실거래가 전체 순위, 매일 자동 갱신되는 뉴스 원문 목록은 아래 다이제스트 페이지에서 볼 수 있습니다.</p>
-    <a class="footer-link" href="./index.html">검단 부동산 일일 다이제스트 보러가기 →</a>
+    <p class="openchat-invite">이 메세지를 매일 보고 검단신도시 관련 집단지성을 느끼고 싶으시면 재부키 오픈채팅방으로 오세요.<br><a href="https://open.kakao.com/o/gSHroBKh" target="_blank" rel="noopener">https://open.kakao.com/o/gSHroBKh</a></p>
   </footer>
 
 </main>
