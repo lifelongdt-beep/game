@@ -312,19 +312,17 @@ async function fetchNewsSafe(query, limit, requireKeyword) {
   }
 }
 
-// 구글 뉴스의 when:1d는 정확한 자정 기준이 아니라 24시간 롤링 윈도우라, 저녁
-// 실행분에는 어제 발행된 기사가 섞여 들어올 수 있다. 검단신도시 뉴스는 KST
-// 기준 "오늘" 날짜에 발행된 기사만 남기도록 한 번 더 걸러낸다(발행시각을 못
-// 읽은 기사는 오늘자인지 확인할 수 없으므로 제외한다).
-function isTodayKst(date) {
+// 구글 뉴스의 when:1d는 정확한 자정 기준이 아니라 24시간 롤링 윈도우다. 예전에는
+// 이걸 KST 달력 날짜가 "오늘"과 같은지로 다시 걸렀는데, 그러면 예를 들어 어제
+// 오후 3시에 나온(지금 기준 16시간 전, 즉 아직 24시간 이내인) 기사가 오전
+// 실행분에서는 "어제 날짜"라는 이유만으로 통째로 잘려나가는 문제가 있었다
+// (실제로 검단호수공원역 풍경채 어바니티 2차 청약 기사가 이렇게 걸러진 걸
+// 확인했다). 그래서 달력 날짜 비교 대신, 발행 후 24시간이 실제로 지났는지를
+// 직접 계산한다(발행시각을 못 읽은 기사는 신선도를 확인할 수 없으므로 제외).
+function isWithinLastDay(date) {
   if (!date || Number.isNaN(date.getTime())) return false;
-  const kstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const kstDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  return (
-    kstDate.getFullYear() === kstNow.getFullYear() &&
-    kstDate.getMonth() === kstNow.getMonth() &&
-    kstDate.getDate() === kstNow.getDate()
-  );
+  const ageMs = Date.now() - date.getTime();
+  return ageMs >= 0 && ageMs <= 24 * 60 * 60 * 1000;
 }
 
 // 검단신도시 뉴스는 ①직접 언급(GEOMDAN_QUERY, GEOMDAN_KEYWORD로 제목 재검증)과
@@ -346,8 +344,8 @@ async function fetchGeomdanArticles(limit) {
     ),
   ]);
 
-  const todaysCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isTodayKst(c.pubDate));
-  return clusterArticles(todaysCandidates, limit);
+  const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate));
+  return clusterArticles(freshCandidates, limit);
 }
 
 function xmlTag(xml, tag) {
