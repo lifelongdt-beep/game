@@ -46,7 +46,7 @@ const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHro
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
 const GEOMDAN_QUERY =
   process.env.GEOMDAN_QUERY ||
-  '(검단신도시 OR "인천 검단" OR "서구 검단") ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR "프랜차이즈 입점" OR "복합쇼핑몰" OR 스타벅스 OR 백화점 OR 멀티플렉스 OR "문화시설 개관" OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d';
+  '(검단신도시 OR "인천 검단" OR "서구 검단") ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR "프랜차이즈 입점" OR "복합쇼핑몰" OR 스타벅스 OR 백화점 OR 멀티플렉스 OR CGV OR 메가박스 OR 롯데시네마 OR "문화시설 개관" OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_NEARBY_QUERY =
   process.env.GEOMDAN_NEARBY_QUERY ||
