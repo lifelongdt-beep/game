@@ -154,42 +154,6 @@ async function fetchWithTimeout(url, timeoutMs, options = {}) {
   }
 }
 
-// Google 뉴스 RSS 링크(news.google.com/rss/articles/...)는 실제 언론사
-// 기사로 리다이렉트되는 중간 주소다. fetch가 그 리다이렉트를 따라간 뒤
-// 도착한 실제 기사 페이지에서 og:image(없으면 twitter:image) 메타 태그를
-// 읽어 카드뉴스에 쓸 기사 대표 이미지를 가져온다. 일부 언론사는 봇으로
-// 보이는 요청을 차단하므로 일반 브라우저 User-Agent를 붙인다. 리다이렉트
-// 실패·태그 없음·접근 차단 등 어떤 이유로든 실패하면 null을 반환하고
-// 호출 쪽에서 대체 이미지나 이미지 없는 레이아웃으로 넘어가야 한다(이
-// 함수는 실패를 던지지 않는다 — 카드뉴스 조립은 언론사 사이트 접근성에
-// 좌우되면 안 되는 부가 기능이라서).
-async function fetchArticleOgImage(articleUrl) {
-  try {
-    const res = await fetchWithTimeout(articleUrl, FETCH_TIMEOUT_MS, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const patterns = [
-      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
-      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
-    ];
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match) return match[1];
-    }
-    return null;
-  } catch (err) {
-    return null;
-  }
-}
-
 // 구글 뉴스/실거래가 API 둘 다 가끔 일시적으로 실패한다 — HTTP 상태코드로
 // 오기도 하고(503 등), fetch 자체가 예외를 던지며 죽기도 한다(네트워크 오류).
 // 특히 실거래가 API(apis.data.go.kr)는 한 번 불안정해지면 시도당 10초 안팎이
