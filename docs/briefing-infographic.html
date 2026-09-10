@@ -85,28 +85,17 @@
   }
 
   /* ========================================================
-     SLIDE 1: 표지 — 원래 쓰던 기사 사진은 구글 뉴스 리다이렉트
-     링크라 자동 추출이 불가능해(og:image가 모든 기사에서 동일한
-     구글 아이콘으로만 뜸, 실제 테스트로 확인) 사진 없이 대형
-     타이포그래피만으로 구성한 텍스트 중심 표지로 대체했다.
+     SLIDE 1: 표지 — Playwright로 실제 기사에서 추출한 대표 이미지
+     (scripts/resolve-article-images.js). 구글 뉴스 RSS 링크는 일반
+     fetch로는 대표 이미지를 가져올 수 없어(자바스크립트 SPA
+     리다이렉트) 실제 브라우저로 리다이렉트를 실행시켜 얻었다.
      ======================================================== */
   .slide-cover {
-    background: radial-gradient(circle at 100% 0%, rgba(45,196,0,0.18), transparent 45%),
-                linear-gradient(165deg, #12151b 0%, #05070a 100%);
+    background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.85) 100%),
+                url('https://dimg.donga.com/wps/NEWS/IMAGE/2026/09/10/134644441.1.jpg') center/cover no-repeat;
     color: #ffffff;
     justify-content: flex-end;
     padding: 50px 46px;
-  }
-  .cover-bg-mark {
-    position: absolute;
-    top: -36px;
-    right: -16px;
-    font-family: var(--font-hand);
-    font-size: 320px;
-    line-height: 1;
-    color: rgba(255,223,0,0.08);
-    pointer-events: none;
-    user-select: none;
   }
   .cover-category {
     font-size: 13px;
@@ -214,7 +203,7 @@
   }
 
   /* ========================================================
-     SLIDE 3: 좌우 분할형 (실제 기사 사진: 부동산원 정비사업 + 금감원 대출 점검)
+     SLIDE 3: 좌우 분할형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
      ======================================================== */
   .slide-split {
     background: #f7f8fa;
@@ -229,25 +218,20 @@
   .split-row.reverse {
     grid-template-columns: 1fr 240px;
   }
-  /* 실제 기사 사진 대신(자동 추출 불가 사유는 위 SLIDE 1 주석 참고)
-     이슈 번호를 큰 손글씨 숫자로 보여주는 컬러 아이콘 타일. */
-  .split-icon {
+  .split-img {
     width: 240px;
     height: 180px;
-    border-radius: 12px;
+    border-radius: 4px;
+    overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    background: #e2e5e9;
   }
-  .split-icon span {
-    font-family: var(--font-hand);
-    font-size: 92px;
-    line-height: 1;
-    color: rgba(255,255,255,0.94);
+  .split-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
-  .split-icon.icon-01 { background: linear-gradient(155deg, var(--brand-green), #189400); }
-  .split-icon.icon-02 { background: linear-gradient(155deg, var(--brand-blue), #0044b8); }
   .split-content {
     display: flex;
     flex-direction: column;
@@ -274,13 +258,11 @@
   }
 
   /* ========================================================
-     SLIDE 4: 전체 배경 오버레이형 — 이 슬라이드도 실제 기사 사진
-     자동 추출이 불가능해(사유는 SLIDE 1 주석 참고) 경고 톤의
-     그라디언트 배경으로 대체한 텍스트 중심 레이아웃.
+     SLIDE 4: 전체 배경 오버레이형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
      ======================================================== */
   .slide-overlay {
-    background: radial-gradient(circle at 50% 0%, rgba(255,59,48,0.20), transparent 55%),
-                linear-gradient(165deg, #14181f 0%, #05070a 100%);
+    background: linear-gradient(rgba(14, 18, 24, 0.82), rgba(14, 18, 24, 0.90)),
+                url('https://www.imaeil.com/photos/2026/09/10/2026091015275574646_l.jpeg') center/cover no-repeat;
     color: #ffffff;
     justify-content: center;
     align-items: center;
@@ -410,7 +392,6 @@
      좌우분할형은 세로로 쌓아 좁은 화면에서도 읽히게 한다. */
   @media (max-width: 560px) {
     .card-slide { aspect-ratio: auto; height: auto; min-height: 420px; padding: 26px 22px 22px; }
-    .cover-bg-mark { font-size: 180px; top: -20px; right: -10px; }
     .hand-title { font-size: 32px; margin-bottom: 14px; }
     .cover-headline { font-size: 34px; }
     .cover-summary { font-size: 14px; margin-bottom: 18px; }
@@ -419,8 +400,7 @@
     .caption-lead { font-size: 16px; }
     .caption-sub { font-size: 13px; }
     .split-row, .split-row.reverse { grid-template-columns: 1fr; gap: 12px; }
-    .split-icon { width: 100%; height: 110px; }
-    .split-icon span { font-size: 56px; }
+    .split-img { width: 100%; height: 140px; }
     .split-title { font-size: 16px; }
     .overlay-script { font-size: 38px; }
     .overlay-lead { font-size: 19px; }
@@ -467,10 +447,10 @@
 <body>
 
   <!-- ========================================================
-       SLIDE 1: 표지 (사진 없이 텍스트 중심 구성 — 사유는 CSS 주석 참고)
+       SLIDE 1: 표지
+       배경 사진: 동아일보 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-cover">
-    <div class="cover-bg-mark">검</div>
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
@@ -520,7 +500,8 @@
 
 
   <!-- ========================================================
-       SLIDE 3: 좌우 분할형 (사진 대신 넘버 아이콘 — 사유는 SLIDE 1 CSS 주석 참고)
+       SLIDE 3: 좌우 분할형
+       사진: 스트레이트뉴스 + 시사저널 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-split">
     <div class="slide-indicator">
@@ -528,9 +509,12 @@
     </div>
     <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
 
-    <!-- 첫 번째 행: 아이콘 왼쪽, 글 오른쪽 -->
+    <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 -->
     <div class="split-row">
-      <div class="split-icon icon-01"><span>01</span></div>
+      <div class="split-img">
+        <img src="https://cdn.straightnews.co.kr/news/thumbnail/202609/310846_222142_3552_v150.jpg" alt="사업자대출 우회 적발 관련 기사 사진">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
+      </div>
       <div class="split-content">
         <span class="check-tag">✔ Issue 01</span>
         <p class="split-title">사업자대출 우회 1,167건 적발</p>
@@ -538,14 +522,17 @@
       </div>
     </div>
 
-    <!-- 두 번째 행: 글 왼쪽, 아이콘 오른쪽 -->
+    <!-- 두 번째 행: 글 왼쪽, 사진 오른쪽 -->
     <div class="split-row reverse">
       <div class="split-content">
         <span class="check-tag">✔ Issue 02</span>
         <p class="split-title">전국 아파트 입주율 50%대로 뚝</p>
         <p class="split-text">잔금대출 문턱이 높아지면서 전국 아파트 입주율이 50%대로 떨어졌습니다. 분양 이후 실제 입주 단계까지 대출 규제 영향이 번지고 있습니다.</p>
       </div>
-      <div class="split-icon icon-02"><span>02</span></div>
+      <div class="split-img">
+        <img src="https://cdn.sisajournal.com/news/thumbnail/202609/386793_394948_212_v150.jpg" alt="전국 아파트 입주율 하락 관련 기사 사진">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
+      </div>
     </div>
 
     <div class="slide-footer-label">
@@ -556,7 +543,8 @@
 
 
   <!-- ========================================================
-       SLIDE 4: 전체 배경 오버레이형 (사진 없이 텍스트 중심 구성)
+       SLIDE 4: 전체 배경 오버레이형
+       사진: 매일신문 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-overlay">
     <div class="slide-indicator">
