@@ -79,11 +79,23 @@ jobs:
           ];
 
           (async () => {
-            for (const [label, url] of urls) {
-              const result = await fetchArticleOgImage(url);
-              console.log(`=== ${label} ===`);
-              console.log(JSON.stringify(result));
-            }
+            const url = urls[0][1];
+            const res = await fetch(url, {
+              redirect: 'follow',
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            });
+            console.log('status:', res.status, 'finalUrl:', res.url);
+            const html = await res.text();
+            console.log('length:', html.length);
+            const cwiz = html.match(/data-p="([^"]+)"/);
+            console.log('data-p found:', !!cwiz);
+            if (cwiz) console.log('data-p sample:', cwiz[1].slice(0, 300));
+            const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
+            console.log('canonical:', canonical ? canonical[1] : null);
+            const metaRefresh = html.match(/<meta[^>]+http-equiv=["']refresh["'][^>]+content=["']([^"']+)["']/i);
+            console.log('meta refresh:', metaRefresh ? metaRefresh[1] : null);
+            console.log('--- first 1500 chars ---');
+            console.log(html.slice(0, 1500));
           })();
           DIAGEOF
           node /tmp/diag.js
