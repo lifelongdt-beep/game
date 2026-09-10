@@ -751,6 +751,474 @@ ${renderTransactionsHtml(transactions)}
 `;
 }
 
+function renderCardNewsHtml(articles, geomdanArticles, transactionsResult, generatedAt) {
+  const geomdan = geomdanArticles[0] || articles[0] || { title: '검단신도시 아파트 시세 동향', link: '#' };
+  const issue1 = articles[0] || { title: '부동산 시장 주요 정책 발표', link: '#' };
+  const issue2 = articles[1] || { title: '시중 대출 금리 동향 점검', link: '#' };
+  const top4 = (transactionsResult.transactions || []).slice(0, 4);
+
+  const cleanTitle = (t) => {
+    const idx = t.lastIndexOf(' - ');
+    return idx === -1 ? t : t.slice(0, idx);
+  };
+
+  const gTitle = cleanTitle(geomdan.title);
+  const i1Title = cleanTitle(issue1.title);
+  const i2Title = cleanTitle(issue2.title);
+
+  const rankItemsHtml = top4.map((t, idx) => {
+    return `      <div class="rank-item">
+        <span class="rank-idx">0${idx + 1}</span>
+        <div class="rank-meta">
+          <b>${escapeHtml(t.apt)}</b>
+          <span>${escapeHtml(t.dong)} · 전용 ${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층</span>
+        </div>
+        <span class="rank-val">${formatAmount(t.amount)}</span>
+      </div>`;
+  }).join('\n');
+
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>재부키 부동산 분석 카드뉴스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Pretendard:wght@400;500;600;700;800;900&display=swap">
+<style>
+  :root {
+    --bg-page: #e9ecef;
+    --card-bg: #f8f9fa;
+    --card-white: #ffffff;
+    --text-black: #111111;
+    --text-dark: #222222;
+    --text-gray: #555555;
+    --text-light: #888888;
+    --brand-yellow: #ffdf00;
+    --brand-green: #2dc400;
+    --brand-blue: #0066ff;
+    --brand-red: #ff3b30;
+    --font-hand: 'Nanum Pen Script', cursive;
+    --font-main: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg-page);
+    font-family: var(--font-main);
+    color: var(--text-black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 16px 60px;
+    gap: 36px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card-slide {
+    width: 650px;
+    height: 650px;
+    background: var(--card-bg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 44px 44px 40px;
+  }
+  .slide-indicator {
+    position: absolute;
+    top: 36px;
+    right: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 10;
+  }
+  .slide-indicator span {
+    width: 6px;
+    height: 6px;
+    background: var(--brand-green);
+    border-radius: 50%;
+  }
+  .hand-title {
+    font-family: var(--font-hand);
+    font-size: 56px;
+    color: #1a1a1a;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    letter-spacing: 0.02em;
+  }
+  .slide-cover {
+    background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.85) 100%),
+                url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+    color: #ffffff;
+    justify-content: flex-end;
+    padding: 50px 46px;
+  }
+  .cover-category {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover-headline {
+    font-size: 60px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+  .cover-headline .highlight { color: var(--brand-yellow); }
+  .cover-summary {
+    font-size: 17px;
+    color: rgba(255,255,255,0.88);
+    line-height: 1.55;
+    margin-bottom: 28px;
+  }
+  .cover-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255,255,255,0.22);
+    margin-bottom: 24px;
+  }
+  .tag-pills { display: flex; gap: 10px; }
+  .tag-pill {
+    padding: 9px 22px;
+    border-radius: 999px;
+    font-size: 14.5px;
+    font-weight: 800;
+  }
+  .tag-yellow { background: var(--brand-yellow); color: #000; }
+  .tag-white { background: #ffffff; color: #000; }
+  .tag-black { background: #000000; color: var(--brand-yellow); border: 1px solid rgba(255,255,255,0.2); }
+
+  .slide-single { background: #f4f5f7; }
+  .image-container-single {
+    width: 100%;
+    height: 330px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    background: #e2e5e9;
+  }
+  .image-container-single img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .image-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  .source-watermark {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    background: rgba(0,0,0,0.65);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .image-caption-box { margin-top: 24px; text-align: center; }
+  .caption-lead {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+  .caption-sub {
+    font-size: 14.5px;
+    color: var(--text-gray);
+    line-height: 1.6;
+    max-width: 510px;
+    margin: 0 auto;
+  }
+
+  .slide-split { background: #f7f8fa; justify-content: space-between; }
+  .split-row {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 22px;
+    align-items: center;
+  }
+  .split-row.reverse { grid-template-columns: 1fr 240px; }
+  .split-img {
+    width: 240px;
+    height: 180px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    position: relative;
+    background: #e2e5e9;
+  }
+  .split-img img { width: 100%; height: 100%; object-fit: cover; }
+  .split-content { display: flex; flex-direction: column; gap: 6px; }
+  .check-tag {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--brand-green);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .split-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-dark);
+    line-height: 1.35;
+  }
+  .split-text {
+    font-size: 13.5px;
+    color: var(--text-gray);
+    line-height: 1.55;
+  }
+
+  .slide-overlay {
+    background: linear-gradient(rgba(14, 18, 24, 0.82), rgba(14, 18, 24, 0.90)),
+                url('https://img7.yna.co.kr/photo/yna/YH/2026/08/14/PYH2026081408170001300_P4.jpg') center/cover no-repeat;
+    color: #ffffff;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 50px;
+  }
+  .overlay-script {
+    font-family: var(--font-hand);
+    font-size: 70px;
+    color: var(--brand-green);
+    margin-bottom: 18px;
+    line-height: 1;
+  }
+  .overlay-lead {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.4;
+    margin-bottom: 22px;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+  .overlay-body {
+    font-size: 16px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+    max-width: 490px;
+    margin-bottom: 34px;
+  }
+  .overlay-quote {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid var(--brand-green);
+    padding: 14px 20px;
+    border-radius: 0 8px 8px 0;
+    text-align: left;
+    font-size: 14.5px;
+    color: #f0f0f0;
+    line-height: 1.5;
+  }
+
+  .slide-ranking { background: #f5f5f8; }
+  .bold-sub {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .bold-title {
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--text-black);
+    margin-bottom: 20px;
+  }
+  .ranking-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 22px 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rank-item {
+    display: grid;
+    grid-template-columns: 28px 1fr 100px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-idx {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-light);
+  }
+  .rank-item:nth-child(1) .rank-idx { color: var(--brand-blue); }
+  .rank-item:nth-child(2) .rank-idx { color: var(--brand-green); }
+  .rank-meta b {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .rank-meta span {
+    font-size: 12px;
+    color: var(--text-light);
+  }
+  .rank-val {
+    text-align: right;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--brand-blue);
+  }
+  .rank-summary-pill {
+    margin-top: 18px;
+    background: #eef4ff;
+    border: 1px solid #d0e1fd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    color: #2b5bb3;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .slide-footer-label {
+    margin-top: auto;
+    font-size: 12px;
+    color: var(--text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- SLIDE 1: 표지 -->
+  <section class="card-slide slide-cover">
+    <div class="slide-indicator"><span></span><span></span><span></span></div>
+    <div class="cover-category">Daily Real Estate Briefing</div>
+    <h1 class="cover-headline">
+      오늘의<br>
+      <span class="highlight">검단 부동산</span><br>
+      핵심 브리핑
+    </h1>
+    <p class="cover-summary">${escapeHtml(generatedAt)} 기준 · 오늘의 부동산 시장과 검단 실거래가 흐름</p>
+    <div class="cover-divider"></div>
+    <div class="tag-pills">
+      <span class="tag-pill tag-yellow"># 실시간 브리핑</span>
+      <span class="tag-pill tag-white"># 실거래 TOP4</span>
+      <span class="tag-pill tag-black"># 시장분석</span>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: 단일 이미지 강조형 -->
+  <section class="card-slide slide-single">
+    <div class="slide-indicator"><span></span><span></span><span></span></div>
+    <h2 class="hand-title">검단 핵심 소식</h2>
+    <div class="image-container-single">
+      <img src="https://www.lottecastle.co.kr/files/etc/2023/5/202305220150595240.jpg" alt="검단신도시 단지">
+      <div class="image-badge">실시간 모니터링</div>
+      <div class="source-watermark">기사 연동</div>
+    </div>
+    <div class="image-caption-box">
+      <p class="caption-lead">${escapeHtml(gTitle)}</p>
+      <p class="caption-sub">검단신도시 및 인접 지역에서 가장 주목받고 있는 핵심 개발·분양·시세 뉴스입니다.</p>
+    </div>
+    <div class="slide-footer-label">
+      <span>재부키 부동산 분석</span>
+      <span>02 / 05</span>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: 좌우 분할형 -->
+  <section class="card-slide slide-split">
+    <div class="slide-indicator"><span></span><span></span><span></span></div>
+    <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
+    <div class="split-row">
+      <div class="split-img">
+        <img src="https://img7.yna.co.kr/photo/yna/YH/2026/08/14/PYH2026081408170001300_P4.jpg" alt="정책 및 공급">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
+      </div>
+      <div class="split-content">
+        <span class="check-tag">✔ Issue 01</span>
+        <p class="split-title">${escapeHtml(i1Title)}</p>
+        <p class="split-text">공급 및 금융 정책 변화가 시세에 미치는 영향 분석</p>
+      </div>
+    </div>
+    <div class="split-row reverse">
+      <div class="split-content">
+        <span class="check-tag">✔ Issue 02</span>
+        <p class="split-title">${escapeHtml(i2Title)}</p>
+        <p class="split-text">대출 규제 및 금리 동향에 따른 실수요자 점검 사항</p>
+      </div>
+      <div class="split-img">
+        <img src="https://i3n.news1.kr/system/photos/2020/4/23/4166452/high.jpg" alt="금융 시장">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
+      </div>
+    </div>
+    <div class="slide-footer-label">
+      <span>주요 언론 보도 연동</span>
+      <span>03 / 05</span>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: 전체 배경 오버레이형 -->
+  <section class="card-slide slide-overlay">
+    <div class="slide-indicator"><span></span><span></span><span></span></div>
+    <div class="overlay-script">금리·시장 주의보</div>
+    <h2 class="overlay-lead">
+      "국내외 금융 환경과 시장 지표의 변화,<br>
+      자금 계획을 다시 점검할 때입니다"
+    </h2>
+    <p class="overlay-body">
+      채권 및 주담대 금리 변동과 금융당국의 대출 관리 기조에 따라 매수 심리와 거래량이 영향을 받고 있습니다.
+    </p>
+    <div class="overlay-quote">
+      💡 <b>재부키 인사이트</b><br>
+      변동성이 큰 시기일수록 역세권 대단지 중심의 실수요 가치 판단이 중요합니다.
+    </div>
+    <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
+      <span>시장 거시 지표 분석</span>
+      <span>04 / 05</span>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: 실거래가 랭킹 TOP 4 -->
+  <section class="card-slide slide-ranking">
+    <div class="slide-indicator"><span></span><span></span><span></span></div>
+    <div class="bold-sub">REAL TRANSACTION TOP 4</div>
+    <h2 class="bold-title">검단 실거래<br>평당 순위</h2>
+    <div class="ranking-box">
+${rankItemsHtml}
+    </div>
+    <div class="rank-summary-pill">
+      📌 국토부 실거래가 최근 계약 건 기준 자동 집계 순위
+    </div>
+    <div class="slide-footer-label">
+      <span>자료: 국토교통부 실거래가 공개시스템</span>
+      <span>05 / 05</span>
+    </div>
+  </section>
+</body>
+</html>`;
+}
+
 function publishCombinedPage(filename, articles, geomdanArticles, transactionsResult) {
   const generatedAt = new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
@@ -760,6 +1228,17 @@ function publishCombinedPage(filename, articles, geomdanArticles, transactionsRe
   fs.mkdirSync('docs', { recursive: true });
   fs.writeFileSync(`docs/${filename}`, renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt));
   console.log(`docs/${filename} 갱신 완료`);
+}
+
+function publishCardNewsPage(articles, geomdanArticles, transactionsResult) {
+  const generatedAt = new Date().toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+  fs.mkdirSync('docs', { recursive: true });
+  fs.writeFileSync(`docs/briefing-infographic.html`, renderCardNewsHtml(articles, geomdanArticles, transactionsResult, generatedAt));
+  console.log(`docs/briefing-infographic.html 자동 카드뉴스 갱신 완료`);
 }
 
 async function main() {
@@ -784,6 +1263,7 @@ async function main() {
 
   publishCombinedPage('index.html', articles, geomdanArticles, geomdanResult);
   publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanResult);
+  publishCardNewsPage(articles, geomdanArticles, geomdanResult);
 
   if (SKIP_KAKAO_SEND) {
     console.log('SKIP_KAKAO_SEND가 설정돼 있어 카카오톡 자동 다이제스트 발송을 건너뜁니다.');

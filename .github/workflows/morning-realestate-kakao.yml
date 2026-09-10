@@ -92,11 +92,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/index.html docs/geomdan.html docs/geomdan-transactions-cache.json
+          git add docs/index.html docs/geomdan.html docs/geomdan-transactions-cache.json docs/briefing-infographic.html
           if git diff --cached --quiet; then
             echo "변경 사항 없음, 커밋 생략"
           else
-            git commit -m "docs: 오늘의 부동산 뉴스 갱신"
+            git commit -m "docs: 오늘의 부동산 뉴스 및 카드뉴스 갱신"
             git push
           fi
 
