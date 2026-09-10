@@ -40,38 +40,28 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* 1:1 정사각 카드뉴스 표준 규격 슬라이드. 뷰포트가 650px보다 좁으면
-     (모바일 등) width:100%로 줄어들어 카드가 화면 밖으로 잘리지
-     않는다 — 기존엔 폭이 650px로 고정돼 있어 좁은 화면에서 카드
-     양옆이 화면 밖으로 밀려나 잘려 보이는 문제가 있었다. */
-  .card-slide {
+  /* 5장이 따로따로 분리된 카드처럼 보이지 않고 하나로 자연스럽게
+     이어지도록, 개별 슬라이드 대신 이 .card-flow 하나에만 둥근
+     모서리·그림자를 주고 내부 슬라이드는 이음매 없이 맞붙인다.
+     뷰포트가 650px보다 좁으면(모바일 등) width:100%로 줄어들어
+     화면 밖으로 잘리지 않는다. */
+  .card-flow {
     width: 100%;
     max-width: 650px;
-    aspect-ratio: 1 / 1;
-    background: var(--card-bg);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    position: relative;
+    border-radius: 20px;
     overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.10);
+    display: flex;
+    flex-direction: column;
+  }
+  .card-slide {
+    width: 100%;
+    min-height: 420px;
+    background: var(--card-bg);
+    position: relative;
     display: flex;
     flex-direction: column;
     padding: 44px 44px 40px;
-  }
-
-  /* 상단 우측 연두색 3점 인디케이터 */
-  .slide-indicator {
-    position: absolute;
-    top: 36px;
-    right: 36px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 10;
-  }
-  .slide-indicator span {
-    width: 6px;
-    height: 6px;
-    background: var(--brand-green);
-    border-radius: 50%;
   }
 
   /* 감성 손글씨 타이틀 */
@@ -391,7 +381,7 @@
      그대로 두면 서로 겹치거나 잘려 보인다. 주요 글자 크기를 줄이고
      좌우분할형은 세로로 쌓아 좁은 화면에서도 읽히게 한다. */
   @media (max-width: 560px) {
-    .card-slide { aspect-ratio: auto; height: auto; min-height: 420px; padding: 26px 22px 22px; }
+    .card-slide { padding: 26px 22px 22px; }
     .hand-title { font-size: 32px; margin-bottom: 14px; }
     .cover-headline { font-size: 34px; }
     .cover-summary { font-size: 14px; margin-bottom: 18px; }
@@ -446,14 +436,12 @@
 </head>
 <body>
 
+  <div class="card-flow">
   <!-- ========================================================
        SLIDE 1: 표지
        배경 사진: 한경매거진 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-cover">
-    <div class="slide-indicator">
-      <span></span><span></span><span></span>
-    </div>
     <div class="cover-category">Daily Real Estate Briefing</div>
     <h1 class="cover-headline">
       국채금리 발작<br>
@@ -475,9 +463,6 @@
        사진: 롯데건설 롯데캐슬 넥스티엘 공식 조감도 기사 사진
        ======================================================== -->
   <section class="card-slide slide-single">
-    <div class="slide-indicator">
-      <span></span><span></span><span></span>
-    </div>
     <h2 class="hand-title">검단 핵심 호재</h2>
     
     <div class="image-container-single">
@@ -494,7 +479,6 @@
 
     <div class="slide-footer-label">
       <span>출처: 뉴스핌 보도 / 롯데건설</span>
-      <span>02 / 05</span>
     </div>
   </section>
 
@@ -504,9 +488,6 @@
        사진: 스트레이트뉴스 + 시사저널 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-split">
-    <div class="slide-indicator">
-      <span></span><span></span><span></span>
-    </div>
     <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
 
     <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 -->
@@ -537,7 +518,6 @@
 
     <div class="slide-footer-label">
       <span>출처: SBS CNBC(다음뉴스)</span>
-      <span>03 / 05</span>
     </div>
   </section>
 
@@ -547,10 +527,6 @@
        사진: 뉴시(다음뉴스) 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-overlay">
-    <div class="slide-indicator">
-      <span></span><span></span><span></span>
-    </div>
-
     <div class="overlay-script">금융불균형 경고</div>
     <h2 class="overlay-lead">
       "대출을 조여도 집값은 오른다<br>
@@ -567,7 +543,6 @@
 
     <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
       <span>출처: 뉴시(다음뉴스)</span>
-      <span>04 / 05</span>
     </div>
   </section>
 
@@ -576,10 +551,6 @@
        SLIDE 5: 실거래가 랭킹 TOP 4
        ======================================================== -->
   <section class="card-slide slide-ranking">
-    <div class="slide-indicator">
-      <span></span><span></span><span></span>
-    </div>
-    
     <div class="bold-sub">MARKET RANKING TOP 4</div>
     <h2 class="bold-title">검단 실거래<br>평당 순위</h2>
 
@@ -627,9 +598,9 @@
 
     <div class="slide-footer-label">
       <span>자료: 국토교통부 실거래가 공개시스템</span>
-      <span>05 / 05</span>
     </div>
   </section>
+  </div>
 
   <!-- ========================================================
        전체 뉴스·실거래가 목록 (기사 원문 링크 + 실거래가 전체)
