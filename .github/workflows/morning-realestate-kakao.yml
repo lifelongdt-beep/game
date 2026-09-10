@@ -39,6 +39,55 @@ jobs:
         with:
           node-version: '20'
 
+      - name: TEMP og:image 추출 진단 (확인 후 되돌릴 예정)
+        run: |
+          cat > /tmp/diag.js <<'DIAGEOF'
+          async function fetchArticleOgImage(articleUrl) {
+            try {
+              const res = await fetch(articleUrl, {
+                redirect: 'follow',
+                headers: {
+                  'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
+              });
+              if (!res.ok) return { ok: false, status: res.status, finalUrl: res.url };
+              const html = await res.text();
+              const patterns = [
+                /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+                /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+                /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+                /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+              ];
+              for (const pattern of patterns) {
+                const match = html.match(pattern);
+                if (match) return { ok: true, image: match[1], finalUrl: res.url };
+              }
+              return { ok: true, image: null, finalUrl: res.url };
+            } catch (err) {
+              return { ok: false, error: err.message };
+            }
+          }
+
+          const urls = [
+            ['사업자대출 용도외유용', 'https://news.google.com/rss/articles/CBMic0FVX3lxTE42SndRVlZGeFVsX2VsRC1XMGNSWldwZnRTczFkbWRqWDJEdkJmb3ZoWVpfQ1ZOMFI5Snh1YzVlalgtdUhvd1RiZGpqcHhhc2NtUTJkcXo5RjJvYUQxa0ZjOEJYU09LZ3FvYUJRMXZzYjBFdVnSAXdBVV95cUxPS2ZkbE5XOFVoSnROcmNUVU5HeHJTZ2VLYVRtNjRKUjdOdDJoYW9RbTNwc3RnVzVEeXJmZ2k2TE4wZk9ualBSZXFxZ1EyQU4yUG1Qdzk2YWdDaFBoRUJQakR1NVlsLVFVRl9Jd2g3S195dlBidjlZSQ?oc=5'],
+            ['한은 수도권 집값', 'https://news.google.com/rss/articles/CBMie0FVX3lxTE1nUEI3QnlpMXpxYzVkS3hRRHd6WERGdkd3dGN1TGROYnZPNG1DdDV0WG5VVlFFUlp5MzNUV0FTTHAxSXR1QTF4VVhlaWkwUUM1cDYzbGs4Z3RyY1I2eHdUZ3RLLXRRWDBfeUtjckRoRTJ6cXhuT1E2RWZOUdIBgAFBVV95cUxPWFB3WTdZb0w2cGdDZ0pJVlpVa2s4LUJHSTNObWZmbUJCTmJJbG9wREtPdmVlbnJxQkVhQTVFOFl3ZkxQVWFuLXEzVE9ZeUdhaERCWHpDVENwNzZ1WVl2ak9RY1Z2VkEyeXh6S2x0cHVzUGZfV3BYdlFaT29qcEpGcw?oc=5'],
+            ['사고차량 대출 총책', 'https://news.google.com/rss/articles/CBMiW0FVX3lxTE40dzE5RFRjMUlBMXdsbms5bXh2SUNMdEVXLU1OLU12anFXR05FYU5KbUM1WDgwQ0RVbjFkU3hFR0xtLVQ3RF9MTGZoeVJQaEVGZlRqbnBISmtpZ2c?oc=5'],
+            ['한은 기준금리 v.daum', 'https://news.google.com/rss/articles/CBMiT0FVX3lxTFBKa2hrcWJNcld4djdibzFuZUE5R2hoSm9sM2ZtckZNdDdMWGpwS1kySUlwSi1EUHkzWUNQdUE0TXRSLXktXzFpZ1hSUUMyYzg?oc=5'],
+            ['계양신도시 카이브 유보라 분양', 'https://news.google.com/rss/articles/CBMibkFVX3lxTE03bUxrNzlWekFPWGtEelJkTXlEY0NpQVU0WjAzNzhFZFZja2FGVURpeExGckFXRk83Wlk2NENjQ29qUFpYZWJiQjU5RGFnOFVvcl9mU2N1SmtIcFBaUVdlbTdWbEZVb0VUckVnS3V3?oc=5'],
+            ['계양신도시 첫 입주 인천일보', 'https://news.google.com/rss/articles/CBMicEFVX3lxTE95anF2b0p5TzB6aE4yYi1QSExlTkNEWG5sRHlLai1IbFNxNXdqTjFTTEtMS3VSYkFhdVlPb0thQ1BkLXdGSnh1aGZYQmZ3NzVDWVl6VXRuaVJVNnEyektURkdHQlI4cVZOUi1uV3BJME0?oc=5'],
+          ];
+
+          (async () => {
+            for (const [label, url] of urls) {
+              const result = await fetchArticleOgImage(url);
+              console.log(`=== ${label} ===`);
+              console.log(JSON.stringify(result));
+            }
+          })();
+          DIAGEOF
+          node /tmp/diag.js
+
       - name: Send KakaoTalk real estate news digest
         id: send
         env:
