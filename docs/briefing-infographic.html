@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>재부키 부동산 카드뉴스 브리핑</title>
+<title>재부키 부동산 분석 카드뉴스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Pretendard:wght@400;500;600;700;800;900&display=swap">
@@ -13,13 +13,12 @@
     --card-bg: #f8f9fa;
     --card-white: #ffffff;
     --text-black: #111111;
-    --text-dark: #2b2b2b;
-    --text-gray: #666666;
+    --text-dark: #222222;
+    --text-gray: #555555;
     --text-light: #888888;
     
-    /* 카드뉴스 시그니처 컬러 */
     --brand-yellow: #ffdf00;
-    --brand-green: #37d200;
+    --brand-green: #2dc400;
     --brand-blue: #0066ff;
     --brand-red: #ff3b30;
 
@@ -40,7 +39,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* 인스타/카드뉴스 표준 규격 슬라이드 (1:1 비율 정사각 카드 650x650) */
+  /* 1:1 정사각 650x650 규격 카드 슬라이드 */
   .card-slide {
     width: 650px;
     height: 650px;
@@ -53,7 +52,7 @@
     padding: 44px 44px 40px;
   }
 
-  /* 상단 초록색 3점 인디케이터 */
+  /* 상단 우측 연두색 3점 인디케이터 */
   .slide-indicator {
     position: absolute;
     top: 36px;
@@ -61,6 +60,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
+    z-index: 2;
   }
   .slide-indicator span {
     width: 6px;
@@ -69,73 +69,52 @@
     border-radius: 50%;
   }
 
-  /* 손글씨 / 캘리그라피 타이틀 스타일 */
+  /* 감성 손글씨 타이틀 (틀은 템플릿 유지, 문구는 실제 뉴스 맞춤) */
   .hand-title {
     font-family: var(--font-hand);
-    font-size: 58px;
+    font-size: 56px;
     color: #1a1a1a;
     line-height: 1.1;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     letter-spacing: 0.02em;
   }
 
-  /* 고딕/볼드 타이포 타이틀 스타일 */
-  .bold-sub {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-light);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .bold-title {
-    font-size: 48px;
-    font-weight: 900;
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-    color: var(--text-black);
-    margin-bottom: 20px;
-  }
-
-  /* ========================================================
-     SLIDE 1: 전체 배경 커버형 (표지)
-     ======================================================== */
+  /* 슬라이드 1: 표지 (전체 배경 사진 + 대형 고딕 타이틀 + 해시태그 알약) */
   .slide-cover {
-    background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.85) 100%),
-                url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.88) 100%),
+                url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
     color: #ffffff;
     justify-content: flex-end;
     padding: 50px 46px;
   }
-  .cover-top {
+  .cover-category {
     font-size: 13px;
     font-weight: 800;
-    letter-spacing: 0.18em;
-    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.16em;
+    color: rgba(255,255,255,0.75);
     text-transform: uppercase;
     margin-bottom: 12px;
   }
-  .cover-title {
-    font-size: 64px;
+  .cover-headline {
+    font-size: 60px;
     font-weight: 900;
-    line-height: 1.08;
+    line-height: 1.1;
     letter-spacing: -0.03em;
     margin-bottom: 16px;
   }
-  .cover-title span.highlight {
+  .cover-headline .highlight {
     color: var(--brand-yellow);
-    display: inline;
   }
-  .cover-desc {
-    font-size: 18px;
+  .cover-summary {
+    font-size: 17px;
     color: rgba(255,255,255,0.85);
-    line-height: 1.5;
-    margin-bottom: 30px;
+    line-height: 1.55;
+    margin-bottom: 28px;
   }
   .cover-divider {
     width: 100%;
     height: 1px;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.22);
     margin-bottom: 24px;
   }
   .tag-pills {
@@ -143,23 +122,18 @@
     gap: 10px;
   }
   .tag-pill {
-    padding: 10px 24px;
+    padding: 9px 22px;
     border-radius: 999px;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 800;
-    display: inline-flex;
-    align-items: center;
   }
   .tag-yellow { background: var(--brand-yellow); color: #000; }
   .tag-white { background: #ffffff; color: #000; }
   .tag-black { background: #000000; color: var(--brand-yellow); border: 1px solid rgba(255,255,255,0.2); }
 
-
-  /* ========================================================
-     SLIDE 2: 단일 이미지 강조형 (헤드라인 분석)
-     ======================================================== */
+  /* 슬라이드 2: 단일 이미지 강조형 (검단 아라역 롯데캐슬 개발) */
   .slide-single {
-    background: #f2f4f6;
+    background: #f4f5f7;
   }
   .image-container-single {
     width: 100%;
@@ -167,7 +141,7 @@
     border-radius: 4px;
     overflow: hidden;
     position: relative;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
   }
   .image-container-single img {
     width: 100%;
@@ -178,7 +152,7 @@
     position: absolute;
     top: 16px;
     left: 16px;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.78);
     backdrop-filter: blur(4px);
     color: #fff;
     font-size: 13px;
@@ -191,32 +165,29 @@
     text-align: center;
   }
   .caption-lead {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 19px;
+    font-weight: 800;
     color: var(--text-dark);
     margin-bottom: 8px;
-    line-height: 1.4;
+    line-height: 1.35;
   }
   .caption-sub {
     font-size: 14.5px;
     color: var(--text-gray);
     line-height: 1.6;
-    max-width: 500px;
+    max-width: 510px;
     margin: 0 auto;
   }
 
-
-  /* ========================================================
-     SLIDE 3: 좌우 분할형 (2가지 이슈 비교/배치)
-     ======================================================== */
+  /* 슬라이드 3: 좌우 분할형 (정비사업 vs 대출단속 2대 이슈) */
   .slide-split {
-    background: #f5f6f8;
+    background: #f7f8fa;
     justify-content: space-between;
   }
   .split-row {
     display: grid;
     grid-template-columns: 240px 1fr;
-    gap: 24px;
+    gap: 22px;
     align-items: center;
   }
   .split-row.reverse {
@@ -240,33 +211,29 @@
     gap: 6px;
   }
   .check-tag {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 800;
     color: var(--brand-green);
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    margin-bottom: 2px;
   }
   .split-title {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-dark);
     line-height: 1.35;
   }
   .split-text {
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--text-gray);
     line-height: 1.55;
   }
 
-
-  /* ========================================================
-     SLIDE 4: 전체 배경 오버레이형 (메시지 집중형)
-     ======================================================== */
+  /* 슬라이드 4: 전체 배경 오버레이형 (금리 상승 경고 메시지) */
   .slide-overlay {
-    background: linear-gradient(rgba(18, 22, 28, 0.82), rgba(18, 22, 28, 0.88)),
-                url('https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+    background: linear-gradient(rgba(14, 18, 24, 0.82), rgba(14, 18, 24, 0.90)),
+                url('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
     color: #ffffff;
     justify-content: center;
     align-items: center;
@@ -275,25 +242,25 @@
   }
   .overlay-script {
     font-family: var(--font-hand);
-    font-size: 72px;
+    font-size: 70px;
     color: var(--brand-green);
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     line-height: 1;
   }
   .overlay-lead {
-    font-size: 25px;
+    font-size: 26px;
     font-weight: 800;
-    line-height: 1.45;
-    margin-bottom: 24px;
+    line-height: 1.4;
+    margin-bottom: 22px;
     letter-spacing: -0.02em;
-    color: #f8f9fa;
+    color: #ffffff;
   }
   .overlay-body {
     font-size: 16px;
-    color: rgba(255,255,255,0.78);
+    color: rgba(255,255,255,0.8);
     line-height: 1.7;
-    max-width: 480px;
-    margin-bottom: 36px;
+    max-width: 490px;
+    margin-bottom: 34px;
   }
   .overlay-quote {
     background: rgba(255, 255, 255, 0.08);
@@ -302,16 +269,29 @@
     border-radius: 0 8px 8px 0;
     text-align: left;
     font-size: 14.5px;
-    color: #e0e0e0;
+    color: #f0f0f0;
     line-height: 1.5;
   }
 
-
-  /* ========================================================
-     SLIDE 5: 실거래가 랭킹 & 데이터 카드형
-     ======================================================== */
+  /* 슬라이드 5: 단일 이미지 강조 II (검단 실거래가 랭킹) */
   .slide-ranking {
-    background: #f7f8fa;
+    background: #f5f6f8;
+  }
+  .bold-sub {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .bold-title {
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--text-black);
+    margin-bottom: 20px;
   }
   .ranking-box {
     background: #ffffff;
@@ -365,7 +345,6 @@
     text-align: center;
   }
 
-  /* 슬라이드 캡션 꼬리표 */
   .slide-footer-label {
     margin-top: auto;
     font-size: 12px;
@@ -373,52 +352,54 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 14px;
+    padding-top: 12px;
   }
 </style>
 </head>
 <body>
 
   <!-- ========================================================
-       SLIDE 1: 표지 (전체 사진 활용 카드뉴스)
+       SLIDE 1: 표지 (템플릿 틀: 전체배경 커버 + 노란 강조 + 해시태그 알약)
+       문맥: 오늘 하루 부동산 시장 및 검단 브리핑
        ======================================================== -->
   <section class="card-slide slide-cover">
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
-    <div class="cover-top">Daily Real Estate Briefing</div>
-    <h1 class="cover-title">
-      사진을<br>
-      <span class="highlight">활용한</span><br>
-      부동산 카드뉴스
+    <div class="cover-category">Daily Real Estate Briefing</div>
+    <h1 class="cover-headline">
+      오늘의<br>
+      <span class="highlight">검단 부동산</span><br>
+      핵심 브리핑
     </h1>
-    <p class="cover-desc">오늘의 부동산 시장 동향과 검단신도시 시세를 자연스러운 레이아웃으로 한눈에 전달합니다.</p>
+    <p class="cover-summary">아라역 롯데캐슬 호재부터 정비사업·대출 단속, 실거래 랭킹까지 오늘의 부동산 흐름을 한눈에 정리합니다.</p>
     <div class="cover-divider"></div>
     <div class="tag-pills">
-      <span class="tag-pill tag-yellow"># 검단신도시</span>
-      <span class="tag-pill tag-white"># 실거래가</span>
-      <span class="tag-pill tag-black"># 대출정책</span>
+      <span class="tag-pill tag-yellow"># 아라역 롯데캐슬</span>
+      <span class="tag-pill tag-white"># 실거래 TOP5</span>
+      <span class="tag-pill tag-black"># 금리·대출점검</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 2: 단일 이미지 강조형 (오늘의 메인 뉴스)
+       SLIDE 2: 단일 이미지 강조형 (템플릿 틀: 상단 손글씨 타이틀 + 대형 단일 사진 + 2줄 요약)
+       문맥: 검단 아라역 롯데캐슬 브랜드 타운 조성 뉴스
        ======================================================== -->
   <section class="card-slide slide-single">
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
-    <h2 class="hand-title">단일 이미지 강조형</h2>
+    <h2 class="hand-title">검단 핵심 호재</h2>
     
     <div class="image-container-single">
-      <img src="https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=1000&q=80" alt="건설 및 개발 현장">
-      <div class="image-badge">핵심 개발 소식</div>
+      <img src="https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=1000&q=80" alt="아라역 개발 현장">
+      <div class="image-badge">아라역세권 복합개발</div>
     </div>
 
     <div class="image-caption-box">
-      <p class="caption-lead">검단 아라역, 롯데캐슬 대규모 브랜드 타운 조성</p>
-      <p class="caption-sub">한 장의 현장감 있는 사진과 핵심 문구로 소식을 전달합니다. 아라역 일대 상업·주거 복합 개발로 역세권 시세 견인이 기대됩니다.</p>
+      <p class="caption-lead">검단 아라역, 롯데캐슬 브랜드 타운 조성 가시화</p>
+      <p class="caption-sub">오랜만에 나온 검단신도시 직접 언급 호재. 영화관이 아닌 주거·상업 복합 개발로, 역세권 대단지 조성에 따른 입주 후 상권 및 시세 견인 효과가 기대됩니다.</p>
     </div>
 
     <div class="slide-footer-label">
@@ -429,13 +410,14 @@
 
 
   <!-- ========================================================
-       SLIDE 3: 좌우 분할형 (두 가지 이슈 자연 비교)
+       SLIDE 3: 좌우 분할형 (템플릿 틀: 손글씨 타이틀 + 지그재그 사진/글 배치)
+       문맥: 정비사업 지원 vs 대출 단속 이슈 비교
        ======================================================== -->
   <section class="card-slide slide-split">
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
-    <h2 class="hand-title">좌우 분할형</h2>
+    <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
 
     <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 -->
     <div class="split-row">
@@ -445,7 +427,7 @@
       <div class="split-content">
         <span class="check-tag">✔ Issue 01</span>
         <p class="split-title">정비사업 초기 불확실성 해소</p>
-        <p class="split-text">한국부동산원이 재개발·재건축 주민 지원을 확대해 인허가 속도를 높입니다.</p>
+        <p class="split-text">부동산원이 재개발·재건축 주민 지원을 확대해 판단 지연으로 밀리던 공급 추진에 속도를 냅니다.</p>
       </div>
     </div>
 
@@ -453,60 +435,62 @@
     <div class="split-row reverse">
       <div class="split-content">
         <span class="check-tag">✔ Issue 02</span>
-        <p class="split-title">사업자대출 우회 적발 강화</p>
-        <p class="split-text">대출금을 주택 구입에 유용한 사례가 4년 새 6배 급증해 금융당국 점검이 본격화됩니다.</p>
+        <p class="split-title">사업자대출 우회 단속 본격화</p>
+        <p class="split-text">사업자 대출로 집을 산 적발 사례가 4년 새 6배 폭증하며 금융권 전수 점검과 회수가 시작됩니다.</p>
       </div>
       <div class="split-img">
-        <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" alt="금융 및 계산">
+        <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" alt="금융 및 대출 점검">
       </div>
     </div>
 
     <div class="slide-footer-label">
-      <span>자연스러운 비교 배치 레이아웃</span>
+      <span>정책 및 금융 동향</span>
       <span>03 / 05</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 4: 전체 배경형 (강조하고 싶은 인사이트 메시지)
+       SLIDE 4: 전체 배경 오버레이형 (템플릿 틀: 어두운 배경 사진 + 초록 손글씨 + 인용 박스)
+       문맥: 한미 금리 동반 상승 및 관망세 주의 경고
        ======================================================== -->
   <section class="card-slide slide-overlay">
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
     
-    <div class="overlay-script">전체 배경형</div>
+    <div class="overlay-script">금리 주의보</div>
     <h2 class="overlay-lead">
-      "사진 배경 위에 핵심 메시지를 배치해<br>
-      시선의 집중도를 극대화합니다"
+      "미국 10년물 국채·국내 채권금리 동반 상승<br>
+      대출금리 인상 압력이 커집니다"
     </h2>
     <p class="overlay-body">
-      미국 10년물 국채금리가 연고점을 기록하고 국내 채권금리가 전 구간 상승하면서 시중 대출금리 인상 압력이 커지고 있습니다. 실수요자는 자금 계획 점검이 필요한 시점입니다.
+      미 주택담보대출 금리가 작년 6월 이후 최고치를 기록한 가운데 한은 기준금리 인상 여파로 국내 채권금리도 전 구간 상승했습니다. 가계대출 조이기와 맞물려 실수요자의 자금 부담이 커지고 있습니다.
     </p>
 
     <div class="overlay-quote">
-      💡 <b>오늘의 한 줄 총평</b><br>
-      금리 인상기에는 역세권 중심 옥석 가리기가 더욱 뚜렷해집니다.
+      💡 <b>재부키 인사이트</b><br>
+      금리 인상기에는 단순 시세 추격보다 역세권 옥석 가리기와 자금 조달 안전성이 최우선입니다.
     </div>
 
     <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
-      <span>집중형 메시지 카드</span>
+      <span>거시 경제 지표 분석</span>
       <span>04 / 05</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 5: 깔끔한 타이포형 (단일 이미지 강조 II / 시세 데이터)
+       SLIDE 5: 랭킹 및 단일 이미지 강조 II (템플릿 틀: 영문 소제목 + 대형 고딕 타이틀 + 랭킹 박스)
+       문맥: 검단신도시 실거래가 평당 순위 TOP 5
        ======================================================== -->
   <section class="card-slide slide-ranking">
     <div class="slide-indicator">
       <span></span><span></span><span></span>
     </div>
     
-    <div class="bold-sub">MARKET RANKING 05</div>
-    <h2 class="bold-title">검단 실거래<br>TOP 5</h2>
+    <div class="bold-sub">MARKET RANKING TOP 4</div>
+    <h2 class="bold-title">검단 실거래<br>평당 순위</h2>
 
     <div class="ranking-box">
       <div class="rank-item">
@@ -547,11 +531,11 @@
     </div>
 
     <div class="rank-summary-pill">
-      📌 상위 1~4위 격차 5% 이내로 초역세권 신축 중심 촘촘한 가격대 유지
+      📌 1~4위 격차 5% 이내로 초역세권 신축 중심 촘촘한 가격대 형성 중
     </div>
 
     <div class="slide-footer-label">
-      <span>국토교통부 실거래가 기준</span>
+      <span>국토교통부 실거래가 기준 (최근 30일)</span>
       <span>05 / 05</span>
     </div>
   </section>
