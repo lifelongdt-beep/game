@@ -23,6 +23,10 @@ on:
         required: false
         type: boolean
         default: false
+      resolve_image_urls:
+        description: '카드뉴스에 쓸 구글 뉴스 RSS 링크를 줄바꿈으로 구분해 입력하면, 실제 브라우저(Playwright)로 각 링크를 열어 최종 기사 URL과 대표 이미지(og:image)를 로그에 출력합니다. 구글 뉴스 링크는 일반 fetch로는 실제 기사로 리다이렉트되지 않아(자바스크립트 SPA 방식) 이 방법이 필요합니다. 비워두면 이 단계는 건너뜁니다.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -38,6 +42,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install Playwright Chromium (카드뉴스 이미지 추출용)
+        if: ${{ github.event.inputs.resolve_image_urls != '' }}
+        run: |
+          npm init -y >/dev/null
+          npm install --no-save playwright@1.47.0
+          npx playwright install --with-deps chromium
+
+      - name: Resolve article images for card news
+        if: ${{ github.event.inputs.resolve_image_urls != '' }}
+        env:
+          RESOLVE_IMAGE_URLS: ${{ github.event.inputs.resolve_image_urls }}
+        run: node scripts/resolve-article-images.js
 
       - name: Send KakaoTalk real estate news digest
         id: send
