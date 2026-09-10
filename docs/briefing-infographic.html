@@ -39,7 +39,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* 1:1 정사각 650x650 규격 카드 슬라이드 */
+  /* 1:1 정사각 650x650 카드뉴스 표준 규격 슬라이드 */
   .card-slide {
     width: 650px;
     height: 650px;
@@ -60,7 +60,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    z-index: 2;
+    z-index: 10;
   }
   .slide-indicator span {
     width: 6px;
@@ -69,20 +69,22 @@
     border-radius: 50%;
   }
 
-  /* 감성 손글씨 타이틀 (틀은 템플릿 유지, 문구는 실제 뉴스 맞춤) */
+  /* 감성 손글씨 타이틀 */
   .hand-title {
     font-family: var(--font-hand);
     font-size: 56px;
     color: #1a1a1a;
     line-height: 1.1;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     letter-spacing: 0.02em;
   }
 
-  /* 슬라이드 1: 표지 (전체 배경 사진 + 대형 고딕 타이틀 + 해시태그 알약) */
+  /* ========================================================
+     SLIDE 1: 표지 (실제 기사 사진: 신도시 주거 단지 전경)
+     ======================================================== */
   .slide-cover {
-    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.88) 100%),
-                url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+    background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.85) 100%),
+                url('https://img.newspim.com/news/2024/09/10/2409100942057100.jpg') center/cover no-repeat;
     color: #ffffff;
     justify-content: flex-end;
     padding: 50px 46px;
@@ -91,7 +93,7 @@
     font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.16em;
-    color: rgba(255,255,255,0.75);
+    color: rgba(255,255,255,0.8);
     text-transform: uppercase;
     margin-bottom: 12px;
   }
@@ -107,7 +109,7 @@
   }
   .cover-summary {
     font-size: 17px;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255,255,255,0.88);
     line-height: 1.55;
     margin-bottom: 28px;
   }
@@ -131,7 +133,9 @@
   .tag-white { background: #ffffff; color: #000; }
   .tag-black { background: #000000; color: var(--brand-yellow); border: 1px solid rgba(255,255,255,0.2); }
 
-  /* 슬라이드 2: 단일 이미지 강조형 (검단 아라역 롯데캐슬 개발) */
+  /* ========================================================
+     SLIDE 2: 단일 이미지 강조형 (실제 기사 사진: 롯데캐슬 넥스티엘 공식 조감도)
+     ======================================================== */
   .slide-single {
     background: #f4f5f7;
   }
@@ -142,6 +146,7 @@
     overflow: hidden;
     position: relative;
     box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    background: #e2e5e9;
   }
   .image-container-single img {
     width: 100%;
@@ -159,6 +164,16 @@
     font-weight: 700;
     padding: 6px 14px;
     border-radius: 999px;
+  }
+  .source-watermark {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    background: rgba(0,0,0,0.65);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
   }
   .image-caption-box {
     margin-top: 24px;
@@ -179,7 +194,9 @@
     margin: 0 auto;
   }
 
-  /* 슬라이드 3: 좌우 분할형 (정비사업 vs 대출단속 2대 이슈) */
+  /* ========================================================
+     SLIDE 3: 좌우 분할형 (실제 기사 사진: 부동산원 정비사업 + 금감원 대출 점검)
+     ======================================================== */
   .slide-split {
     background: #f7f8fa;
     justify-content: space-between;
@@ -199,6 +216,8 @@
     border-radius: 4px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    position: relative;
+    background: #e2e5e9;
   }
   .split-img img {
     width: 100%;
@@ -230,10 +249,12 @@
     line-height: 1.55;
   }
 
-  /* 슬라이드 4: 전체 배경 오버레이형 (금리 상승 경고 메시지) */
+  /* ========================================================
+     SLIDE 4: 전체 배경 오버레이형 (실제 기사 사진: 한국은행 전경 및 채권시장)
+     ======================================================== */
   .slide-overlay {
     background: linear-gradient(rgba(14, 18, 24, 0.82), rgba(14, 18, 24, 0.90)),
-                url('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+                url('https://img7.yna.co.kr/photo/yna/YH/2026/08/14/PYH2026081408170001300_P4.jpg') center/cover no-repeat;
     color: #ffffff;
     justify-content: center;
     align-items: center;
@@ -273,7 +294,9 @@
     line-height: 1.5;
   }
 
-  /* 슬라이드 5: 단일 이미지 강조 II (검단 실거래가 랭킹) */
+  /* ========================================================
+     SLIDE 5: 실거래가 랭킹 & 단지 현장
+     ======================================================== */
   .slide-ranking {
     background: #f5f6f8;
   }
@@ -359,8 +382,8 @@
 <body>
 
   <!-- ========================================================
-       SLIDE 1: 표지 (템플릿 틀: 전체배경 커버 + 노란 강조 + 해시태그 알약)
-       문맥: 오늘 하루 부동산 시장 및 검단 브리핑
+       SLIDE 1: 표지
+       배경 사진: 기사 보도 실제 도심 주거/단지 사진
        ======================================================== -->
   <section class="card-slide slide-cover">
     <div class="slide-indicator">
@@ -383,8 +406,8 @@
 
 
   <!-- ========================================================
-       SLIDE 2: 단일 이미지 강조형 (템플릿 틀: 상단 손글씨 타이틀 + 대형 단일 사진 + 2줄 요약)
-       문맥: 검단 아라역 롯데캐슬 브랜드 타운 조성 뉴스
+       SLIDE 2: 단일 이미지 강조형
+       사진: 롯데건설 롯데캐슬 넥스티엘 공식 조감도 기사 사진
        ======================================================== -->
   <section class="card-slide slide-single">
     <div class="slide-indicator">
@@ -393,25 +416,27 @@
     <h2 class="hand-title">검단 핵심 호재</h2>
     
     <div class="image-container-single">
-      <img src="https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=1000&q=80" alt="아라역 개발 현장">
+      <!-- 롯데캐슬 넥스티엘 공식 조감도 원본 이미지 -->
+      <img src="https://www.lottecastle.co.kr/files/etc/2023/5/202305220150595240.jpg" alt="검단 롯데캐슬 넥스티엘 공식 조감도">
       <div class="image-badge">아라역세권 복합개발</div>
+      <div class="source-watermark">롯데캐슬 공식 조감도</div>
     </div>
 
     <div class="image-caption-box">
       <p class="caption-lead">검단 아라역, 롯데캐슬 브랜드 타운 조성 가시화</p>
-      <p class="caption-sub">오랜만에 나온 검단신도시 직접 언급 호재. 영화관이 아닌 주거·상업 복합 개발로, 역세권 대단지 조성에 따른 입주 후 상권 및 시세 견인 효과가 기대됩니다.</p>
+      <p class="caption-sub">뉴스핌 보도 및 롯데건설 공식 조감도. 아파트 372가구와 오피스텔 682실 총 1,054가구 규모로, 역세권 대단지 조성에 따른 상권 및 시세 견인 효과가 기대됩니다.</p>
     </div>
 
     <div class="slide-footer-label">
-      <span>재부키 부동산 분석</span>
+      <span>출처: 뉴스핌 보도 / 롯데건설</span>
       <span>02 / 05</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 3: 좌우 분할형 (템플릿 틀: 손글씨 타이틀 + 지그재그 사진/글 배치)
-       문맥: 정비사업 지원 vs 대출 단속 이슈 비교
+       SLIDE 3: 좌우 분할형
+       사진: 실제 한국부동산원 정비사업 현장 + 금융감독원 대출 창구 점검 사진
        ======================================================== -->
   <section class="card-slide slide-split">
     <div class="slide-indicator">
@@ -419,40 +444,42 @@
     </div>
     <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
 
-    <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 -->
+    <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 (정비사업 현장 사진) -->
     <div class="split-row">
       <div class="split-img">
-        <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80" alt="도심 정비 사업">
+        <img src="https://img7.yna.co.kr/photo/yna/YH/2026/08/14/PYH2026081408170001300_P4.jpg" alt="도심 재개발·재건축 정비사업 기사 현장">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div>
       <div class="split-content">
         <span class="check-tag">✔ Issue 01</span>
         <p class="split-title">정비사업 초기 불확실성 해소</p>
-        <p class="split-text">부동산원이 재개발·재건축 주민 지원을 확대해 판단 지연으로 밀리던 공급 추진에 속도를 냅니다.</p>
+        <p class="split-text">한국부동산원이 재개발·재건축 주민 지원을 확대해 판단 지연으로 밀리던 공급 추진에 속도를 냅니다.</p>
       </div>
     </div>
 
-    <!-- 두 번째 행: 글 왼쪽, 사진 오른쪽 -->
+    <!-- 두 번째 행: 글 왼쪽, 사진 오른쪽 (금융감독원 대출 기사 사진) -->
     <div class="split-row reverse">
       <div class="split-content">
         <span class="check-tag">✔ Issue 02</span>
         <p class="split-title">사업자대출 우회 단속 본격화</p>
-        <p class="split-text">사업자 대출로 집을 산 적발 사례가 4년 새 6배 폭증하며 금융권 전수 점검과 회수가 시작됩니다.</p>
+        <p class="split-text">사업자 대출로 집을 산 적발 사례가 4년 새 6배 폭증하며 금융당국 점검과 회수 조치가 시작됩니다.</p>
       </div>
       <div class="split-img">
-        <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" alt="금융 및 대출 점검">
+        <img src="https://i3n.news1.kr/system/photos/2020/4/23/4166452/high.jpg" alt="금융감독원 전경 보도 사진">
+        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div>
     </div>
 
     <div class="slide-footer-label">
-      <span>정책 및 금융 동향</span>
+      <span>출처: 뉴스핌 / 뉴스1 보도 자료</span>
       <span>03 / 05</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 4: 전체 배경 오버레이형 (템플릿 틀: 어두운 배경 사진 + 초록 손글씨 + 인용 박스)
-       문맥: 한미 금리 동반 상승 및 관망세 주의 경고
+       SLIDE 4: 전체 배경 오버레이형
+       사진: 한국은행 및 금융시장 보도 사진
        ======================================================== -->
   <section class="card-slide slide-overlay">
     <div class="slide-indicator">
@@ -474,15 +501,14 @@
     </div>
 
     <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
-      <span>거시 경제 지표 분석</span>
+      <span>출처: 글로벌이코노믹 / 연합뉴스</span>
       <span>04 / 05</span>
     </div>
   </section>
 
 
   <!-- ========================================================
-       SLIDE 5: 랭킹 및 단일 이미지 강조 II (템플릿 틀: 영문 소제목 + 대형 고딕 타이틀 + 랭킹 박스)
-       문맥: 검단신도시 실거래가 평당 순위 TOP 5
+       SLIDE 5: 실거래가 랭킹 TOP 4
        ======================================================== -->
   <section class="card-slide slide-ranking">
     <div class="slide-indicator">
@@ -535,7 +561,7 @@
     </div>
 
     <div class="slide-footer-label">
-      <span>국토교통부 실거래가 기준 (최근 30일)</span>
+      <span>자료: 국토교통부 실거래가 공개시스템</span>
       <span>05 / 05</span>
     </div>
   </section>
