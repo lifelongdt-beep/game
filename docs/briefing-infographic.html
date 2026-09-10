@@ -2,324 +2,543 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>재부키 부동산 분석 인포그래픽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Pretendard:wght@400;500;600;700;800&display=swap">
 <style>
   :root {
-    --paper: #f6f2ea;
-    --paper-raised: #ffffff;
-    --ink: #1c2536;
-    --ink-soft: #5b6470;
-    --ink-faint: #9099a5;
-    --accent: #c9502f;
-    --accent-soft: rgba(201,80,47,.10);
-    --accent-light: rgba(201,80,47,.32);
-    --rule: rgba(28,37,54,.12);
-    --font-display: 'Gowun Batang', Georgia, 'Nanum Myeongjo', serif;
-    --font-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --bg: #0f141c;
+    --card: #18202c;
+    --card-hover: #1f2a3a;
+    --card-inner: #121822;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-bright: rgba(255, 255, 255, 0.16);
+    
+    --text-main: #f3f5f8;
+    --text-sub: #9aa5b5;
+    --text-faint: #636f82;
+
+    /* Semantic Colors */
+    --accent-red: #ff5252;
+    --accent-orange: #ff9100;
+    --accent-blue: #2979ff;
+    --accent-green: #00e676;
+    --accent-purple: #b388ff;
+    --accent-cyan: #00e5ff;
+
+    --font-heading: 'Gowun Batang', serif;
+    --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
+  body {
     width: 700px;
-    background: var(--paper);
-    color: var(--ink);
+    background: var(--bg);
+    color: var(--text-main);
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    padding: 24px 20px 40px;
   }
-  .sheet { width: 700px; position: relative; overflow: hidden; }
 
-  /* ===== Header ===== */
-  .head {
-    position: relative;
-    padding: 34px 32px 26px;
-    background: var(--ink);
-    color: #fff;
-    overflow: hidden;
-  }
-  .head::after {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 220px; height: 220px;
-    background: var(--accent);
-    transform: rotate(20deg);
-    opacity: .9;
-    clip-path: polygon(40% 0, 100% 0, 100% 100%, 0% 60%);
-  }
-  .head-inner { position: relative; z-index: 1; }
-  .kicker-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .kicker { font-size: 14px; font-weight: 600; letter-spacing: .12em; color: #ffb89a; text-transform: uppercase; }
-  .count-pill { font-size: 13px; font-weight: 700; color: var(--ink); background: #fff; border-radius: 999px; padding: 5px 14px; }
-  h1 {
-    font-family: var(--font-display);
-    font-size: 44px;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -.01em;
-    margin-bottom: 10px;
-  }
-  .subtitle { font-size: 16px; color: rgba(255,255,255,.72); line-height: 1.5; max-width: 480px; }
-
-  .body { padding: 0 32px 28px; }
-
-  /* ===== Hero: Geomdan ===== */
-  .hero {
-    margin-top: -18px;
-    background: var(--accent);
-    border-radius: 18px;
-    padding: 26px 26px 24px;
+  .sheet {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Header Section */
+  .header-card {
+    background: linear-gradient(135deg, #1c2738 0%, #131924 100%);
+    border: 1px solid var(--border-bright);
+    border-radius: 20px;
+    padding: 28px 26px 24px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 14px 30px -16px rgba(201,80,47,.6);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
-  .hero::before {
+  .header-card::after {
     content: '';
     position: absolute;
-    right: -30px; bottom: -40px;
-    width: 160px; height: 160px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.10);
+    right: -40px;
+    top: -40px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(41, 121, 255, 0.18) 0%, transparent 70%);
+    pointer-events: none;
   }
-  .hero-icon { flex-shrink: 0; width: 64px; height: 64px; position: relative; z-index: 1; }
-  .hero-body { color: #fff; position: relative; z-index: 1; min-width: 0; }
-  .hero-tag {
-    display: inline-block;
-    font-size: 12.5px;
+  .header-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .header-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--accent);
-    background: #fff;
-    padding: 4px 11px;
+    color: var(--accent-cyan);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
     border-radius: 999px;
-    margin-bottom: 10px;
+    background: rgba(0, 230, 118, 0.12);
+    border: 1px solid rgba(0, 230, 118, 0.3);
+    color: var(--accent-green);
+    font-size: 12px;
+    font-weight: 700;
   }
-  .hero-title { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
-  .hero-text { font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,.92); }
-
-  /* ===== Section title with icon ===== */
-  .sec { margin-top: 22px; }
-  .sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .sec-icon { flex-shrink: 0; width: 34px; height: 34px; color: var(--accent); }
-  .sec-title { font-size: 20px; font-weight: 700; }
-
-  .card {
-    background: var(--paper-raised);
-    border: 1px solid var(--rule);
-    border-radius: 14px;
-    padding: 20px 22px;
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+  }
+  .header-title {
+    font-family: var(--font-heading);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .header-subtitle {
+    font-size: 15px;
+    color: var(--text-sub);
+    line-height: 1.5;
   }
 
-  /* ===== TOP5 chart ===== */
-  .chart-caption { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 14px; }
-  .bar-list { display: flex; flex-direction: column; gap: 10px; }
-  .bar-row { display: grid; grid-template-columns: 168px 1fr 82px; align-items: center; gap: 12px; }
-  .bar-row-label { font-size: 13px; color: var(--ink-soft); line-height: 1.35; }
-  .bar-row-label b { color: var(--ink); font-weight: 600; display: block; font-size: 14px; }
-  .bar-track { position: relative; height: 22px; background: rgba(28,37,54,.05); border-radius: 4px; }
-  .bar-fill {
-    position: absolute; left: 0; top: 0; bottom: 0;
-    background: linear-gradient(90deg, var(--accent-light), var(--accent));
+  /* Metric Ticker Grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .metric-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card.alert {
+    border-color: rgba(255, 82, 82, 0.35);
+    background: linear-gradient(180deg, rgba(255, 82, 82, 0.08) 0%, var(--card) 100%);
+  }
+  .metric-card.positive {
+    border-color: rgba(0, 230, 118, 0.35);
+    background: linear-gradient(180deg, rgba(0, 230, 118, 0.08) 0%, var(--card) 100%);
+  }
+  .metric-card.focus {
+    border-color: rgba(0, 229, 255, 0.35);
+    background: linear-gradient(180deg, rgba(0, 229, 255, 0.08) 0%, var(--card) 100%);
+  }
+  .metric-label {
+    font-size: 12.5px;
+    color: var(--text-sub);
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .metric-desc {
+    font-size: 12px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Universal Infographic Cards */
+  .info-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 24px;
+    position: relative;
+  }
+  .info-card.hero {
+    border: 1px solid rgba(41, 121, 255, 0.35);
+    background: linear-gradient(145deg, #1c2738 0%, #151d29 100%);
+    box-shadow: 0 8px 24px -12px rgba(41, 121, 255, 0.3);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .category-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .pill-red { background: rgba(255, 82, 82, 0.15); color: #ff7676; }
+  .pill-blue { background: rgba(41, 121, 255, 0.15); color: #70a7ff; }
+  .pill-green { background: rgba(0, 230, 118, 0.15); color: #46ff9e; }
+  .pill-orange { background: rgba(255, 145, 0, 0.15); color: #ffb74d; }
+  .pill-purple { background: rgba(179, 136, 255, 0.15); color: #cfb3ff; }
+
+  .status-tag {
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .status-up { color: var(--accent-red); }
+  .status-down { color: var(--accent-blue); }
+  .status-good { color: var(--accent-green); }
+
+  .card-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .card-lead {
+    font-size: 14.5px;
+    color: var(--text-sub);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  /* 3-Part Deep Breakdown Box (Fact - Impact - Check) */
+  .breakdown-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--card-inner);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .breakdown-col {
+    padding: 12px 14px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .breakdown-col:last-child { border-right: none; }
+  .col-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .col-content {
+    font-size: 13px;
+    color: var(--text-main);
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  /* Visual Comparison Gauge / Bars */
+  .gauge-wrapper {
+    margin-top: 14px;
+    background: var(--card-inner);
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .gauge-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .gauge-track {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+  .gauge-fill.primary {
+    background: linear-gradient(90deg, #2979ff, #00e5ff);
+  }
+  .gauge-fill.accent {
+    background: linear-gradient(90deg, #ff9100, #ff5252);
+  }
+  .gauge-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  /* Real Estate Ranking Chart (Top 5 Bar Chart) */
+  .ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .ranking-row {
+    display: grid;
+    grid-template-columns: 28px 150px 1fr 90px;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .rank-num {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-faint);
+    text-align: center;
+  }
+  .ranking-row:nth-child(1) .rank-num { color: var(--accent-orange); }
+  .ranking-row:nth-child(2) .rank-num { color: var(--accent-cyan); }
+  .ranking-row:nth-child(3) .rank-num { color: var(--accent-blue); }
+
+  .rank-name {
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rank-bar-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
+    overflow: hidden;
   }
-  .bar-value { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; text-align: right; }
-  .insight { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--rule); font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
-  .insight b { color: var(--accent); }
+  .rank-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #2979ff, #00e5ff);
+  }
+  .rank-price {
+    text-align: right;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    font-variant-numeric: tabular-nums;
+  }
 
-  /* ===== Growth comparison (mini charts w/ arrow) ===== */
-  .growth-intro { font-size: 16px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 14px; }
-  .growth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .growth-card { background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 14px; padding: 18px 20px; }
-  .growth-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
-  .growth-track { position: relative; display: flex; align-items: flex-end; gap: 18px; height: 80px; padding-left: 4px; }
-  .growth-bar { width: 56px; border-radius: 5px 5px 0 0; }
-  .growth-bar.past { background: var(--accent-light); }
-  .growth-bar.now { background: var(--accent); }
-  .growth-labels { display: flex; gap: 18px; padding-left: 4px; margin-top: 8px; }
-  .growth-col-label { width: 56px; text-align: center; }
-  .growth-col-value { display: block; font-size: 13px; font-weight: 700; color: var(--ink); }
-  .growth-col-name { display: block; font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
-  .growth-delta { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--rule); font-size: 15px; font-weight: 700; color: var(--accent); text-align: center; }
+  /* Grid 2-Column Pair */
+  .pair-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 
-  .row-text { font-size: 16px; color: var(--ink-soft); line-height: 1.6; }
-  .row-figure { font-size: 17px; font-weight: 700; color: var(--accent); margin-top: 10px; }
-
-  /* ===== Half-width pair ===== */
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .pair .card { display: flex; flex-direction: column; height: 100%; }
-  .pair .sec-title { font-size: 17px; }
-  .pair .row-text { font-size: 14.5px; }
-  .pair .sec-icon { width: 28px; height: 28px; }
-
-  .foot { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--rule); }
-  .foot-url { font-size: 14px; color: var(--ink-faint); font-weight: 500; }
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 16px 0 6px;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
   <div class="sheet">
-    <div class="head">
-      <div class="head-inner">
-        <div class="kicker-row">
-          <span class="kicker">Daily Briefing · 2026.09.10</span>
-          <span class="count-pill">오늘 선정 7건</span>
-        </div>
-        <h1>재부키 부동산 분석</h1>
-        <p class="subtitle">오전 7시 정기 브리핑 이후 후속 업데이트 — 사람이 직접 고른 오늘의 흐름</p>
+    <!-- Header -->
+    <header class="header-card">
+      <div class="header-meta">
+        <span class="header-tag">📊 Intelligence Briefing</span>
+        <span class="live-badge"><span class="live-dot"></span> 2026.09.10 실시간 분석</span>
       </div>
-    </div>
+      <h1 class="header-title">오늘의 부동산 시장 종합 분석</h1>
+      <p class="header-subtitle">주요 지표 변동, 정책·대출 동향, 검단신도시 시세 흐름 핵심 시각화</p>
+    </header>
 
-    <div class="body">
-      <!-- Hero: Geomdan direct-mention -->
-      <div class="hero">
-        <svg class="hero-icon" viewBox="0 0 64 64" fill="none">
-          <rect x="8" y="26" width="14" height="30" rx="1.5" stroke="#fff" stroke-width="2.5"/>
-          <rect x="25" y="14" width="16" height="42" rx="1.5" stroke="#fff" stroke-width="2.5"/>
-          <rect x="44" y="34" width="12" height="22" rx="1.5" stroke="#fff" stroke-width="2.5"/>
-          <line x1="12" y1="33" x2="12" y2="33.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="17" y1="33" x2="17" y2="33.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="12" y1="40" x2="12" y2="40.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="17" y1="40" x2="17" y2="40.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="30" y1="21" x2="30" y2="21.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="36" y1="21" x2="36" y2="21.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="30" y1="28" x2="30" y2="28.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="36" y1="28" x2="36" y2="28.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="30" y1="35" x2="30" y2="35.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="36" y1="35" x2="36" y2="35.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M2 56h60" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-        <div class="hero-body">
-          <span class="hero-tag">검단신도시 직접 언급</span>
-          <p class="hero-title">검단 아라역, 롯데캐슬 브랜드 타운 조성</p>
-          <p class="hero-text">오랜만에 나온 검단신도시 직접 언급 소식. 영화관이 아니라 롯데건설 아파트 브랜드가 들어서는 주거·상업 복합 개발로, 역세권 브랜드 타운은 통상 입주 후 시세·상권 형성에 직접 영향을 준다.</p>
+    <!-- 1. 핵심 수치 메트릭스 (Metric Ticker Grid) -->
+    <section class="metrics-grid">
+      <div class="metric-card focus">
+        <div class="metric-label">🏙️ 검단 최고 평당가</div>
+        <div class="metric-value" style="color:var(--accent-cyan);">2,619<small style="font-size:15px;font-weight:600;">만</small></div>
+        <div class="metric-desc">힐스테이트신검단센트럴 84㎡</div>
+      </div>
+      <div class="metric-card alert">
+        <div class="metric-label">⚠️ 불법 대출 적발</div>
+        <div class="metric-value" style="color:var(--accent-red);">1,098<small style="font-size:15px;font-weight:600;">억</small></div>
+        <div class="metric-desc">저축은행(918억) + 기업은행(180억)</div>
+      </div>
+      <div class="metric-card positive">
+        <div class="metric-label">📈 우회 대출 증가율</div>
+        <div class="metric-value" style="color:var(--accent-orange);">+562<small style="font-size:15px;font-weight:600;">%</small></div>
+        <div class="metric-desc">사업자대출 타용도 58건 → 384건</div>
+      </div>
+    </section>
+
+    <!-- 2. 메인 헤드라인 카드 (Hero Card: 지역 핵심 호재) -->
+    <article class="info-card hero">
+      <div class="card-top">
+        <span class="category-pill pill-blue">🎯 검단신도시 핵심 호재</span>
+        <span class="status-tag status-good">★ 복합개발 가시화</span>
+      </div>
+      <h2 class="card-title">검단 아라역, 롯데캐슬 대규모 브랜드 타운 조성</h2>
+      <p class="card-lead">아라역 일대에 대형 건설사 주거·상업 복합 브랜드 타운 조성이 본격화됩니다. 단순 주거 공급을 넘어 역세권 상권 형성과 지역 대장 단지 중심의 시세 견인 효과가 기대됩니다.</p>
+      
+      <!-- 3-Part Deep Breakdown -->
+      <div class="breakdown-box">
+        <div class="breakdown-col">
+          <div class="col-title">📌 주요 사실 (Fact)</div>
+          <div class="col-content">인천1호선 아라역 역세권에 롯데캐슬 브랜드 타운 인허가 및 공급 가시화</div>
+        </div>
+        <div class="breakdown-col">
+          <div class="col-title">⚡ 시장 영향 (Impact)</div>
+          <div class="col-content">주변 단지 상권 흡수 및 검단 남부권 대장주 시세 기준점 역할 형성</div>
+        </div>
+        <div class="breakdown-col">
+          <div class="col-title">💡 체크 포인트 (Check)</div>
+          <div class="col-content">분양가 상한제 적용 여부 및 인근 기존 단지(금호·우미린) 갭 메우기 여부</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 3. 실거래가 TOP 5 정밀 차트 -->
+    <section class="info-card">
+      <div class="card-top">
+        <span class="category-pill pill-green">📊 시세 레이더</span>
+        <span class="status-tag" style="color:var(--text-sub);">최근 30일 계약 · 공급추정 기준</span>
+      </div>
+      <h2 class="card-title">검단신도시 평당가 TOP 5 실거래 랭킹</h2>
+      
+      <div class="ranking-list">
+        <div class="ranking-row">
+          <span class="rank-num">01</span>
+          <span class="rank-name">힐스테이트신검단센트럴</span>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:100%;"></div></div>
+          <span class="rank-price">2,619만원</span>
+        </div>
+        <div class="ranking-row">
+          <span class="rank-num">02</span>
+          <span class="rank-name">힐스테이트신검단센트럴</span>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:97.1%;"></div></div>
+          <span class="rank-price">2,544만원</span>
+        </div>
+        <div class="ranking-row">
+          <span class="rank-num">03</span>
+          <span class="rank-name">신검단중앙역풍경채</span>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:96.9%;"></div></div>
+          <span class="rank-price">2,540만원</span>
+        </div>
+        <div class="ranking-row">
+          <span class="rank-num">04</span>
+          <span class="rank-name">검단모아엘가그랑데</span>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:95.2%;"></div></div>
+          <span class="rank-price">2,495만원</span>
+        </div>
+        <div class="ranking-row">
+          <span class="rank-num">05</span>
+          <span class="rank-name">우미린더시그니처</span>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:95.1%;"></div></div>
+          <span class="rank-price">2,491만원</span>
         </div>
       </div>
 
-      <!-- TOP5 price chart -->
-      <div class="sec">
-        <div class="card">
-          <p class="hero-title" style="color:var(--ink); font-size:19px; margin-bottom:4px;">실거래가 TOP 5 · 평당가</p>
-          <p class="chart-caption">최근 30일 이내 계약, 공급면적 추정 기준</p>
-          <div class="bar-list">
-            <div class="bar-row">
-              <div class="bar-row-label"><b>힐스테이트신검단센트럴</b>불로동 · 15층</div>
-              <div class="bar-track"><div class="bar-fill" style="width:97.0%"></div></div>
-              <span class="bar-value">2,619만원</span>
-            </div>
-            <div class="bar-row">
-              <div class="bar-row-label"><b>힐스테이트신검단센트럴</b>불로동 · 6층</div>
-              <div class="bar-track"><div class="bar-fill" style="width:94.2%"></div></div>
-              <span class="bar-value">2,544만원</span>
-            </div>
-            <div class="bar-row">
-              <div class="bar-row-label"><b>신검단중앙역풍경채어바니티</b>불로동 · 5층</div>
-              <div class="bar-track"><div class="bar-fill" style="width:94.1%"></div></div>
-              <span class="bar-value">2,540만원</span>
-            </div>
-            <div class="bar-row">
-              <div class="bar-row-label"><b>검단신도시모아엘가그랑데</b>원당동 · 28층</div>
-              <div class="bar-track"><div class="bar-fill" style="width:92.4%"></div></div>
-              <span class="bar-value">2,495만원</span>
-            </div>
-            <div class="bar-row">
-              <div class="bar-row-label"><b>우미린더시그니처</b>원당동 · 22층</div>
-              <div class="bar-track"><div class="bar-fill" style="width:92.3%"></div></div>
-              <span class="bar-value">2,491만원</span>
-            </div>
+      <div class="gauge-footer" style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);">
+        <span>💡 상위 1~5위 평당 격차 <b>128만원(5% 미만)</b>으로 촘촘한 가격대 형성</span>
+        <span style="color:var(--accent-cyan);">초역세권 프리미엄 집중</span>
+      </div>
+    </section>
+
+    <!-- 4. 2-Column Pair: 대출 규제 vs 공급 정책 -->
+    <section class="pair-grid">
+      <article class="info-card">
+        <div class="card-top">
+          <span class="category-pill pill-red">🚨 금융 리스크</span>
+          <span class="status-tag status-up">전수조사 확대</span>
+        </div>
+        <h3 class="card-title" style="font-size:17px;">사업자대출 우회 단속 강화</h3>
+        <p class="card-lead" style="font-size:13.5px; margin-bottom:12px;">주택 구입 목적으로 유용된 사업자 대출 적발이 급증하며 전 금융권 점검 및 회수 조치 확산.</p>
+        
+        <div class="gauge-wrapper">
+          <div class="gauge-header">
+            <span style="color:var(--text-sub);">대출 우회 적발 추이</span>
+            <span style="color:var(--accent-red); font-weight:700;">6.6배 급증</span>
           </div>
-          <p class="insight">1~5위 평당가 차이는 <b>128만원(5% 이내)</b> — 검단신도시 상위권 시세가 촘촘하게 붙어 경쟁하고 있다.</p>
-        </div>
-      </div>
-
-      <!-- Loan fraud: growth comparisons -->
-      <div class="sec">
-        <div class="sec-head">
-          <svg class="sec-icon" viewBox="0 0 34 34" fill="none">
-            <path d="M17 3 L30 10 V13 H4 V10 Z" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/>
-            <path d="M6 13 V26 M13 13 V26 M21 13 V26 M28 13 V26" stroke="currentColor" stroke-width="2.3"/>
-            <path d="M3 30 H31" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
-            <circle cx="17" cy="20" r="3.2" fill="currentColor"/>
-          </svg>
-          <p class="sec-title">대출 사기·오남용, 다시 도마 위</p>
-        </div>
-        <p class="growth-intro">IBK기업은행은 압수수색 영장이 나온 것도 모른 채 의심 거래에 계속 돈을 내줬고, 사업자대출을 다른 용도로 쓴 사례는 4년 새 크게 늘었다.</p>
-        <div class="growth-grid">
-          <div class="growth-card">
-            <p class="growth-title">대출 사기 적발 금액</p>
-            <div class="growth-track">
-              <div class="growth-bar now" style="height:68px"></div>
-              <div class="growth-bar past" style="height:13px"></div>
-            </div>
-            <div class="growth-labels">
-              <span class="growth-col-label"><span class="growth-col-value">918억</span><span class="growth-col-name">저축은행</span></span>
-              <span class="growth-col-label"><span class="growth-col-value">180억</span><span class="growth-col-name">기업은행</span></span>
-            </div>
-            <p class="growth-delta">오늘 하루만 2건</p>
+          <div class="gauge-track">
+            <div class="gauge-fill accent" style="width: 86%;"></div>
           </div>
-          <div class="growth-card">
-            <p class="growth-title">사업자대출 우회 적발</p>
-            <div class="growth-track">
-              <div class="growth-bar past" style="height:11px"></div>
-              <div class="growth-bar now" style="height:70px"></div>
-            </div>
-            <div class="growth-labels">
-              <span class="growth-col-label"><span class="growth-col-value">58건</span><span class="growth-col-name">4년 전</span></span>
-              <span class="growth-col-label"><span class="growth-col-value">384건</span><span class="growth-col-name">지금</span></span>
-            </div>
-            <p class="growth-delta">↑ 6.6배 증가</p>
+          <div class="gauge-footer">
+            <span>4년 전 58건</span>
+            <span>현재 384건 적발</span>
           </div>
         </div>
-      </div>
+      </article>
 
-      <!-- Half-width pair: 정비사업 + 성실상환자 -->
-      <div class="sec pair">
-        <div class="card">
-          <div class="sec-head">
-            <svg class="sec-icon" viewBox="0 0 34 34" fill="none">
-              <path d="M4 30 V16 L17 8 L30 16 V30" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/>
-              <path d="M13 30 V20 H21 V30" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/>
-              <path d="M22 14 L30 6 M30 6 V11 M30 6 H25" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p class="sec-title">정비사업 속도 내기</p>
+      <article class="info-card">
+        <div class="card-top">
+          <span class="category-pill pill-purple">🏗️ 정비사업</span>
+          <span class="status-tag status-good">속도전 개시</span>
+        </div>
+        <h3 class="card-title" style="font-size:17px;">재개발·재건축 지원 확대</h3>
+        <p class="card-lead" style="font-size:13.5px; margin-bottom:12px;">한국부동산원이 초기 사업성 불확실성 해소 컨설팅을 전면 확대하여 인허가 지연 방지.</p>
+        
+        <div class="gauge-wrapper">
+          <div class="gauge-header">
+            <span style="color:var(--text-sub);">초기 단계 지원율</span>
+            <span style="color:var(--accent-purple); font-weight:700;">추진 기간 단축</span>
           </div>
-          <p class="row-text">한국부동산원이 재개발·재건축 초기 사업성 불확실성을 낮추는 주민 지원사업을 확대해, 판단이 늦어지며 밀리던 정비사업에 속도를 붙인다.</p>
-          <p class="row-figure">지원사업 확대</p>
-        </div>
-        <div class="card">
-          <div class="sec-head">
-            <svg class="sec-icon" viewBox="0 0 34 34" fill="none">
-              <path d="M17 4 V30 M9 30 H25" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
-              <path d="M17 8 L5 12 M17 8 L29 12" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
-              <path d="M5 12 L1 20 A6 4 0 0 0 9 20 Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
-              <path d="M29 12 L25 20 A6 4 0 0 0 33 20 Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
-            </svg>
-            <p class="sec-title">성실 상환자가 되레 손해</p>
+          <div class="gauge-track">
+            <div class="gauge-fill primary" style="width: 72%;"></div>
           </div>
-          <p class="row-text">연체 이력이 없는 자영업자가 매출 변동성 위주 신용평가 탓에, 오히려 저신용자보다 더 높은 이자를 문다.</p>
-          <p class="row-figure">대출 이자 역전</p>
+          <div class="gauge-footer">
+            <span>기존 불확실성 해소</span>
+            <span>공급 기간 단축 목표</span>
+          </div>
         </div>
-      </div>
+      </article>
+    </section>
 
-      <!-- 금리 -->
-      <div class="sec">
-        <div class="sec-head">
-          <svg class="sec-icon" viewBox="0 0 34 34" fill="none">
-            <path d="M3 26 L12 17 L18 22 L31 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M22 8 H31 V17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p class="sec-title">국내외 금리 동반 상승</p>
-        </div>
-        <div class="card">
-          <p class="row-text">미국 10년물 국채금리가 오르며 美 주담대 금리가 작년 6월 이후 최고치를 찍었고, 한은 기준금리 인상 여파로 국내 채권금리도 전 구간 올랐다.</p>
-          <p class="row-figure">국내외 금리 압력↑</p>
-        </div>
+    <!-- 5. 금리 및 거시경제 지표 경고 -->
+    <article class="info-card">
+      <div class="card-top">
+        <span class="category-pill pill-orange">📈 거시 지표 모니터링</span>
+        <span class="status-tag status-up">금리 상승 압력</span>
       </div>
+      <h3 class="card-title">美 국채 10년물 급등 및 국내 채권금리 전구간 상승</h3>
+      <p class="card-lead" style="margin-bottom: 0;">미국 장기 국채금리가 최고치를 기록하며 국내 주담대 및 시중 채권 금리를 동시에 밀어올리고 있습니다. 가계대출 총량 관리와 맞물려 하반기 차주들의 이자 부담 및 매수 심리 관망세가 짙어질 가능성이 높습니다.</p>
+    </article>
 
-      <div class="foot">
-        <p class="foot-url">lifelongdt-beep.github.io/game/briefing.html</p>
-      </div>
-    </div>
+    <!-- Footer -->
+    <footer class="footer">
+      <span>재부키 부동산 데이터 연구소 · 자동 분석 인포그래픽</span>
+      <span>lifelongdt-beep.github.io/game</span>
+    </footer>
   </div>
 </body>
 </html>
