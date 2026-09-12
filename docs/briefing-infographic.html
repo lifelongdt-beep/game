@@ -131,38 +131,6 @@
   .tag-white { background: #ffffff; color: #000; }
   .tag-black { background: #000000; color: var(--brand-yellow); border: 1px solid rgba(255,255,255,0.2); }
 
-  /* ========================================================
-     SLIDE 2: 단일 이미지 강조형 (실제 기사 사진: 롯데캐슬 넥스티엘 공식 조감도)
-     ======================================================== */
-  .slide-single {
-    background: #f4f5f7;
-  }
-  .image-container-single {
-    width: 100%;
-    height: 330px;
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-    background: #e2e5e9;
-  }
-  .image-container-single img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .image-badge {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    background: rgba(0, 0, 0, 0.78);
-    backdrop-filter: blur(4px);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 6px 14px;
-    border-radius: 999px;
-  }
   .source-watermark {
     position: absolute;
     bottom: 12px;
@@ -173,27 +141,8 @@
     padding: 3px 8px;
     border-radius: 4px;
   }
-  .image-caption-box {
-    margin-top: 24px;
-    text-align: center;
-  }
-  .caption-lead {
-    font-size: 19px;
-    font-weight: 800;
-    color: var(--text-dark);
-    margin-bottom: 8px;
-    line-height: 1.35;
-  }
-  .caption-sub {
-    font-size: 14.5px;
-    color: var(--text-gray);
-    line-height: 1.6;
-    max-width: 510px;
-    margin: 0 auto;
-  }
-
   /* ========================================================
-     SLIDE 3: 좌우 분할형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
+     SLIDE 2: 좌우 분할형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
      ======================================================== */
   .slide-split {
     background: #f7f8fa;
@@ -248,7 +197,7 @@
   }
 
   /* ========================================================
-     SLIDE 4: 전체 배경 오버레이형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
+     SLIDE 3: 전체 배경 오버레이형 (실제 기사 사진 — 추출 방식은 SLIDE 1 주석 참고)
      ======================================================== */
   .slide-overlay {
     background: linear-gradient(rgba(14, 18, 24, 0.82), rgba(14, 18, 24, 0.90)),
@@ -293,7 +242,7 @@
   }
 
   /* ========================================================
-     SLIDE 5: 실거래가 랭킹 & 단지 현장
+     SLIDE 4: 실거래가 랭킹 & 단지 현장
      ======================================================== */
   .slide-ranking {
     background: #f5f6f8;
@@ -386,9 +335,6 @@
     .cover-headline { font-size: 34px; }
     .cover-summary { font-size: 14px; margin-bottom: 18px; }
     .tag-pill { padding: 7px 14px; font-size: 12px; }
-    .image-container-single { height: 180px; }
-    .caption-lead { font-size: 16px; }
-    .caption-sub { font-size: 13px; }
     .split-row, .split-row.reverse { grid-template-columns: 1fr; gap: 12px; }
     .split-img { width: 100%; height: 140px; }
     .split-title { font-size: 16px; }
@@ -474,32 +420,7 @@
 
 
   <!-- ========================================================
-       SLIDE 2: 단일 이미지 강조형
-       사진: 롯데건설 롯데캐슬 넥스티엘 공식 조감도 기사 사진
-       ======================================================== -->
-  <section class="card-slide slide-single">
-    <h2 class="hand-title">검단 핵심 호재</h2>
-    
-    <div class="image-container-single">
-      <!-- 롯데캐슬 넥스티엘 공식 조감도 원본 이미지 -->
-      <img src="https://www.lottecastle.co.kr/files/etc/2023/5/202305220150595240.jpg" alt="검단 롯데캐슬 넥스티엘 공식 조감도">
-      <div class="image-badge">아라역세권 복합개발</div>
-      <div class="source-watermark">롯데캐슬 공식 조감도</div>
-    </div>
-
-    <div class="image-caption-box">
-      <p class="caption-lead">검단 아라역, 롯데캐슬 브랜드 타운 조성 가시화</p>
-      <p class="caption-sub">뉴스핌 보도 및 롯데건설 공식 조감도. 아파트 372가구와 오피스텔 682실 총 1,054가구 규모로, 역세권 대단지 조성에 따른 상권 및 시세 견인 효과가 기대됩니다.</p>
-    </div>
-
-    <div class="slide-footer-label">
-      <span>출처: 뉴스핌 보도 / 롯데건설</span>
-    </div>
-  </section>
-
-
-  <!-- ========================================================
-       SLIDE 3: 좌우 분할형
+       SLIDE 2: 좌우 분할형
        사진: 스트레이트뉴스 + 시사저널 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-split">
@@ -538,7 +459,7 @@
 
 
   <!-- ========================================================
-       SLIDE 4: 전체 배경 오버레이형
+       SLIDE 3: 전체 배경 오버레이형
        사진: 뉴시(다음뉴스) 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-overlay">
@@ -563,7 +484,7 @@
 
 
   <!-- ========================================================
-       SLIDE 5: 실거래가 랭킹 TOP 4
+       SLIDE 4: 실거래가 랭킹 TOP 4
        ======================================================== -->
   <section class="card-slide slide-ranking">
     <div class="bold-sub">MARKET RANKING TOP 4</div>
