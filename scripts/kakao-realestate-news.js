@@ -32,10 +32,12 @@ const OPENCHAT_INVITE_TEXT =
 const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHroBKh';
 
 // 검단신도시 뉴스는 두 갈래로 찾는다.
-// ① GEOMDAN_QUERY: "검단신도시"/"인천 검단"/"서구 검단"/"검단구"와 반드시 함께 언급된
-//    기사만 — 교통/분양·청약/시세·거래/생활 인프라/정책·금융 각 분야의 구체적인
-//    키워드로 좁힌다. 본문이 아니라 제목 기준으로만 GEOMDAN_KEYWORD를 한 번 더
-//    검사한다(이 스크립트는 기사 본문을 읽지 않고 구글 뉴스 제목/링크만 다룬다).
+// ① GEOMDAN_QUERY: "검단신도시"/"인천 검단"/"서구 검단"/"검단구"가 언급된 기사는
+//    분야를 가리지 않고 전부 포함한다(부동산 시장 이슈뿐 아니라 교통(I-MOD 등)·
+//    행정·생활 소식도 검단신도시 뉴스가 맞다는 피드백에 따라, 예전에 있던 특정
+//    주제 키워드와의 AND 조건은 걷어냈다). 본문이 아니라 제목 기준으로만
+//    GEOMDAN_KEYWORD를 한 번 더 검사한다(이 스크립트는 기사 본문을 읽지 않고
+//    구글 뉴스 제목/링크만 다룬다).
 // ② GEOMDAN_NEARBY_QUERY: "검단" 언급이 없어도, 생활권·교통망을 공유해 검단신도시에
 //    영향을 줄 만한 인접 지역(3기 신도시·인접 택지지구 등) 개발 이슈는 별도로 찾는다.
 //    ①에는 안 걸리고 ②에서만 걸린 기사는 "인접 지역 호재" 딱지만 붙이고, 실제
@@ -45,8 +47,7 @@ const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHro
 // 최신순으로 정리한다.
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
 const GEOMDAN_QUERY =
-  process.env.GEOMDAN_QUERY ||
-  '(검단신도시 OR "인천 검단" OR "서구 검단" OR 검단구) ("인천1호선 연장" OR 검단선 OR "계양역 환승" OR 아라역 OR 신검단중앙역 OR 검단호수공원역 OR GTX-D OR "서울지하철 5호선 연장" OR "검단~드림로 연결도로" OR "마곡 접근성" OR "DMC 접근성" OR "강남 접근성" OR 청약경쟁률 OR "1순위 청약" OR 미분양 OR "악성 미분양" OR 입주물량 OR "AA블록 분양" OR "검단 센트럴시티" OR 분양가 OR "초기 분양률" OR 실거래가 OR "매매가 상승" OR 갭투자 OR "역세권 프리미엄" OR "검단신도시 시세" OR 인구증가 OR "상업시설 입지" OR 대형마트 OR "프랜차이즈 입점" OR "복합쇼핑몰" OR 스타벅스 OR 백화점 OR 멀티플렉스 OR CGV OR 메가박스 OR 롯데시네마 OR "문화시설 개관" OR 문화회관 OR 문화예술회관 OR 공공문화복지시설 OR 학군 OR "규제지역 해제" OR 대출한도 OR DSR OR "수도권 서북부 부동산") when:1d';
+  process.env.GEOMDAN_QUERY || '(검단신도시 OR "인천 검단" OR "서구 검단" OR 검단구) when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
 const GEOMDAN_NEARBY_QUERY =
   process.env.GEOMDAN_NEARBY_QUERY ||
