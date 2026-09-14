@@ -40,9 +40,11 @@ const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHro
 //    구글 뉴스 제목/링크만 다룬다).
 // ② GEOMDAN_NEARBY_QUERY: "검단" 언급이 없어도, 생활권·교통망을 공유해 검단신도시에
 //    영향을 줄 만한 인접 지역(3기 신도시·인접 택지지구 등) 개발 이슈는 별도로 찾는다.
-//    ①에는 안 걸리고 ②에서만 걸린 기사는 "인접 지역 호재" 딱지만 붙이고, 실제
-//    영향 내용은 요약하지 않는다(본문 접근·요약 기능이 없어 딱지만 붙이기로
-//    사용자와 합의함).
+//    ①에는 안 걸리고 ②에서만 걸린 기사는 "인접지역" 딱지만 붙이고, 실제 영향
+//    내용은 요약하지 않는다(본문 접근·요약 기능이 없어 딱지만 붙이기로 사용자와
+//    합의함). 호재인지 악재인지는 딱지에 넣지 않는다 — 본문을 읽지 못해 실제
+//    성격을 판단할 수 없고, 실제로 공사 중단처럼 악재성 기사에도 이 딱지가
+//    붙은 적이 있다(7호선 청라 연장 계측값 초과 공사중단 건, 2026-09-15).
 // fetchGeomdanArticles가 두 결과를 합쳐 유사 헤드라인은 하나로 묶고, 발행 시각
 // 최신순으로 정리한다.
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
@@ -327,7 +329,7 @@ function isWithinLastDay(date) {
 }
 
 // 검단신도시 뉴스는 ①직접 언급(GEOMDAN_QUERY, GEOMDAN_KEYWORD로 제목 재검증)과
-// ②인접 지역 호재(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
+// ②인접지역(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
 // 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
 // 독립적으로 실패를 처리한다.
 async function fetchGeomdanArticles(limit) {
@@ -642,7 +644,7 @@ function renderArticlesHtml(articles) {
   return articles.length
     ? articles
         .map((a) => {
-          const badge = a.nearby ? '<span class="tag-nearby">🔗 인접 지역 호재</span>' : '';
+          const badge = a.nearby ? '<span class="tag-nearby">🔗 인접지역</span>' : '';
           return `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
         })
         .join('\n')
