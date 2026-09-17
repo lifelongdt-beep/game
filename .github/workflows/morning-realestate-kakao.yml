@@ -27,6 +27,11 @@ on:
         description: '카드뉴스에 쓸 구글 뉴스 RSS 링크를 줄바꿈으로 구분해 입력하면, 실제 브라우저(Playwright)로 각 링크를 열어 최종 기사 URL과 대표 이미지(og:image)를 로그에 출력합니다. 구글 뉴스 링크는 일반 fetch로는 실제 기사로 리다이렉트되지 않아(자바스크립트 SPA 방식) 이 방법이 필요합니다. 비워두면 이 단계는 건너뜁니다.'
         required: false
         type: string
+      send_briefing_images:
+        description: 'true로 두면 이미 배포된 docs/briefing-infographic.html(카드뉴스)의 표지·이슈·오버레이·검단 실거래 평당 순위 TOP10을 화면 캡처해 카카오톡 이미지 메시지 여러 장으로 전송합니다. briefing-infographic.html이 최신 내용으로 GitHub Pages에 배포된 뒤에 켜세요(배포 전에 켜면 옛 내용이 찍힙니다). notify_message와 함께 켜면 같은 실행에서 텍스트 링크 메시지와 이미지들을 모두 보냅니다.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -43,8 +48,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright Chromium (카드뉴스 이미지 추출용)
-        if: ${{ github.event.inputs.resolve_image_urls != '' }}
+      - name: Install Playwright Chromium (카드뉴스 이미지 추출/캡처용)
+        if: ${{ github.event.inputs.resolve_image_urls != '' || github.event.inputs.send_briefing_images == 'true' }}
         run: |
           npm init -y >/dev/null
           npm install --no-save playwright@1.47.0
@@ -100,6 +105,60 @@ jobs:
           GEOMDAN_TRANSACTION_COUNT: '100'
           GEOMDAN_TRANSACTION_DAYS: '30'
         run: node scripts/kakao-realestate-news.js
+
+      # 카카오 '나에게 보내기' 기본 템플릿은 로컬 이미지를 올리는 API가 없고
+      # 공개 URL만 받으므로, 캡처 이미지를 GitHub Pages에 먼저 배포해야 한다.
+      # docs/briefing-infographic.html 자체는 이 워크플로가 아니라 별도의
+      # PR 머지로 이미 배포돼 있어야 하고(자세한 절차는
+      # docs/kakao-realestate-news-setup.md 10번 문단 참고), 이 단계는 그
+      # 배포된 페이지를 그대로 찍기만 한다.
+      - name: Capture briefing card images for KakaoTalk
+        if: ${{ github.event.inputs.send_briefing_images == 'true' }}
+        env:
+          BRIEFING_URL: 'https://lifelongdt-beep.github.io/game/briefing-infographic.html'
+        run: node scripts/capture-briefing-images.js
+
+      - name: Commit captured card images
+        if: ${{ github.event.inputs.send_briefing_images == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/kakao-captures
+          if git diff --cached --quiet; then
+            echo "캡처 이미지 변경 없음, 커밋 생략"
+          else
+            git commit -m "docs: 카카오톡용 카드뉴스 캡처 이미지 갱신"
+            git push
+          fi
+
+      # GitHub Pages(Deploy from a branch)는 push 후 배포가 끝나기까지 시간이
+      # 걸린다. 카카오가 이미지를 가져올 때 아직 배포 전이면 안 보이므로, 방금
+      # 커밋한 첫 번째 이미지가 실제로 200으로 응답할 때까지 짧게 재시도한다
+      # (완벽하게 "이번 배포분인지"까지 확인하지는 않지만, 매 시도 사이의
+      # 대기 시간을 합치면 보통의 배포 소요 시간을 충분히 커버한다).
+      - name: Wait for captured images to be live on GitHub Pages
+        if: ${{ github.event.inputs.send_briefing_images == 'true' }}
+        run: |
+          first_image=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/kakao-captures/manifest.json'))[0])")
+          url="https://lifelongdt-beep.github.io/game/kakao-captures/${first_image}"
+          for i in $(seq 1 20); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' "${url}?t=$(date +%s)")
+            echo "시도 $i: $status"
+            if [ "$status" = "200" ]; then
+              sleep 5
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::warning::캡처 이미지가 배포 확인 시간 안에 200으로 응답하지 않았습니다. 다음 단계에서 이미지가 안 보일 수 있습니다."
+
+      - name: Send briefing card images to KakaoTalk
+        if: ${{ github.event.inputs.send_briefing_images == 'true' }}
+        env:
+          KAKAO_ACCESS_TOKEN: ${{ steps.send.outputs.access_token }}
+          LINK_URL: 'https://lifelongdt-beep.github.io/game/briefing-infographic.html'
+          IMAGE_BASE_URL: 'https://lifelongdt-beep.github.io/game/kakao-captures'
+        run: node scripts/send-kakao-images.js
 
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
       # docs/index.html(고정 링크)을 방장봇 공지로 걸어두고 내용만 매일 갱신하는

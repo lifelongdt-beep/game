@@ -210,7 +210,17 @@ Secrets 등록 후 저장소 **Actions → Morning Real Estate News to KakaoTalk
 7. **페이지 조립**: `docs/briefing-infographic.html`을 열어 슬라이드 1·2·3·4와 전체 목록 섹션만 교체합니다. 슬라이드 1·2·3은 4단계에서 얻은 실제 이미지 URL을 그대로 씁니다. CSS·디자인 토큰(브랜드 컬러·폰트 등)은 건드리지 않습니다.
 8. **검증**: Playwright로 데스크톱(~700px)·모바일(~390px) 두 뷰포트에서 가로 스크롤 없음, 텍스트 겹침 없음을 확인합니다. 이미지 자체는 샌드박스 네트워크 제약으로 로컬에서 안 뜰 수 있으니(정상), 4단계의 `hotlinkOk` 확인으로 대신합니다.
 9. **커밋·배포**: 이 저장소의 일반적인 브랜치 규칙에 따라(`claude/morning-realestate-news-kakao-q55sf2` 브랜치, PR 생성 후 머지) `docs/briefing-infographic.html`을 커밋·푸시·PR·머지합니다. GitHub Pages 배포(`pages build and deployment` 워크플로)가 끝날 때까지 기다립니다.
-10. **카카오톡 발송**: `morning-realestate-kakao.yml`을 `notify_message`에 `https://lifelongdt-beep.github.io/game/briefing-infographic.html` 링크를 담아 실행합니다. 다른 링크(텍스트 브리핑 `briefing.html`, PDF 등)는 보내지 않습니다.
+10. **카카오톡 발송**: `morning-realestate-kakao.yml`을 `notify_message`에 `https://lifelongdt-beep.github.io/game/briefing-infographic.html` 링크를 담고, `send_briefing_images: true`도 함께 켜서 실행합니다. 다른 링크(텍스트 브리핑 `briefing.html`, PDF 등)는 보내지 않습니다.
+
+### 11. 카드뉴스를 이미지 파일로도 카카오톡에 전송하기
+
+`send_briefing_images: true`를 켜면, 위 9단계에서 이미 배포한 `docs/briefing-infographic.html`을 Playwright로 다시 열어 표지·좌우분할 이슈(2건씩 묶어 2장)·오버레이·검단신도시 실거래 평당가 TOP10을 대략 가로세로 1:1 비율로 화면 캡처해서 카카오톡 이미지 메시지 여러 장으로 전송합니다(보통 5장: 표지 1 + 이슈 2 + 오버레이 1 + 실거래 TOP10 1). 실거래 랭킹은 페이지 전체(고유 단지 전부)가 아니라 TOP10까지만 잘라내며, 원래 있던 "MARKET RANKING TOP N"·"전체를 다 보여드립니다" 문구는 캡처 순간에만 "TOP 10"·"전체 N곳 중 상위 10곳" 문구로 바꿔서 개수가 안 맞는 오해를 막습니다(실제 배포 파일은 그대로 둡니다).
+
+- **관련 스크립트**: [`scripts/capture-briefing-images.js`](../scripts/capture-briefing-images.js)(캡처), [`scripts/send-kakao-images.js`](../scripts/send-kakao-images.js)(전송).
+- **동작 순서**: 캡처 → `docs/kakao-captures/`에 커밋·푸시(다른 커밋처럼 자동으로) → GitHub Pages 배포를 짧게 기다림(첫 이미지 URL이 200으로 응답할 때까지 최대 약 2분 재시도) → 카카오톡으로 순서대로 전송(짧은 간격을 둔 여러 통의 메시지로 도착합니다 — 카카오 기본 템플릿은 메시지 한 통에 이미지 1장뿐이라 "한꺼번에 여러 장"은 이런 형태로 구현했습니다).
+- **반드시 `docs/briefing-infographic.html` 배포 이후에 켜세요**: 이 옵션은 그 시점에 GitHub Pages에 떠 있는 페이지를 그대로 찍습니다. 배포 전에 켜면 어제 내용이 찍힙니다.
+- **토큰 재사용**: 이미지 전송은 같은 실행 안에서 `notify_message`/평소 발송이 이미 발급받은 `access_token`을 그대로 씁니다(각자 새로 토큰을 받으면 그 사이 카카오가 `refresh_token`을 회전시켰을 때 나중 호출이 이미 무효화된 옛 토큰을 쓰게 될 위험이 있어 이를 피했습니다).
+- **이미지 규격**: JPEG로 저장하고 폭은 618px 안팎으로 카카오 이미지 메시지 규격(공개 문서마다 조금씩 다르게 안내되지만 대체로 폭 400~800px, 용량 500KB 이하 수준)에 여유 있게 들어가도록 품질을 82로 압축합니다.
 
 ### 지켜야 할 것
 
