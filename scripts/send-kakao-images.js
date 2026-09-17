@@ -54,16 +54,20 @@ async function fetchWithTimeout(url, timeoutMs, options = {}) {
   }
 }
 
+// 카카오 기본 템플릿은 전부(feed 포함) link가 필수라 이미지에서 링크를
+// 완전히 뗄 수는 없다 — 그래도 title 하나만 남기고 description·buttons를
+// 빼서 카드 느낌을 최대한 줄인다(예전엔 매 장마다 "카드뉴스 보기" 버튼과
+// 부제가 붙어 "같은 링크를 대표 이미지만 바꿔 여러 번 보낸" 것처럼 보인다는
+// 지적을 받아 이렇게 바꿨다). title도 장마다 다르게 붙이지 않고 전부 같은
+// 문구를 써서 "이슈별 카드 여러 개"가 아니라 "사진 묶음 하나"처럼 보이게 한다.
 async function sendFeedImage(imageUrl, title) {
   const templateObject = {
     object_type: 'feed',
     content: {
       title,
-      description: '재부키 부동산 분석',
       image_url: imageUrl,
       link: { web_url: LINK_URL, mobile_web_url: LINK_URL },
     },
-    buttons: [{ title: '카드뉴스 보기', link: { web_url: LINK_URL, mobile_web_url: LINK_URL } }],
   };
   const res = await fetchWithTimeout('https://kapi.kakao.com/v2/api/talk/memo/default/send', FETCH_TIMEOUT_MS, {
     method: 'POST',
@@ -80,18 +84,7 @@ async function sendFeedImage(imageUrl, title) {
   return data;
 }
 
-// 캡처 파일명(예: card-02-issues-1to2.jpg)에서 사람이 읽을 짧은 제목을
-// 만든다. 이 스크립트는 캡처 파일만 다루고 그날 어떤 기사를 골랐는지는
-// 몰라서, 정확한 헤드라인 대신 구분용 라벨만 붙인다 — 실제 헤드라인은 이미
-// 이미지 안에 보인다.
-function titleFromFilename(filename) {
-  if (filename.includes('cover')) return '재부키 부동산 분석 · 표지';
-  if (filename.includes('overlay')) return '재부키 부동산 분석 · 오늘의 트렌드';
-  if (filename.includes('ranking-top10')) return '검단신도시 실거래 평당가 TOP 10';
-  const m = filename.match(/issues-(\d+)to(\d+)/);
-  if (m) return `재부키 부동산 분석 · 이슈 ${m[1]}~${m[2]}`;
-  return '재부키 부동산 분석';
-}
+const SHARED_TITLE = '재부키 부동산 분석';
 
 async function main() {
   const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
@@ -102,7 +95,7 @@ async function main() {
 
   for (const filename of manifest) {
     const imageUrl = `${IMAGE_BASE_URL}/${filename}`;
-    await sendFeedImage(imageUrl, titleFromFilename(filename));
+    await sendFeedImage(imageUrl, SHARED_TITLE);
     console.log(`전송 완료: ${filename}`);
     await sleep(SEND_INTERVAL_MS);
   }
