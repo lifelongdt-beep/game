@@ -773,6 +773,11 @@ async function main() {
     console.log('카카오 refresh_token이 새로 발급되었습니다.');
     writeOutput('new_refresh_token', tokenData.refresh_token);
   }
+  // 카드뉴스 캡처 이미지를 보내는 별도 단계(scripts/send-kakao-images.js)가
+  // 이 access_token을 그대로 재사용한다 — 각자 refresh_token으로 새로
+  // 토큰을 받으면, 그 사이 카카오가 refresh_token을 회전시켰을 때 나중 호출이
+  // 이미 무효화된 옛 토큰을 쓰게 될 위험이 있어 이를 피하려는 의도다.
+  writeOutput('access_token', accessToken);
 
   if (NOTIFY_MESSAGE) {
     await sendKakaoText(accessToken, NOTIFY_MESSAGE, DIGEST_PAGE_URL);
