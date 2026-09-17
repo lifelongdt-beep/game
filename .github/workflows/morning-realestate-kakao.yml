@@ -106,6 +106,16 @@ jobs:
           GEOMDAN_TRANSACTION_DAYS: '30'
         run: node scripts/kakao-realestate-news.js
 
+      # steps.send.outputs.access_token은 secrets.*가 아니라 일반 스텝
+      # 출력이라 GitHub Actions가 로그에서 자동으로 가려주지 않는다(실제로
+      # 마스킹 없이 로그에 평문 노출되는 걸 확인했다 — 이 저장소는 공개
+      # 저장소라 그대로 두면 접근 토큰이 그대로 드러난다). 이후 스텝의
+      # env: 로그 덤프에도 가려지도록, 그 값을 쓰기 전에 먼저 마스킹으로
+      # 등록해둔다.
+      - name: Mask Kakao access token in logs
+        if: ${{ steps.send.outputs.access_token != '' }}
+        run: echo "::add-mask::${{ steps.send.outputs.access_token }}"
+
       # 카카오 '나에게 보내기' 기본 템플릿은 로컬 이미지를 올리는 API가 없고
       # 공개 URL만 받으므로, 캡처 이미지를 GitHub Pages에 먼저 배포해야 한다.
       # docs/briefing-infographic.html 자체는 이 워크플로가 아니라 별도의
