@@ -362,6 +362,15 @@
     font-size: 12px;
     color: var(--text-light);
   }
+  /* 1위 단지 이름 끝에 붙는 왕관(build-card.js가 넣는다). 끝 글자와 한 덩어리라 왕관만 줄바꿈되지 않는다. */
+  .rank-meta .rank-name-end { font-size: inherit; color: inherit; white-space: nowrap; }
+  .rank-crown {
+    display: inline-block;
+    width: 1.15em;
+    height: 1.15em;
+    margin-left: 4px;
+    vertical-align: -0.22em;
+  }
   .rank-val {
     text-align: right;
     font-size: 15px;
@@ -623,7 +632,7 @@
       <div class="rank-item">
         <span class="rank-idx">01</span>
         <div class="rank-meta">
-          <b>힐스테이트신검단센트럴</b>
+          <b>힐스테이트신검단센트<span class="rank-name-end">럴<svg class="rank-crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 8.5 7.6 12.4 12 5.2l4.4 7.2 5.1-3.9-1.9 10H4.4z" fill="#ffc928" stroke="#d99a00" stroke-width="1.2" stroke-linejoin="round"/><rect x="4.4" y="19.6" width="15.2" height="2.4" rx="1.2" fill="#d99a00"/><circle cx="2.5" cy="7.6" r="1.7" fill="#ffc928" stroke="#d99a00"/><circle cx="12" cy="4.2" r="1.7" fill="#ffc928" stroke="#d99a00"/><circle cx="21.5" cy="7.6" r="1.7" fill="#ffc928" stroke="#d99a00"/></svg></span></b>
           <span>불로동 · 전용 85㎡ · 24층</span>
         </div>
         <div class="rank-figures">
