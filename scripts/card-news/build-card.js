@@ -205,7 +205,7 @@ function rankComplexes(txns) {
   return [...best.values()].sort((a, b) => b.ppy - a.ppy || b.amount - a.amount);
 }
 
-// index.html에는 목록(상한 200건)과 별개로, 상한에 잘리기 전 전체 거래에서 뽑은 "단지별 최고 거래"가
+// index.html에는 목록(건수 상한 GEOMDAN_TRANSACTION_COUNT)과 별개로, 상한에 잘리기 전 전체 거래에서 뽑은 "단지별 최고 거래"가
 // 보이지 않는 JSON으로 실려 있다. 조회 기간이 길어 목록이 상한에 걸려도 순위에서 단지가 빠지지 않게 이걸 쓴다.
 function parseEmbeddedRanking(indexHtml) {
   const m = indexHtml.match(/<script type="application\/json" id="geomdan-complex-ranking">([\s\S]*?)<\/script>/);

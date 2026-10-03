@@ -83,7 +83,7 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 200);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 800);
 // 오늘(KST)을 포함해 몇 개월 안에 계약된 건까지 볼지(4면 10/3 기준 6/4~10/3).
 const GEOMDAN_TRANSACTION_MONTHS = Number(process.env.GEOMDAN_TRANSACTION_MONTHS || 4);
 // GEOMDAN_DONGS(법정동) 안에 있어도 검단신도시로 개발된 단지가 아닌 기존 단지는
@@ -478,7 +478,7 @@ async function fetchGeomdanTransactionsAttempt(deadline) {
 
   // 목록은 GEOMDAN_TRANSACTION_COUNT건에서 잘리지만, 카드뉴스의 단지 순위는 단지마다 평당가가 가장
   // 높은 거래 하나씩이라 잘리기 전 전체 거래로 따로 뽑아 둔다. 기간이 길어지면 목록 상한에 걸려
-  // 평당가가 낮은 단지가 순위에서 통째로 빠지기 때문이다(4개월이면 상위 200건이 20개 안팎 단지뿐).
+  // 평당가가 낮은 단지가 순위에서 통째로 빠지기 때문이다(상한이 200건이면 4개월치 상위 200건이 20개 안팎 단지뿐).
   const best = new Map();
   for (const t of recentOnly) {
     const key = normalizeAptName(t.apt);
