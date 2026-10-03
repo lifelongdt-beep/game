@@ -82,7 +82,7 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 100);
+const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 200);
 const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
 // data.go.kr가 통째로 응답하지 않을 때 실거래가 조회에만 무한정 시간을 쓰면
 // 뉴스·카카오톡 발송까지 덩달아 늦어진다. 이 시간(기본 30초) 안에 끝나지 않으면
