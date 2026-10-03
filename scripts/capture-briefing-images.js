@@ -85,6 +85,14 @@ async function main() {
 
       const lastItemRect = rankItems[rankItems.length - 1].getBoundingClientRect();
       bottom = lastItemRect.bottom + 24;
+      // 줄 간격이 좁으면 24px 아래에 다음(열한 번째) 줄 글자가 걸려 반쯤 잘려 보인다 — 그 줄 내용이 시작하기 2px 전에서 멈춘다.
+      const nextItem = document.querySelectorAll('.rank-item')[rankItems.length];
+      if (nextItem) {
+        const nextContentTop = Math.min(
+          ...['.rank-idx', '.rank-meta', '.rank-figures'].map((sel) => nextItem.querySelector(sel).getBoundingClientRect().top)
+        );
+        bottom = Math.min(bottom, nextContentTop - 2);
+      }
     }
 
     const coverRect = cover ? cover.getBoundingClientRect() : null;

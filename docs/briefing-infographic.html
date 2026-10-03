@@ -326,22 +326,22 @@
     line-height: 1.1;
     letter-spacing: -0.03em;
     color: var(--text-black);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .ranking-box {
     background: #ffffff;
     border-radius: 12px;
-    padding: 22px 24px;
+    padding: 8px 24px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.04);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
   }
   .rank-item {
     display: grid;
     grid-template-columns: 28px 1fr 108px;
     align-items: center;
-    padding: 8px 0;
+    padding: 5px 0;
     border-bottom: 1px solid #f0f0f0;
   }
   .rank-item:last-child { border-bottom: none; }
@@ -381,7 +381,7 @@
     white-space: nowrap;
   }
   .rank-summary-pill {
-    margin-top: 18px;
+    margin-top: 12px;
     background: #eef4ff;
     border: 1px solid #d0e1fd;
     border-radius: 8px;
@@ -433,6 +433,7 @@
     .rank-item { grid-template-columns: 22px 1fr 84px; }
     .rank-val { font-size: 13px; }
     .rank-price { font-size: 11.5px; }
+    .slide-ranking { padding-top: 20px; padding-bottom: 16px; }
   }
 
   /* ========================================================
@@ -609,7 +610,7 @@
   <section class="card-slide slide-ranking">
     <div class="bold-sub">MARKET RANKING TOP 33</div>
     <h2 class="bold-title">검단신도시 실거래<br>평당 순위</h2>
-    <p class="full-list-sub" style="margin: -8px 0 16px;">같은 단지 내 최고가만 남기고, 단지별 최고 평당가 기준으로 정리했습니다. 최근 4개월간 집계된 고유 단지가 33곳입니다.</p>
+    <p class="full-list-sub" style="margin: -8px 0 12px;">같은 단지 내 최고가만 남기고, 단지별 최고 평당가 기준으로 정리했습니다. 최근 4개월간 집계된 고유 단지가 33곳입니다.</p>
 
     <div class="ranking-box">
       <div class="rank-item">
@@ -619,8 +620,8 @@
           <span>불로동 · 전용 85㎡ · 24층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">8억 9,500만원</span>
           <span class="rank-val">평당 2,679만</span>
+          <span class="rank-price">8억 9,500만원</span>
         </div>
       </div>
 
@@ -631,8 +632,8 @@
           <span>불로동 · 전용 85㎡ · 24층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">8억 6,000만원</span>
           <span class="rank-val">평당 2,574만</span>
+          <span class="rank-price">8억 6,000만원</span>
         </div>
       </div>
 
@@ -643,8 +644,8 @@
           <span>원당동 · 전용 74㎡ · 26층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">7억 4,200만원</span>
           <span class="rank-val">평당 2,525만</span>
+          <span class="rank-price">7억 4,200만원</span>
         </div>
       </div>
 
@@ -655,8 +656,8 @@
           <span>원당동 · 전용 60㎡ · 27층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억원</span>
           <span class="rank-val">평당 2,499만</span>
+          <span class="rank-price">6억원</span>
         </div>
       </div>
 
@@ -667,8 +668,8 @@
           <span>원당동 · 전용 60㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 8,800만원</span>
           <span class="rank-val">평당 2,437만</span>
+          <span class="rank-price">5억 8,800만원</span>
         </div>
       </div>
 
@@ -679,8 +680,8 @@
           <span>원당동 · 전용 75㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">7억 1,200만원</span>
           <span class="rank-val">평당 2,406만</span>
+          <span class="rank-price">7억 1,200만원</span>
         </div>
       </div>
 
@@ -691,8 +692,8 @@
           <span>원당동 · 전용 73㎡ · 13층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 9,000만원</span>
           <span class="rank-val">평당 2,405만</span>
+          <span class="rank-price">6억 9,000만원</span>
         </div>
       </div>
 
@@ -703,8 +704,8 @@
           <span>원당동 · 전용 60㎡ · 29층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 8,000만원</span>
           <span class="rank-val">평당 2,397만</span>
+          <span class="rank-price">5억 8,000만원</span>
         </div>
       </div>
 
@@ -715,8 +716,8 @@
           <span>당하동 · 전용 60㎡ · 5층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 4,800만원</span>
           <span class="rank-val">평당 2,265만</span>
+          <span class="rank-price">5억 4,800만원</span>
         </div>
       </div>
 
@@ -727,8 +728,8 @@
           <span>원당동 · 전용 85㎡ · 16층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">7억 5,200만원</span>
           <span class="rank-val">평당 2,247만</span>
+          <span class="rank-price">7억 5,200만원</span>
         </div>
       </div>
 
@@ -739,8 +740,8 @@
           <span>불로동 · 전용 75㎡ · 25층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 6,000만원</span>
           <span class="rank-val">평당 2,228만</span>
+          <span class="rank-price">6억 6,000만원</span>
         </div>
       </div>
 
@@ -751,8 +752,8 @@
           <span>당하동 · 전용 85㎡ · 19층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">7억 2,000만원</span>
           <span class="rank-val">평당 2,151만</span>
+          <span class="rank-price">7억 2,000만원</span>
         </div>
       </div>
 
@@ -763,8 +764,8 @@
           <span>당하동 · 전용 60㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 2,000만원</span>
           <span class="rank-val">평당 2,151만</span>
+          <span class="rank-price">5억 2,000만원</span>
         </div>
       </div>
 
@@ -775,8 +776,8 @@
           <span>원당동 · 전용 109㎡ · 19층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">9억원</span>
           <span class="rank-val">평당 2,134만</span>
+          <span class="rank-price">9억원</span>
         </div>
       </div>
 
@@ -787,8 +788,8 @@
           <span>불로동 · 전용 60㎡ · 7층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 1,000만원</span>
           <span class="rank-val">평당 2,113만</span>
+          <span class="rank-price">5억 1,000만원</span>
         </div>
       </div>
 
@@ -799,8 +800,8 @@
           <span>당하동 · 전용 74㎡ · 25층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 1,000만원</span>
           <span class="rank-val">평당 2,077만</span>
+          <span class="rank-price">6억 1,000만원</span>
         </div>
       </div>
 
@@ -811,8 +812,8 @@
           <span>당하동 · 전용 60㎡ · 8층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억원</span>
           <span class="rank-val">평당 2,068만</span>
+          <span class="rank-price">5억원</span>
         </div>
       </div>
 
@@ -823,8 +824,8 @@
           <span>당하동 · 전용 85㎡ · 10층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 9,000만원</span>
           <span class="rank-val">평당 2,061만</span>
+          <span class="rank-price">6억 9,000만원</span>
         </div>
       </div>
 
@@ -835,8 +836,8 @@
           <span>원당동 · 전용 76㎡ · 20층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억원</span>
           <span class="rank-val">평당 1,987만</span>
+          <span class="rank-price">6억원</span>
         </div>
       </div>
 
@@ -847,8 +848,8 @@
           <span>당하동 · 전용 85㎡ · 20층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 5,000만원</span>
           <span class="rank-val">평당 1,943만</span>
+          <span class="rank-price">6억 5,000만원</span>
         </div>
       </div>
 
@@ -859,8 +860,8 @@
           <span>당하동 · 전용 73㎡ · 22층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 4,500만원</span>
           <span class="rank-val">평당 1,896만</span>
+          <span class="rank-price">5억 4,500만원</span>
         </div>
       </div>
 
@@ -871,8 +872,8 @@
           <span>원당동 · 전용 84㎡ · 21층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억 1,000만원</span>
           <span class="rank-val">평당 1,839만</span>
+          <span class="rank-price">6억 1,000만원</span>
         </div>
       </div>
 
@@ -883,8 +884,8 @@
           <span>불로동 · 전용 99㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">7억원</span>
           <span class="rank-val">평당 1,838만</span>
+          <span class="rank-price">7억원</span>
         </div>
       </div>
 
@@ -895,8 +896,8 @@
           <span>당하동 · 전용 84㎡ · 22층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">6억원</span>
           <span class="rank-val">평당 1,808만</span>
+          <span class="rank-price">6억원</span>
         </div>
       </div>
 
@@ -907,8 +908,8 @@
           <span>원당동 · 전용 85㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 9,500만원</span>
           <span class="rank-val">평당 1,777만</span>
+          <span class="rank-price">5억 9,500만원</span>
         </div>
       </div>
 
@@ -919,8 +920,8 @@
           <span>당하동 · 전용 77㎡ · 21층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 2,500만원</span>
           <span class="rank-val">평당 1,727만</span>
+          <span class="rank-price">5억 2,500만원</span>
         </div>
       </div>
 
@@ -931,8 +932,8 @@
           <span>당하동 · 전용 85㎡ · 25층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 6,000만원</span>
           <span class="rank-val">평당 1,679만</span>
+          <span class="rank-price">5억 6,000만원</span>
         </div>
       </div>
 
@@ -943,8 +944,8 @@
           <span>불로동 · 전용 62㎡ · 17층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">3억 9,950만원</span>
           <span class="rank-val">평당 1,634만</span>
+          <span class="rank-price">3억 9,950만원</span>
         </div>
       </div>
 
@@ -955,8 +956,8 @@
           <span>원당동 · 전용 84㎡ · 12층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 3,700만원</span>
           <span class="rank-val">평당 1,615만</span>
+          <span class="rank-price">5억 3,700만원</span>
         </div>
       </div>
 
@@ -967,8 +968,8 @@
           <span>당하동 · 전용 85㎡ · 12층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 3,800만원</span>
           <span class="rank-val">평당 1,612만</span>
+          <span class="rank-price">5억 3,800만원</span>
         </div>
       </div>
 
@@ -979,8 +980,8 @@
           <span>당하동 · 전용 85㎡ · 20층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 3,900만원</span>
           <span class="rank-val">평당 1,611만</span>
+          <span class="rank-price">5억 3,900만원</span>
         </div>
       </div>
 
@@ -991,8 +992,8 @@
           <span>불로동 · 전용 85㎡ · 13층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">5억 2,700만원</span>
           <span class="rank-val">평당 1,581만</span>
+          <span class="rank-price">5억 2,700만원</span>
         </div>
       </div>
 
@@ -1003,8 +1004,8 @@
           <span>원당동 · 전용 60㎡ · 2층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">3억 8,000만원</span>
           <span class="rank-val">평당 1,573만</span>
+          <span class="rank-price">3억 8,000만원</span>
         </div>
       </div>
     </div>

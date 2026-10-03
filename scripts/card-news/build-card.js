@@ -245,8 +245,8 @@ function renderRankItems(ranked) {
           <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>
         </div>
         <div class="rank-figures">
-          <span class="rank-price">${t.amountText}</span>
           <span class="rank-val">평당 ${num(t.ppy)}만</span>
+          <span class="rank-price">${t.amountText}</span>
         </div>
       </div>`
     )
