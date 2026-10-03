@@ -5,6 +5,7 @@
 // 필요한 환경 변수는 docs/kakao-realestate-news-setup.md 참고.
 
 const fs = require('fs');
+const path = require('path');
 
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 // "부동산" 같은 일반 언급뿐 아니라, 그 단어 없이 지표명만으로 쓰이는 기사도
@@ -83,7 +84,33 @@ const GEOMDAN_DONGS = (process.env.GEOMDAN_DONGS || '당하동,마전동,불로�
   .map((s) => s.trim())
   .filter(Boolean);
 const GEOMDAN_TRANSACTION_COUNT = Number(process.env.GEOMDAN_TRANSACTION_COUNT || 200);
-const GEOMDAN_TRANSACTION_DAYS = Number(process.env.GEOMDAN_TRANSACTION_DAYS || 30);
+// 오늘(KST)을 포함해 몇 개월 안에 계약된 건까지 볼지(4면 10/3 기준 6/4~10/3).
+const GEOMDAN_TRANSACTION_MONTHS = Number(process.env.GEOMDAN_TRANSACTION_MONTHS || 4);
+// GEOMDAN_DONGS(법정동) 안에 있어도 검단신도시로 개발된 단지가 아닌 기존 단지는
+// 실거래가에서 뺀다. 법정동 단위로는 신도시와 옛 동네가 갈리지 않아 단지 이름으로
+// 걸러야 한다. 목록은 scripts/geomdan-excluded-apartments.txt에 한 줄에 한 단지씩
+// 적는다(실거래가 API의 단지명 기준, 비교할 때 공백·괄호 안 덧붙임·대소문자는 무시).
+// 단지명에 쉼표가 들어가는 경우가 있어 환경 변수가 아니라 파일로 둔다.
+const EXCLUDED_APARTMENTS_PATH = path.join(__dirname, 'geomdan-excluded-apartments.txt');
+const normalizeAptName = (name) => name.replace(/\([^)]*\)/g, '').replace(/\s+/g, '').toLowerCase();
+function loadExcludedApartments() {
+  try {
+    return new Set(
+      fs
+        .readFileSync(EXCLUDED_APARTMENTS_PATH, 'utf8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map(normalizeAptName)
+    );
+  } catch (err) {
+    // 목록이 없다고 매일 발송까지 멈추지는 않는다 — 기존 단지가 섞여 보일 뿐이다.
+    console.error(`제외 단지 목록을 읽지 못해 제외 없이 진행합니다: ${err.message}`);
+    return new Set();
+  }
+}
+const GEOMDAN_EXCLUDED_APTS = loadExcludedApartments();
+const isExcludedApt = (t) => GEOMDAN_EXCLUDED_APTS.has(normalizeAptName(t.apt));
 // data.go.kr가 통째로 응답하지 않을 때 실거래가 조회에만 무한정 시간을 쓰면
 // 뉴스·카카오톡 발송까지 덩달아 늦어진다. 이 시간(기본 30초) 안에 끝나지 않으면
 // 남은 달·재시도를 더 쌓지 않고 그 자리에서 조회를 포기하고, 대신 가장 최근에
@@ -392,16 +419,24 @@ async function fetchTransactionsForMonth(dealYmd, deadline) {
   }));
 }
 
-// 이번 달 + 지난달 + 지지난달을 함께 조회한다(신고 기한 때문에 이번 달 초에는
-// 자료가 거의 없고, GEOMDAN_TRANSACTION_DAYS가 두 달치로도 못 채울 만큼 길면
-// 달 경계에 걸린 날짜를 놓칠 수 있어 세 달로 여유를 둔다). LAWD_CD가 검단구
-// 전체를 가리키므로, 그중 신도시로 개발된 법정동(GEOMDAN_DONGS)만 한 번 더
-// 걸러낸다. hadError는 개별 달 조회가 fetchWithRetry를 다 쓰고도 실패했는지를
-// 나타낸다(실거래가 정말 0건인 정상적인 경우와 구분하기 위해).
+// 조회 기간의 첫날(오늘 포함 최근 months개월의 시작일). 예: 2026-10-03, 4개월이면 06-04.
+// 달마다 날짜 수가 달라 그 날짜가 없는 달(예: 10-31의 4개월 전인 06-31)은 그 달 말일로 맞춘다.
+function windowStart(now, months) {
+  const lastDay = new Date(now.getFullYear(), now.getMonth() - months + 1, 0).getDate();
+  const sameDay = new Date(now.getFullYear(), now.getMonth() - months, Math.min(now.getDate(), lastDay));
+  return new Date(sameDay.getFullYear(), sameDay.getMonth(), sameDay.getDate() + 1);
+}
+
+// 이번 달부터 GEOMDAN_TRANSACTION_MONTHS개월 전 달까지 달마다 조회한다(조회 기간의
+// 첫날이 걸친 달까지 있어야 해서 기간보다 한 달 더 본다. 신고 기한 때문에 이번 달
+// 초에는 자료가 거의 없다). LAWD_CD가 검단구 전체를 가리키므로, 그중 신도시로
+// 개발된 법정동(GEOMDAN_DONGS)만 한 번 더 걸러내고, 그 안의 기존 단지
+// (GEOMDAN_EXCLUDED_APTS)는 뺀다. hadError는 개별 달 조회가 fetchWithRetry를 다
+// 쓰고도 실패했는지를 나타낸다(실거래가 정말 0건인 정상적인 경우와 구분하기 위해).
 async function fetchGeomdanTransactionsAttempt(deadline) {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const months = [0, -1, -2].map((offset) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const months = Array.from({ length: GEOMDAN_TRANSACTION_MONTHS + 1 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
@@ -423,32 +458,59 @@ async function fetchGeomdanTransactionsAttempt(deadline) {
   }
 
   const newTownOnly = all.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
+  const newTownApts = newTownOnly.filter((t) => !isExcludedApt(t));
 
-  // 오늘(KST) 포함 최근 GEOMDAN_TRANSACTION_DAYS일 안에 계약된 건만 남긴다.
-  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (GEOMDAN_TRANSACTION_DAYS - 1));
-  const recentOnly = newTownOnly.filter(
+  // 오늘(KST) 포함 최근 GEOMDAN_TRANSACTION_MONTHS개월 안에 계약된 건만 남긴다.
+  const cutoff = windowStart(now, GEOMDAN_TRANSACTION_MONTHS);
+  const recentOnly = newTownApts.filter(
     (t) => new Date(Number(t.year), Number(t.month) - 1, Number(t.day)) >= cutoff
   );
 
   console.log(
     `실거래가: 검단구 ${all.length}건 중 검단신도시(${GEOMDAN_DONGS.join('/')}) ${newTownOnly.length}건, ` +
-      `최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 ${recentOnly.length}건`
+      `기존 단지 ${newTownOnly.length - newTownApts.length}건 제외, ` +
+      `최근 ${GEOMDAN_TRANSACTION_MONTHS}개월 이내 ${recentOnly.length}건 중 평당가 높은 ${Math.min(recentOnly.length, GEOMDAN_TRANSACTION_COUNT)}건 표시`
   );
   // 거래금액이 아니라 평당가(공급면적 추정치 기준) 높은 순으로 정렬한다 —
-  // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록.
-  recentOnly.sort((a, b) => (pricePerPyeong(b.amount, b.area) || 0) - (pricePerPyeong(a.amount, a.area) || 0));
-  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), hadError };
+  // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록. 평당가가 같으면 거래금액이 큰 쪽이 먼저다.
+  const ppy = (t) => pricePerPyeong(t.amount, t.area) || 0;
+  recentOnly.sort((a, b) => ppy(b) - ppy(a) || Number(b.amount) - Number(a.amount));
+
+  // 목록은 GEOMDAN_TRANSACTION_COUNT건에서 잘리지만, 카드뉴스의 단지 순위는 단지마다 평당가가 가장
+  // 높은 거래 하나씩이라 잘리기 전 전체 거래로 따로 뽑아 둔다. 기간이 길어지면 목록 상한에 걸려
+  // 평당가가 낮은 단지가 순위에서 통째로 빠지기 때문이다(4개월이면 상위 200건이 20개 안팎 단지뿐).
+  const best = new Map();
+  for (const t of recentOnly) {
+    const key = normalizeAptName(t.apt);
+    if (!best.has(key)) best.set(key, t); // 정렬돼 있어 처음 나온 거래가 그 단지의 최고 평당가
+  }
+  const ranking = [...best.values()].map(toRankingEntry).filter((r) => r.ppy);
+  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), ranking, hadError };
 }
 
-// data.go.kr가 세 달 조회 전부 실패하거나 예산을 넘기면(정말 거래가 0건인
+// 순위용 한 건. 카드뉴스 쪽(build-card.js)이 목록 HTML에서 파싱하는 항목과 같은 모양으로 둔다.
+function toRankingEntry(t) {
+  return {
+    apt: t.apt,
+    dong: t.dong,
+    amountText: formatAmount(t.amount),
+    amount: Number(t.amount),
+    area: Number(t.area),
+    floor: t.floor,
+    date: `${t.year}.${t.month}.${t.day}`,
+    ppy: pricePerPyeong(t.amount, t.area),
+  };
+}
+
+// data.go.kr가 달별 조회를 전부 실패하거나 예산을 넘기면(정말 거래가 0건인
 // 정상적인 경우와 달리 hadError가 true) 그 사실을 예외로 알려서 호출부가
 // "실패"로 인식하게 한다.
 async function fetchGeomdanTransactionsLive(deadline) {
-  const { transactions, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
+  const { transactions, ranking, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
   if (hadError && transactions.length === 0) {
-    throw new Error('실거래가 API가 예산 시간 안에 응답하지 않았거나 세 달치 조회에서 모두 실패했습니다.');
+    throw new Error('실거래가 API가 예산 시간 안에 응답하지 않았거나 달별 조회에서 모두 실패했습니다.');
   }
-  return transactions;
+  return { transactions, ranking };
 }
 
 // 이전에 성공한 실거래가 조회 결과를 docs/에 함께 커밋해두고, 이번 조회가
@@ -458,17 +520,26 @@ async function fetchGeomdanTransactionsLive(deadline) {
 function loadCachedTransactions() {
   try {
     const data = JSON.parse(fs.readFileSync(TRANSACTIONS_CACHE_PATH, 'utf8'));
-    return Array.isArray(data.transactions) ? data : null;
+    // 제외 목록이 생기기 전에 저장된 캐시에는 기존 단지가 섞여 있을 수 있어 여기서도 뺀다.
+    return Array.isArray(data.transactions)
+      ? {
+          ...data,
+          transactions: data.transactions.filter((t) => !isExcludedApt(t)),
+          // 순위(단지별 최고 거래)는 이 항목이 생기기 전에 저장된 캐시에는 없다.
+          ranking: Array.isArray(data.ranking) ? data.ranking.filter((r) => !isExcludedApt(r)) : null,
+        }
+      : null;
   } catch {
     return null;
   }
 }
 
-function saveCachedTransactions(transactions) {
+function saveCachedTransactions(transactions, ranking) {
   if (transactions.length === 0) return;
   const data = {
     generatedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'long', timeStyle: 'short' }),
     transactions,
+    ranking,
   };
   fs.mkdirSync('docs', { recursive: true });
   fs.writeFileSync(TRANSACTIONS_CACHE_PATH, JSON.stringify(data, null, 2));
@@ -491,9 +562,9 @@ async function fetchGeomdanTransactions() {
   const budgetSec = Math.round(GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS / 1000);
   const deadline = Date.now() + GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS;
   try {
-    const transactions = await fetchGeomdanTransactionsLive(deadline);
-    saveCachedTransactions(transactions);
-    return { transactions, stale: false };
+    const { transactions, ranking } = await fetchGeomdanTransactionsLive(deadline);
+    saveCachedTransactions(transactions, ranking);
+    return { transactions, ranking, stale: false };
   } catch (err) {
     console.error(`실거래가 조회 실패: ${err.message}`);
   }
@@ -508,7 +579,7 @@ async function fetchGeomdanTransactions() {
   console.error(
     `실거래가 조회가 ${budgetSec}초 예산 안에 끝나지 않아, ${cached.generatedAt} 기준으로 마지막에 성공했던 데이터를 임시로 보여줍니다.`
   );
-  return { transactions: cached.transactions, stale: true, cachedAt: cached.generatedAt };
+  return { transactions: cached.transactions, ranking: cached.ranking, stale: true, cachedAt: cached.generatedAt };
 }
 
 function formatAmount(manwonStr) {
@@ -711,10 +782,16 @@ const PAGE_STYLE = `
 // 과 docs/geomdan.html 둘 다 같은 내용을 담아서, 예전에 geomdan.html을 따로
 // 북마크/공지해둔 경우에도 링크가 깨지지 않게 한다.
 function renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt) {
-  const { transactions, stale, cachedAt } = transactionsResult;
+  const { transactions, ranking, stale, cachedAt } = transactionsResult;
   const staleNotice = stale
     ? `<p class="stale-notice">⚠️ 지금 국토부 실거래가 조회가 원활하지 않아, ${escapeHtml(cachedAt)} 기준으로 마지막에 성공했던 데이터를 임시로 보여드리고 있어요. 다음 자동 갱신 때 정상 데이터로 바뀝니다.</p>`
     : '';
+  // 카드뉴스(build-card.js)가 목록 상한과 무관하게 단지 순위를 만들 수 있도록, 단지별 최고 거래를
+  // 화면에 보이지 않는 JSON으로 함께 싣는다(없으면 카드뉴스는 위 목록으로 순위를 계산한다).
+  const rankingData =
+    ranking && ranking.length
+      ? `\n  <script type="application/json" id="geomdan-complex-ranking">${JSON.stringify(ranking).replace(/</g, '\\u003c')}</script>`
+      : '';
   const title = '🏠 오늘의 부동산 종합';
   return `<!doctype html>
 <html lang="ko">
@@ -740,12 +817,12 @@ ${renderArticlesHtml(geomdanArticles)}
   </ul>
 
   <h2>🏘️ 검단신도시 아파트 실거래가</h2>
-  <p class="section-note">최근 ${GEOMDAN_TRANSACTION_DAYS}일 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬 · 번호는 순위</p>
+  <p class="section-note">최근 ${GEOMDAN_TRANSACTION_MONTHS}개월 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬${transactions.length >= GEOMDAN_TRANSACTION_COUNT ? `(상위 ${GEOMDAN_TRANSACTION_COUNT}건)` : ''} · 번호는 순위</p>
 ${staleNotice}
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
-  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>
+  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>${rankingData}
 
   <p class="openchat-invite">${escapeHtml(OPENCHAT_INVITE_TEXT)}<br><a href="${escapeHtml(OPENCHAT_URL)}" target="_blank" rel="noopener">${escapeHtml(OPENCHAT_URL)}</a></p>
 </main>

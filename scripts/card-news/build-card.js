@@ -59,12 +59,19 @@ function kstCategory() {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${wd}요일 ${period} · Daily Real Estate Briefing`;
 }
 
+// 표지 맨 위 줄. "날짜 · 브랜드" 형태면 날짜는 사진 위에서도 또렷한 알약(.cover-date), 브랜드는 작은 글씨(.cover-brand)로 나눈다.
+function renderCategory(text) {
+  const [date, ...brand] = text.split(' · ');
+  const brandHtml = brand.length ? ` <span class="cover-brand">${esc(brand.join(' · '))}</span>` : '';
+  return `<span class="cover-date">${esc(date)}</span>${brandHtml}`;
+}
+
 function renderCover(c) {
   const hl = Number.isInteger(c.highlight) ? c.highlight : 1;
   const lines = c.headline.map((l, i) => (i === hl ? `<span class="highlight">${esc(l)}</span>` : esc(l)));
   return `<section class="card-slide slide-cover">
     ${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
-      <div class="cover-category">${esc(c.category || kstCategory())}</div>
+      <div class="cover-category">${renderCategory(c.category || kstCategory())}</div>
       <h1 class="cover-headline">
         ${lines.join('<br>\n        ')}
       </h1>
@@ -185,13 +192,47 @@ function parseTxns(indexHtml) {
   return txns;
 }
 
+// 단지명 비교용(공백·괄호 안 덧붙임·대소문자 무시). scripts/kakao-realestate-news.js의 normalizeAptName과 같은 규칙.
+const aptKey = (name) => name.replace(/\([^)]*\)/g, '').replace(/\s+/g, '').toLowerCase();
+
 function rankComplexes(txns) {
   const best = new Map();
   for (const t of txns) {
-    const cur = best.get(t.apt);
-    if (!cur || t.ppy > cur.ppy || (t.ppy === cur.ppy && t.amount > cur.amount)) best.set(t.apt, t);
+    const key = aptKey(t.apt);
+    const cur = best.get(key);
+    if (!cur || t.ppy > cur.ppy || (t.ppy === cur.ppy && t.amount > cur.amount)) best.set(key, t);
   }
   return [...best.values()].sort((a, b) => b.ppy - a.ppy || b.amount - a.amount);
+}
+
+// index.html에는 목록(상한 200건)과 별개로, 상한에 잘리기 전 전체 거래에서 뽑은 "단지별 최고 거래"가
+// 보이지 않는 JSON으로 실려 있다. 조회 기간이 길어 목록이 상한에 걸려도 순위에서 단지가 빠지지 않게 이걸 쓴다.
+function parseEmbeddedRanking(indexHtml) {
+  const m = indexHtml.match(/<script type="application\/json" id="geomdan-complex-ranking">([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  let list;
+  try {
+    list = JSON.parse(m[1]);
+  } catch (e) {
+    fail(`index.html의 단지 순위 JSON을 읽지 못함: ${e.message}`);
+  }
+  const ok = (r) =>
+    r && typeof r.apt === 'string' && typeof r.dong === 'string' && typeof r.amountText === 'string' && typeof r.floor === 'string' &&
+    Number.isFinite(r.amount) && Number.isFinite(r.area) && Number.isFinite(r.ppy);
+  if (!Array.isArray(list) || list.length === 0 || !list.every(ok)) fail('index.html의 단지 순위 JSON 형식이 맞지 않습니다.');
+  return list;
+}
+
+// 순위(전체 거래 기준)와 목록(상위 N건)이 같은 실행의 데이터인지 확인한다: 목록의 모든 단지가 순위에 있고,
+// 순위의 평당가가 목록 안 같은 단지의 어떤 거래보다 낮지 않아야 한다.
+function rankFromEmbedded(embedded, txns) {
+  const ranked = embedded.slice().sort((a, b) => b.ppy - a.ppy || b.amount - a.amount);
+  const byKey = new Map(ranked.map((r) => [aptKey(r.apt), r]));
+  for (const t of txns) {
+    const r = byKey.get(aptKey(t.apt));
+    if (!r || r.ppy < t.ppy) fail(`순위 데이터가 목록과 맞지 않습니다(${t.apt}) — index.html을 워크플로 결과로 다시 받아 오세요.`);
+  }
+  return ranked;
 }
 
 function renderRankItems(ranked) {
@@ -212,15 +253,15 @@ function renderRankItems(ranked) {
     .join('\n\n');
 }
 
-function pillText(ranked) {
+function pillText(ranked, period) {
   const N = ranked.length;
   const a = ranked.filter((t) => t.ppy >= 2000).length;
   const b = ranked.filter((t) => t.ppy >= 1500).length;
   let first;
-  if (b === 0) first = `오늘 집계된 고유 단지 ${N}곳의 평당가는 모두 1,500만 원 미만입니다.`;
-  else if (a === 0) first = `오늘 집계된 고유 단지 ${N}곳 중 ${b}곳이 평당 1,500만 원 이상입니다.`;
-  else if (b === N) first = `오늘 집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상이고, 전 단지가 1,500만 원 이상입니다.`;
-  else first = `오늘 집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상, ${b}곳이 1,500만 원 이상입니다.`;
+  if (b === 0) first = `${period}집계된 고유 단지 ${N}곳의 평당가는 모두 1,500만 원 미만입니다.`;
+  else if (a === 0) first = `${period}집계된 고유 단지 ${N}곳 중 ${b}곳이 평당 1,500만 원 이상입니다.`;
+  else if (b === N) first = `${period}집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상이고, 전 단지가 1,500만 원 이상입니다.`;
+  else first = `${period}집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상, ${b}곳이 1,500만 원 이상입니다.`;
 
   const top = ranked[0];
   const last = ranked[N - 1];
@@ -235,15 +276,15 @@ function pillText(ranked) {
   return `💡 ${first} ${second}`;
 }
 
-function applyRanking(html, ranked, customPill) {
+function applyRanking(html, ranked, customPill, period) {
   const boxS = html.indexOf('<div class="ranking-box">');
   const pillS = html.indexOf('<div class="rank-summary-pill">');
   if (boxS < 0 || pillS < 0) fail('카드 HTML에서 ranking-box / rank-summary-pill을 찾지 못함');
   html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked)}\n    </div>\n\n    ` + html.slice(pillS);
-  const pill = customPill || pillText(ranked);
+  const pill = customPill || pillText(ranked, period);
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
-  html = html.replace(/오늘 집계된 고유 단지가 \d+곳입니다\./, () => `오늘 집계된 고유 단지가 ${ranked.length}곳입니다.`);
+  html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   return { html, pill };
 }
 
@@ -279,8 +320,22 @@ function main() {
   }
 
   const txns = parseTxns(indexHtml);
-  const ranked = rankComplexes(txns);
-  const result = applyRanking(html, ranked, customPill);
+  const embedded = parseEmbeddedRanking(indexHtml);
+  const ranked = embedded ? rankFromEmbedded(embedded, txns) : rankComplexes(txns);
+  if (!embedded && /\(상위 \d+건\)/.test(indexHtml)) {
+    warnings.push('목록이 상한에 걸려 있는데 단지 순위 데이터(geomdan-complex-ranking)가 index.html에 없어, 평당가가 낮은 단지가 순위에서 빠졌을 수 있습니다.');
+  }
+  // 집계 기간 문구는 index.html 안내문("최근 N개월 이내 계약 건…")에서 읽는다(옛 형식이면 "오늘").
+  const months = indexHtml.match(/최근 (\d+)개월 이내 계약/);
+  const period = months ? `최근 ${months[1]}개월간 ` : '오늘 ';
+  // 평당 1,500만 이하 단지는 신도시가 아닌 기존 단지일 가능성이 높다(사용자 판단) — 제외 목록에 빠진 단지가 없는지 알린다.
+  const low = ranked.filter((t) => t.ppy <= 1500);
+  if (low.length) {
+    warnings.push(
+      `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
+    );
+  }
+  const result = applyRanking(html, ranked, customPill, period);
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;
@@ -296,6 +351,7 @@ function main() {
         card: path.relative(process.cwd(), CARD_PATH),
         transactions: txns.length,
         uniqueComplexes: ranked.length,
+        rankingFrom: embedded ? 'index.html의 전체 거래 기준 순위 데이터' : '하단 목록',
         top: ranked.slice(0, 3).map((t) => `${t.apt} ${t.amountText} 평당 ${num(t.ppy)}만`),
         pill: result.pill,
         warnings,
