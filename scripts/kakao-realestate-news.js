@@ -700,6 +700,11 @@ function writeOutput(name, value) {
   fs.appendFileSync(outputPath, `${name}<<KAKAO_EOF\n${value}\nKAKAO_EOF\n`);
 }
 
+// 스텝 출력으로 넘기는 토큰은 Actions가 자동으로 가려주지 않아, 쓰기 전에 직접 마스킹 등록한다.
+function maskSecret(value) {
+  if (value) console.log(`::add-mask::${value}`);
+}
+
 function escapeHtml(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -845,6 +850,8 @@ function publishCombinedPage(filename, articles, geomdanArticles, transactionsRe
 async function main() {
   const tokenData = await refreshAccessToken();
   const accessToken = tokenData.access_token;
+  maskSecret(accessToken);
+  maskSecret(tokenData.refresh_token);
 
   if (tokenData.refresh_token && tokenData.refresh_token !== REFRESH_TOKEN) {
     console.log('카카오 refresh_token이 새로 발급되었습니다.');
