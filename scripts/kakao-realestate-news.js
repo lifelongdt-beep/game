@@ -472,20 +472,45 @@ async function fetchGeomdanTransactionsAttempt(deadline) {
       `최근 ${GEOMDAN_TRANSACTION_MONTHS}개월 이내 ${recentOnly.length}건 중 평당가 높은 ${Math.min(recentOnly.length, GEOMDAN_TRANSACTION_COUNT)}건 표시`
   );
   // 거래금액이 아니라 평당가(공급면적 추정치 기준) 높은 순으로 정렬한다 —
-  // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록.
-  recentOnly.sort((a, b) => (pricePerPyeong(b.amount, b.area) || 0) - (pricePerPyeong(a.amount, a.area) || 0));
-  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), hadError };
+  // 면적이 작아도 평당가가 비싼 거래가 먼저 보이도록. 평당가가 같으면 거래금액이 큰 쪽이 먼저다.
+  const ppy = (t) => pricePerPyeong(t.amount, t.area) || 0;
+  recentOnly.sort((a, b) => ppy(b) - ppy(a) || Number(b.amount) - Number(a.amount));
+
+  // 목록은 GEOMDAN_TRANSACTION_COUNT건에서 잘리지만, 카드뉴스의 단지 순위는 단지마다 평당가가 가장
+  // 높은 거래 하나씩이라 잘리기 전 전체 거래로 따로 뽑아 둔다. 기간이 길어지면 목록 상한에 걸려
+  // 평당가가 낮은 단지가 순위에서 통째로 빠지기 때문이다(4개월이면 상위 200건이 20개 안팎 단지뿐).
+  const best = new Map();
+  for (const t of recentOnly) {
+    const key = normalizeAptName(t.apt);
+    if (!best.has(key)) best.set(key, t); // 정렬돼 있어 처음 나온 거래가 그 단지의 최고 평당가
+  }
+  const ranking = [...best.values()].map(toRankingEntry).filter((r) => r.ppy);
+  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), ranking, hadError };
+}
+
+// 순위용 한 건. 카드뉴스 쪽(build-card.js)이 목록 HTML에서 파싱하는 항목과 같은 모양으로 둔다.
+function toRankingEntry(t) {
+  return {
+    apt: t.apt,
+    dong: t.dong,
+    amountText: formatAmount(t.amount),
+    amount: Number(t.amount),
+    area: Number(t.area),
+    floor: t.floor,
+    date: `${t.year}.${t.month}.${t.day}`,
+    ppy: pricePerPyeong(t.amount, t.area),
+  };
 }
 
 // data.go.kr가 달별 조회를 전부 실패하거나 예산을 넘기면(정말 거래가 0건인
 // 정상적인 경우와 달리 hadError가 true) 그 사실을 예외로 알려서 호출부가
 // "실패"로 인식하게 한다.
 async function fetchGeomdanTransactionsLive(deadline) {
-  const { transactions, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
+  const { transactions, ranking, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
   if (hadError && transactions.length === 0) {
     throw new Error('실거래가 API가 예산 시간 안에 응답하지 않았거나 달별 조회에서 모두 실패했습니다.');
   }
-  return transactions;
+  return { transactions, ranking };
 }
 
 // 이전에 성공한 실거래가 조회 결과를 docs/에 함께 커밋해두고, 이번 조회가
@@ -497,18 +522,24 @@ function loadCachedTransactions() {
     const data = JSON.parse(fs.readFileSync(TRANSACTIONS_CACHE_PATH, 'utf8'));
     // 제외 목록이 생기기 전에 저장된 캐시에는 기존 단지가 섞여 있을 수 있어 여기서도 뺀다.
     return Array.isArray(data.transactions)
-      ? { ...data, transactions: data.transactions.filter((t) => !isExcludedApt(t)) }
+      ? {
+          ...data,
+          transactions: data.transactions.filter((t) => !isExcludedApt(t)),
+          // 순위(단지별 최고 거래)는 이 항목이 생기기 전에 저장된 캐시에는 없다.
+          ranking: Array.isArray(data.ranking) ? data.ranking.filter((r) => !isExcludedApt(r)) : null,
+        }
       : null;
   } catch {
     return null;
   }
 }
 
-function saveCachedTransactions(transactions) {
+function saveCachedTransactions(transactions, ranking) {
   if (transactions.length === 0) return;
   const data = {
     generatedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'long', timeStyle: 'short' }),
     transactions,
+    ranking,
   };
   fs.mkdirSync('docs', { recursive: true });
   fs.writeFileSync(TRANSACTIONS_CACHE_PATH, JSON.stringify(data, null, 2));
@@ -531,9 +562,9 @@ async function fetchGeomdanTransactions() {
   const budgetSec = Math.round(GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS / 1000);
   const deadline = Date.now() + GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS;
   try {
-    const transactions = await fetchGeomdanTransactionsLive(deadline);
-    saveCachedTransactions(transactions);
-    return { transactions, stale: false };
+    const { transactions, ranking } = await fetchGeomdanTransactionsLive(deadline);
+    saveCachedTransactions(transactions, ranking);
+    return { transactions, ranking, stale: false };
   } catch (err) {
     console.error(`실거래가 조회 실패: ${err.message}`);
   }
@@ -548,7 +579,7 @@ async function fetchGeomdanTransactions() {
   console.error(
     `실거래가 조회가 ${budgetSec}초 예산 안에 끝나지 않아, ${cached.generatedAt} 기준으로 마지막에 성공했던 데이터를 임시로 보여줍니다.`
   );
-  return { transactions: cached.transactions, stale: true, cachedAt: cached.generatedAt };
+  return { transactions: cached.transactions, ranking: cached.ranking, stale: true, cachedAt: cached.generatedAt };
 }
 
 function formatAmount(manwonStr) {
@@ -751,10 +782,16 @@ const PAGE_STYLE = `
 // 과 docs/geomdan.html 둘 다 같은 내용을 담아서, 예전에 geomdan.html을 따로
 // 북마크/공지해둔 경우에도 링크가 깨지지 않게 한다.
 function renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt) {
-  const { transactions, stale, cachedAt } = transactionsResult;
+  const { transactions, ranking, stale, cachedAt } = transactionsResult;
   const staleNotice = stale
     ? `<p class="stale-notice">⚠️ 지금 국토부 실거래가 조회가 원활하지 않아, ${escapeHtml(cachedAt)} 기준으로 마지막에 성공했던 데이터를 임시로 보여드리고 있어요. 다음 자동 갱신 때 정상 데이터로 바뀝니다.</p>`
     : '';
+  // 카드뉴스(build-card.js)가 목록 상한과 무관하게 단지 순위를 만들 수 있도록, 단지별 최고 거래를
+  // 화면에 보이지 않는 JSON으로 함께 싣는다(없으면 카드뉴스는 위 목록으로 순위를 계산한다).
+  const rankingData =
+    ranking && ranking.length
+      ? `\n  <script type="application/json" id="geomdan-complex-ranking">${JSON.stringify(ranking).replace(/</g, '\\u003c')}</script>`
+      : '';
   const title = '🏠 오늘의 부동산 종합';
   return `<!doctype html>
 <html lang="ko">
@@ -785,7 +822,7 @@ ${staleNotice}
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
-  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>
+  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>${rankingData}
 
   <p class="openchat-invite">${escapeHtml(OPENCHAT_INVITE_TEXT)}<br><a href="${escapeHtml(OPENCHAT_URL)}" target="_blank" rel="noopener">${escapeHtml(OPENCHAT_URL)}</a></p>
 </main>

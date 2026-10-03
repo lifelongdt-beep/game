@@ -107,13 +107,34 @@
     padding: 50px 46px;
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.88) 100%);
   }
+  /* 날짜는 사진 위에서도 읽히도록 노란 알약에 검은 글씨로 올린다(옅은 흰 글씨는
+     사진 속 글자·간판과 섞여 안 보였다). 브랜드 문구는 그 아래 작은 글씨. */
   .cover-category {
-    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+    margin-bottom: 14px;
+  }
+  .cover-date {
+    display: inline-block;
+    background: var(--brand-yellow);
+    color: #111111;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    padding: 7px 15px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .cover-brand {
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.16em;
-    color: rgba(255,255,255,0.8);
+    color: #ffffff;
     text-transform: uppercase;
-    margin-bottom: 12px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.85);
   }
   .cover-headline {
     font-size: 60px;
@@ -386,7 +407,17 @@
      그대로 두면 서로 겹치거나 잘려 보인다. 주요 글자 크기를 줄이고
      좌우분할형은 세로로 쌓아 좁은 화면에서도 읽히게 한다. */
   @media (max-width: 560px) {
+    /* 휴대폰에서는 카드가 화면 폭을 꽉 채우게 한다(바깥 여백·둥근 모서리 없음). */
+    body { padding: 0 0 40px; gap: 24px; }
+    .card-flow { border-radius: 0; box-shadow: none; }
     .card-slide { padding: 26px 22px 22px; }
+    /* 표지·사진 오버레이 슬라이드는 사진이 가장자리까지 가야 한다. 위 .card-slide 패딩이
+       앞에 나온 .slide-cover/.slide-overlay의 padding:0을 덮어써서 사진 둘레에 검은 띠가
+       생기던 것을 되돌린다. */
+    .slide-cover, .slide-overlay { padding: 0; }
+    .cover-content { padding: 36px 18px 24px; }
+    .cover-date { font-size: 15px; padding: 6px 13px; }
+    .full-list-section { padding: 0 12px; }
     .hand-title { font-size: 32px; margin-bottom: 14px; }
     .cover-headline { font-size: 34px; }
     .cover-summary { font-size: 14px; margin-bottom: 18px; }
@@ -397,7 +428,7 @@
     .overlay-script { font-size: 38px; }
     .overlay-lead { font-size: 19px; }
     .overlay-body { font-size: 14px; margin-bottom: 20px; }
-    .overlay-content { padding: 34px 26px; }
+    .overlay-content { padding: 34px 20px; }
     .bold-title { font-size: 28px; }
     .rank-item { grid-template-columns: 22px 1fr 84px; }
     .rank-val { font-size: 13px; }

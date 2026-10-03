@@ -59,12 +59,19 @@ function kstCategory() {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${wd}요일 ${period} · Daily Real Estate Briefing`;
 }
 
+// 표지 맨 위 줄. "날짜 · 브랜드" 형태면 날짜는 사진 위에서도 또렷한 알약(.cover-date), 브랜드는 작은 글씨(.cover-brand)로 나눈다.
+function renderCategory(text) {
+  const [date, ...brand] = text.split(' · ');
+  const brandHtml = brand.length ? ` <span class="cover-brand">${esc(brand.join(' · '))}</span>` : '';
+  return `<span class="cover-date">${esc(date)}</span>${brandHtml}`;
+}
+
 function renderCover(c) {
   const hl = Number.isInteger(c.highlight) ? c.highlight : 1;
   const lines = c.headline.map((l, i) => (i === hl ? `<span class="highlight">${esc(l)}</span>` : esc(l)));
   return `<section class="card-slide slide-cover">
     ${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
-      <div class="cover-category">${esc(c.category || kstCategory())}</div>
+      <div class="cover-category">${renderCategory(c.category || kstCategory())}</div>
       <h1 class="cover-headline">
         ${lines.join('<br>\n        ')}
       </h1>
@@ -185,13 +192,47 @@ function parseTxns(indexHtml) {
   return txns;
 }
 
+// 단지명 비교용(공백·괄호 안 덧붙임·대소문자 무시). scripts/kakao-realestate-news.js의 normalizeAptName과 같은 규칙.
+const aptKey = (name) => name.replace(/\([^)]*\)/g, '').replace(/\s+/g, '').toLowerCase();
+
 function rankComplexes(txns) {
   const best = new Map();
   for (const t of txns) {
-    const cur = best.get(t.apt);
-    if (!cur || t.ppy > cur.ppy || (t.ppy === cur.ppy && t.amount > cur.amount)) best.set(t.apt, t);
+    const key = aptKey(t.apt);
+    const cur = best.get(key);
+    if (!cur || t.ppy > cur.ppy || (t.ppy === cur.ppy && t.amount > cur.amount)) best.set(key, t);
   }
   return [...best.values()].sort((a, b) => b.ppy - a.ppy || b.amount - a.amount);
+}
+
+// index.html에는 목록(상한 200건)과 별개로, 상한에 잘리기 전 전체 거래에서 뽑은 "단지별 최고 거래"가
+// 보이지 않는 JSON으로 실려 있다. 조회 기간이 길어 목록이 상한에 걸려도 순위에서 단지가 빠지지 않게 이걸 쓴다.
+function parseEmbeddedRanking(indexHtml) {
+  const m = indexHtml.match(/<script type="application\/json" id="geomdan-complex-ranking">([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  let list;
+  try {
+    list = JSON.parse(m[1]);
+  } catch (e) {
+    fail(`index.html의 단지 순위 JSON을 읽지 못함: ${e.message}`);
+  }
+  const ok = (r) =>
+    r && typeof r.apt === 'string' && typeof r.dong === 'string' && typeof r.amountText === 'string' && typeof r.floor === 'string' &&
+    Number.isFinite(r.amount) && Number.isFinite(r.area) && Number.isFinite(r.ppy);
+  if (!Array.isArray(list) || list.length === 0 || !list.every(ok)) fail('index.html의 단지 순위 JSON 형식이 맞지 않습니다.');
+  return list;
+}
+
+// 순위(전체 거래 기준)와 목록(상위 N건)이 같은 실행의 데이터인지 확인한다: 목록의 모든 단지가 순위에 있고,
+// 순위의 평당가가 목록 안 같은 단지의 어떤 거래보다 낮지 않아야 한다.
+function rankFromEmbedded(embedded, txns) {
+  const ranked = embedded.slice().sort((a, b) => b.ppy - a.ppy || b.amount - a.amount);
+  const byKey = new Map(ranked.map((r) => [aptKey(r.apt), r]));
+  for (const t of txns) {
+    const r = byKey.get(aptKey(t.apt));
+    if (!r || r.ppy < t.ppy) fail(`순위 데이터가 목록과 맞지 않습니다(${t.apt}) — index.html을 워크플로 결과로 다시 받아 오세요.`);
+  }
+  return ranked;
 }
 
 function renderRankItems(ranked) {
@@ -279,7 +320,11 @@ function main() {
   }
 
   const txns = parseTxns(indexHtml);
-  const ranked = rankComplexes(txns);
+  const embedded = parseEmbeddedRanking(indexHtml);
+  const ranked = embedded ? rankFromEmbedded(embedded, txns) : rankComplexes(txns);
+  if (!embedded && /\(상위 \d+건\)/.test(indexHtml)) {
+    warnings.push('목록이 상한에 걸려 있는데 단지 순위 데이터(geomdan-complex-ranking)가 index.html에 없어, 평당가가 낮은 단지가 순위에서 빠졌을 수 있습니다.');
+  }
   // 집계 기간 문구는 index.html 안내문("최근 N개월 이내 계약 건…")에서 읽는다(옛 형식이면 "오늘").
   const months = indexHtml.match(/최근 (\d+)개월 이내 계약/);
   const period = months ? `최근 ${months[1]}개월간 ` : '오늘 ';
@@ -306,6 +351,7 @@ function main() {
         card: path.relative(process.cwd(), CARD_PATH),
         transactions: txns.length,
         uniqueComplexes: ranked.length,
+        rankingFrom: embedded ? 'index.html의 전체 거래 기준 순위 데이터' : '하단 목록',
         top: ranked.slice(0, 3).map((t) => `${t.apt} ${t.amountText} 평당 ${num(t.ppy)}만`),
         pill: result.pill,
         warnings,
