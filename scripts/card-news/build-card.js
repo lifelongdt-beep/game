@@ -34,17 +34,17 @@ function need(cond, msg) {
 }
 
 function checkContent(c) {
-  need(c.cover && c.cover.img && Array.isArray(c.cover.headline) && c.cover.headline.length >= 1, 'cover.img, cover.headline[] 필요');
+  need(c.cover && Array.isArray(c.cover.headline) && c.cover.headline.length >= 1, 'cover.headline[] 필요');
   need(typeof c.cover.summary === 'string' && c.cover.summary, 'cover.summary 필요');
   need(Array.isArray(c.cover.tags) && c.cover.tags.length === 3, 'cover.tags는 정확히 3개');
   need(Array.isArray(c.issues) && c.issues.length === 4, 'issues는 정확히 4건(2건으로 되돌리지 말 것)');
-  c.issues.forEach((it, i) => need(it.img && it.alt && it.title && it.text, `issues[${i}]에 img, alt, title, text 필요`));
+  c.issues.forEach((it, i) => need(it.title && it.text && (!it.img || it.alt), `issues[${i}]에 title, text 필요(img가 있으면 alt도)`));
   need(typeof c.outlets === 'string' && c.outlets, 'outlets(출처 매체, 예: "문화일보 / 연합뉴스") 필요');
   const o = c.overlay;
-  need(o && o.img && o.alt && o.script && Array.isArray(o.lead) && o.body && o.insight && o.source, 'overlay.img, alt, script, lead[], body, insight, source 필요');
-  need(c.cover.alt, 'cover.alt 필요');
+  need(o && o.script && Array.isArray(o.lead) && o.body && o.insight && o.source && (!o.img || o.alt), 'overlay.script, lead[], body, insight, source 필요(img가 있으면 alt도)');
+  need(!c.cover.img || c.cover.alt, 'cover.img가 있으면 cover.alt도 필요');
 
-  const images = [c.cover.img, ...c.issues.map((i) => i.img), o.img];
+  const images = [c.cover.img, ...c.issues.map((i) => i.img), o.img].filter(Boolean);
   images.forEach((u) => need(/^https:\/\//.test(u), `이미지 주소는 https여야 함(혼합 콘텐츠 방지): ${u}`));
 
   const texts = JSON.stringify(c);
@@ -63,8 +63,7 @@ function renderCover(c) {
   const hl = Number.isInteger(c.highlight) ? c.highlight : 1;
   const lines = c.headline.map((l, i) => (i === hl ? `<span class="highlight">${esc(l)}</span>` : esc(l)));
   return `<section class="card-slide slide-cover">
-    <img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">
-    <div class="cover-content">
+    ${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
       <div class="cover-category">${esc(c.category || kstCategory())}</div>
       <h1 class="cover-headline">
         ${lines.join('<br>\n        ')}
@@ -83,7 +82,7 @@ function renderCover(c) {
 const ROW_LABELS = ['첫 번째 행: 사진 왼쪽, 글 오른쪽', '두 번째 행: 글 왼쪽, 사진 오른쪽', '세 번째 행: 사진 왼쪽, 글 오른쪽', '네 번째 행: 글 왼쪽, 사진 오른쪽'];
 
 function renderSplit(c) {
-  const img = (it) => `<div class="split-img">
+  const img = (it) => !it.img ? '' : `<div class="split-img">
         <img src="${escAttr(it.img)}" alt="${escAttr(it.alt)}">
         <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div>`;
@@ -95,6 +94,10 @@ function renderSplit(c) {
   const rows = c.issues
     .map((it, i) => {
       const reverse = i % 2 === 1;
+      if (!it.img) return `    <!-- ${ROW_LABELS[i]} (사진 없음) -->
+    <div class="split-row" style="grid-template-columns:1fr">
+      ${txt(it, i + 1)}
+    </div>`;
       return `    <!-- ${ROW_LABELS[i]} -->
     <div class="split-row${reverse ? ' reverse' : ''}">
       ${reverse ? txt(it, i + 1) + '\n      ' + img(it) : img(it) + '\n      ' + txt(it, i + 1)}
@@ -114,8 +117,7 @@ ${rows}
 
 function renderOverlay(o) {
   return `<section class="card-slide slide-overlay">
-    <img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">
-    <div class="overlay-content">
+    ${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n    ` : ''}<div class="overlay-content">
       <div class="overlay-script">${esc(o.script)}</div>
       <h2 class="overlay-lead">
         ${o.lead.map(esc).join('<br>\n        ')}
