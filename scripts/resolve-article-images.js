@@ -80,7 +80,10 @@ async function resolveOne(browser, url) {
       n += 1;
       // 로그를 짧게 읽도록 긴 입력 링크는 빼고 입력 순서(n, 1부터)로 구분한다.
       const { url: _input, ...result } = await resolveOne(browser, url);
-      console.log('RESOLVED ' + JSON.stringify({ n, ...result }));
+      const line = JSON.stringify({ n, ...result });
+      console.log('RESOLVED ' + line);
+      // 로그를 못 읽는 세션도 gh api(check-runs/<job_id>/annotations)로 결과만 읽게 주석(notice)으로도 남긴다.
+      console.log('::notice title=RESOLVED::' + line.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
     }
   } finally {
     await browser.close();

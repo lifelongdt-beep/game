@@ -227,9 +227,15 @@ Secrets 등록 후 저장소 **Actions → Morning Real Estate News to KakaoTalk
 갱신 절차의 5~8단계는 스크립트로 자동화돼 있습니다. HTML을 손으로 고치거나 `docs/index.html`·실행 로그를 통째로 읽지 말고 아래 도구를 쓰세요(토큰·실수 절약).
 
 1. **후보 보기** — `node scripts/card-news/candidates.js [--index <index.html>]`: 일반 뉴스·검단 뉴스 후보를 번호와 제목으로만 출력합니다. `--prev`는 직전 카드의 표지·이슈·오버레이 제목을 보여줍니다(같은 기사·후속 기사 반복 방지용). 고른 번호를 인자로 주면(`candidates.js 3 7 21`) 그 기사들의 구글 뉴스 링크가 줄바꿈으로 출력되며, 그대로 `resolve_image_urls` 입력에 넣으면 됩니다(입력 순서가 결과의 `n`).
-2. **이미지 확인** — 워크플로 로그의 `RESOLVED {"n":1,"finalUrl":...,"image":...,"hotlinkOk":...}` 줄만 읽습니다(`n`은 입력 순서, 로그는 `tail_lines`를 작게 지정). `hotlinkOk`가 `true`여야 하고, `image`는 `https`여야 하며(`http`면 같은 주소를 `https`로 바꿔 다시 확인), 150px 안팎의 작은 썸네일(`..._v150.jpg` 등)이나 사이트 공용 로고는 다른 후보로 바꿉니다.
+2. **이미지 확인** — `node scripts/card-news/actions.js resolved <run_id>`가 잡 주석에 남은 추출 결과를 한 줄씩 출력합니다(`{"n":입력 순서,"hotlinkOk":...,"host":...,"image":...}`, 로그를 읽을 필요 없음). `hotlinkOk`가 `true`여야 하고, `image`는 `https`여야 하며(`http`면 같은 주소를 `https`로 바꿔 다시 확인), 150px 안팎의 작은 썸네일(`..._v150.jpg` 등)이나 사이트 공용 로고는 다른 후보로 바꿉니다.
 3. **조립** — 슬라이드 1~3 내용을 아래 형식의 JSON(임시 파일, 커밋하지 않음)으로 쓰고 `node scripts/card-news/build-card.js --content <content.json> --index <index.html>`을 실행하면 슬라이드 1~3, 슬라이드 4 랭킹(고유 단지 전체, 각 줄에 실거래가와 평당가, 요약 문구는 데이터로 자동 생성), 하단 전체 목록(뉴스+검단 뉴스+실거래가)이 한 번에 갱신됩니다. `--txn-only`는 하단 목록 중 실거래가 구간만 교체합니다.
 4. **검증** — `node scripts/card-news/validate-card.js [--out <폴더>]`: 데스크톱(700px)·모바일(390px)에서 가로 스크롤·겹침·잘림·카드 이음매·랭킹 우측 열 충돌을 검사하고(문제가 있으면 종료 코드 1) 스크린샷을 저장합니다. 이미지는 샌드박스에서 안 뜨므로 회색 자리표시자로 대체합니다.
+
+5. **워크플로·PR 보조** — `gh api`만 쓰는 `node scripts/card-news/actions.js`로 MCP 도구 없이도 처리합니다(Bash timeout은 600000 권장).
+   - `dispatch <작업 브랜치> skip_kakao_send=true`: 데이터 갱신 실행 후 끝날 때까지 대기. 이미지 추출은 `dispatch <작업 브랜치> skip_kakao_send=true --links <링크 파일>`(링크 파일은 `candidates.js <번호들>` 출력을 저장한 것)로 실행하고, 끝나면 `resolved <run_id>`로 결과를 읽습니다.
+   - 발송: `dispatch main skip_kakao_send=true send_briefing_images=true` 후 `steps <run_id>`로 "Send briefing card images to KakaoTalk"가 success인지 확인합니다.
+   - `pr-merge --head <브랜치> --title <제목> --body-file <파일> [--commit-file <파일>]`: PR(draft) 생성 → ready → squash 머지. 이어서 `pages <머지 sha>`로 Pages 배포 완료를 기다립니다.
+   - `resolve_image_urls`에 `skip_kakao_send=true`가 빠졌거나, 발송 단계에 `notify_message`·`resolve_image_urls`를 넣거나, 발송을 main이 아닌 ref에서 실행하려 하면 실행 전에 거부합니다.
 
 `content.json` 형식(텍스트는 한국어로만, 이미지 주소는 반드시 3단계에서 확인한 https 주소):
 
