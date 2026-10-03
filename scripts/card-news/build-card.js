@@ -212,15 +212,15 @@ function renderRankItems(ranked) {
     .join('\n\n');
 }
 
-function pillText(ranked) {
+function pillText(ranked, period) {
   const N = ranked.length;
   const a = ranked.filter((t) => t.ppy >= 2000).length;
   const b = ranked.filter((t) => t.ppy >= 1500).length;
   let first;
-  if (b === 0) first = `오늘 집계된 고유 단지 ${N}곳의 평당가는 모두 1,500만 원 미만입니다.`;
-  else if (a === 0) first = `오늘 집계된 고유 단지 ${N}곳 중 ${b}곳이 평당 1,500만 원 이상입니다.`;
-  else if (b === N) first = `오늘 집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상이고, 전 단지가 1,500만 원 이상입니다.`;
-  else first = `오늘 집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상, ${b}곳이 1,500만 원 이상입니다.`;
+  if (b === 0) first = `${period}집계된 고유 단지 ${N}곳의 평당가는 모두 1,500만 원 미만입니다.`;
+  else if (a === 0) first = `${period}집계된 고유 단지 ${N}곳 중 ${b}곳이 평당 1,500만 원 이상입니다.`;
+  else if (b === N) first = `${period}집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상이고, 전 단지가 1,500만 원 이상입니다.`;
+  else first = `${period}집계된 고유 단지 ${N}곳 중 ${a}곳이 평당 2,000만 원 이상, ${b}곳이 1,500만 원 이상입니다.`;
 
   const top = ranked[0];
   const last = ranked[N - 1];
@@ -235,15 +235,15 @@ function pillText(ranked) {
   return `💡 ${first} ${second}`;
 }
 
-function applyRanking(html, ranked, customPill) {
+function applyRanking(html, ranked, customPill, period) {
   const boxS = html.indexOf('<div class="ranking-box">');
   const pillS = html.indexOf('<div class="rank-summary-pill">');
   if (boxS < 0 || pillS < 0) fail('카드 HTML에서 ranking-box / rank-summary-pill을 찾지 못함');
   html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked)}\n    </div>\n\n    ` + html.slice(pillS);
-  const pill = customPill || pillText(ranked);
+  const pill = customPill || pillText(ranked, period);
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
-  html = html.replace(/오늘 집계된 고유 단지가 \d+곳입니다\./, () => `오늘 집계된 고유 단지가 ${ranked.length}곳입니다.`);
+  html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   return { html, pill };
 }
 
@@ -280,7 +280,17 @@ function main() {
 
   const txns = parseTxns(indexHtml);
   const ranked = rankComplexes(txns);
-  const result = applyRanking(html, ranked, customPill);
+  // 집계 기간 문구는 index.html 안내문("최근 N개월 이내 계약 건…")에서 읽는다(옛 형식이면 "오늘").
+  const months = indexHtml.match(/최근 (\d+)개월 이내 계약/);
+  const period = months ? `최근 ${months[1]}개월간 ` : '오늘 ';
+  // 평당 1,500만 이하 단지는 신도시가 아닌 기존 단지일 가능성이 높다(사용자 판단) — 제외 목록에 빠진 단지가 없는지 알린다.
+  const low = ranked.filter((t) => t.ppy <= 1500);
+  if (low.length) {
+    warnings.push(
+      `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
+    );
+  }
+  const result = applyRanking(html, ranked, customPill, period);
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;

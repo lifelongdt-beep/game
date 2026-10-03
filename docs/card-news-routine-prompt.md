@@ -17,7 +17,7 @@
 
 순서:
 1. TZ=Asia/Seoul 기준 오늘 날짜·시각을 확인해(자정을 막 넘긴 시점일 수도 있으니 반드시).
-2. 최신 뉴스 후보·검단신도시 실거래가(최근 30일, 최대 200건)를 새로 받아: `node scripts/card-news/actions.js dispatch claude/morning-realestate-news-kakao-q55sf2 skip_kakao_send=true`. 끝나면 그 브랜치에 올라온 데이터를 임시 파일로 받아 둬: `git fetch origin claude/morning-realestate-news-kakao-q55sf2 && git show origin/claude/morning-realestate-news-kakao-q55sf2:docs/index.html > <임시>/index.html`. docs/index.html·docs/geomdan.html·docs/geomdan-transactions-cache.json은 커밋하지 않는다(origin/main 버전을 유지, 되돌리지 않기).
+2. 최신 뉴스 후보·검단신도시 실거래가(최근 4개월, 기존 단지 제외, 평당가 높은 순 최대 200건)를 새로 받아: `node scripts/card-news/actions.js dispatch claude/morning-realestate-news-kakao-q55sf2 skip_kakao_send=true`. 끝나면 그 브랜치에 올라온 데이터를 임시 파일로 받아 둬: `git fetch origin claude/morning-realestate-news-kakao-q55sf2 && git show origin/claude/morning-realestate-news-kakao-q55sf2:docs/index.html > <임시>/index.html`. docs/index.html·docs/geomdan.html·docs/geomdan-transactions-cache.json은 커밋하지 않는다(origin/main 버전을 유지, 되돌리지 않기).
 3. `node scripts/card-news/candidates.js --index <임시>/index.html`로 후보를 보고, `node scripts/card-news/candidates.js --prev`로 직전 카드에 쓴 이슈를 확인한 뒤, 사람처럼 직접 판단해서 고른다:
    - 표지(슬라이드1)에 쓸 오늘의 헤드라인 이슈 1건
    - 좌우분할(슬라이드2)에 쓸 핵심 이슈 4건 (처음엔 2건이었는데 "이슈가 2개뿐이니 4개로 늘려달라"는 요청으로 4건으로 늘었음 — 절대 2건으로 되돌리지 말 것)
@@ -35,6 +35,6 @@
 - 전부 한국어로만 작성해. 일본어 등 다른 언어는 절대 섞지 마(이전에 실수한 적 있어서 특히 조심할 것).
 - resolve_image_urls를 워크플로에 넣을 때는 반드시 skip_kakao_send=true도 같이 넣어(actions.js가 막아 주지만 직접 실행할 때도 마찬가지).
 - 애매하거나 크게 막히는 문제가 아니면 나(사용자)한테 확인받지 말고 알아서 끝까지 진행해.
-- 끝나면 오늘 고른 헤드라인·핵심 이슈가 무엇인지, 검단 이슈 반영 여부, 이미지 추출 성공 여부, 카카오톡 발송(사진 1장+링크 한 통) 완료 여부만 짧게 한국어로 알려줘. 문제없이 잘 끝났으면 길게 쓸 필요 없어.
+- 끝나면 오늘 고른 헤드라인·핵심 이슈가 무엇인지, 검단 이슈 반영 여부, 이미지 추출 성공 여부, 카카오톡 발송(사진 1장+링크 한 통) 완료 여부만 짧게 한국어로 알려줘. 6단계에서 build-card.js가 평당 1,500만 이하 단지 경고(warnings)를 출력했다면 그 단지 이름만 한 줄 덧붙여(신도시가 아닌 기존 단지는 scripts/geomdan-excluded-apartments.txt에 추가해야 하지만 이 루틴에서는 건드리지 말고 알리기만 해). 문제없이 잘 끝났으면 길게 쓸 필요 없어.
 
 --- 프롬프트 끝 ---
