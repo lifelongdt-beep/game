@@ -75,9 +75,12 @@ async function resolveOne(browser, url) {
   }
   const browser = await chromium.launch();
   try {
+    let n = 0;
     for (const url of urls) {
-      const result = await resolveOne(browser, url);
-      console.log('RESOLVED ' + JSON.stringify(result));
+      n += 1;
+      // 로그를 짧게 읽도록 긴 입력 링크는 빼고 입력 순서(n, 1부터)로 구분한다.
+      const { url: _input, ...result } = await resolveOne(browser, url);
+      console.log('RESOLVED ' + JSON.stringify({ n, ...result }));
     }
   } finally {
     await browser.close();
