@@ -104,7 +104,7 @@ jobs:
           GEOMDAN_DONGS: '당하동,마전동,불로동,원당동'
           # 검단신도시가 아닌 기존 단지는 scripts/geomdan-excluded-apartments.txt에
           # 적어 두면 목록에서 빠집니다(단지명에 쉼표가 있어 환경 변수 대신 파일).
-          GEOMDAN_TRANSACTION_COUNT: '200'
+          GEOMDAN_TRANSACTION_COUNT: '800'
           GEOMDAN_TRANSACTION_MONTHS: '4'
         run: node scripts/kakao-realestate-news.js
 
