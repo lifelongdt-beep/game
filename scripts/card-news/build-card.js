@@ -221,7 +221,8 @@ function parseEmbeddedRanking(indexHtml) {
     r && typeof r.apt === 'string' && typeof r.dong === 'string' && typeof r.amountText === 'string' && typeof r.floor === 'string' &&
     Number.isFinite(r.amount) && Number.isFinite(r.area) && Number.isFinite(r.ppy);
   if (!Array.isArray(list) || list.length === 0 || !list.every(ok)) fail('index.html의 단지 순위 JSON 형식이 맞지 않습니다.');
-  return list;
+  // JSON에는 원래 이름이 들어 있다. 목록 HTML에서 읽은 값(이미 이스케이프됨)과 같은 형태로 맞춘다 — 그래야 비교가 맞고 HTML에도 안전하다.
+  return list.map((r) => ({ ...r, apt: escAttr(r.apt), dong: escAttr(r.dong), amountText: escAttr(r.amountText), floor: escAttr(r.floor) }));
 }
 
 // 순위(전체 거래 기준)와 목록(상위 N건)이 같은 실행의 데이터인지 확인한다: 목록의 모든 단지가 순위에 있고,
@@ -236,13 +237,21 @@ function rankFromEmbedded(embedded, txns) {
   return ranked;
 }
 
+// 1위 단지 이름 옆 왕관. 글꼴에 기대지 않는 인라인 SVG라 카카오톡 캡처 이미지에도 똑같이 나온다.
+const CROWN_SVG =
+  '<svg class="rank-crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 8.5 7.6 12.4 12 5.2l4.4 7.2 5.1-3.9-1.9 10H4.4z" fill="#ffc928" stroke="#d99a00" stroke-width="1.2" stroke-linejoin="round"/><rect x="4.4" y="19.6" width="15.2" height="2.4" rx="1.2" fill="#d99a00"/><circle cx="2.5" cy="7.6" r="1.7" fill="#ffc928" stroke="#d99a00"/><circle cx="12" cy="4.2" r="1.7" fill="#ffc928" stroke="#d99a00"/><circle cx="21.5" cy="7.6" r="1.7" fill="#ffc928" stroke="#d99a00"/></svg>';
+
+// 이름 끝 글자와 왕관을 한 덩어리로 묶어, 이름이 길어 줄이 꺾여도 왕관만 다음 줄에 떨어지지 않게 한다.
+// 이름은 이미 HTML 이스케이프된 문자열이라 &amp; 같은 엔티티는 한 글자로 본다.
+const withCrown = (name) => name.replace(/(&#?\w+;|[\s\S])$/, (m) => `<span class="rank-name-end">${m}${CROWN_SVG}</span>`);
+
 function renderRankItems(ranked) {
   return ranked
     .map(
       (t, i) => `      <div class="rank-item">
         <span class="rank-idx">${String(i + 1).padStart(2, '0')}</span>
         <div class="rank-meta">
-          <b>${t.apt}</b>
+          <b>${i === 0 ? withCrown(t.apt) : t.apt}</b>
           <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>
         </div>
         <div class="rank-figures">
