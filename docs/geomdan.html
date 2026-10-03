@@ -20,6 +20,11 @@
   .txn-apt { flex: 1; min-width: 0; font-size: 15px; }
   .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; white-space: nowrap; }
   .txn-meta { font-size: 12px; color: #888; margin-top: 1px; }
+  @media (max-width: 440px) {
+    body { padding-left: 8px; padding-right: 8px; }
+    .txn { padding: 8px 10px; }
+    .txn-meta { font-size: 11px; }
+  }
   .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
   .stale-notice { background: #fff6e5; color: #8a5a00; border: 1px solid #f0d999; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
   .empty { color: #666; padding: 14px 0; }
@@ -43,21 +48,45 @@
 <body>
 <main>
   <h1>🏠 오늘의 부동산 종합</h1>
-  <p class="updated">2026년 10월 4일 AM 6:54 기준 자동 업데이트 · 보도 매체 수 많은 순</p>
+  <p class="updated">2026년 10월 4일 AM 7:26 기준 자동 업데이트 · 보도 매체 수 많은 순</p>
 
   <h2>📰 부동산 뉴스</h2>
   <ul>
-    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE5wbjhtYlNWZmJjSjRlSDFmQWg3YjhHVUNVd2dXYm1tY3BJNGtDaGZWdmtvUFloWmoyZHdNY0gyRzBhRTkwdTRoX2xWLUdXSGx6Z21kYXRWa2dPQVhVR2RTNHRQMXlTSTFZOThJ?oc=5" target="_blank" rel="noopener">[은행이 뚫린다] 현대캐피탈 해킹 공격... 주택대출 모집인 146명 정보 유출 - 보안뉴스</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMib0FVX3lxTFByOVY3UXh1MTVvMEJPaUtHY0Y2Zy1sVUV1UDBDYzUxbXliZjA0bUh6b2M1dmU2eXNreE96ZXJ6M1ppbTlQTkFuTzhpMHR0SWp6Zlh5bksxMHE4RU5LSjZYMzFjQVBKQjJ0ZE1GaHozZw?oc=5" target="_blank" rel="noopener">우리은행, 개인사업자 부동산담보대출 비대면 확대…상가까지 담보 인정 - joseilbo.com</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiR0FVX3lxTE0yOEljdEtSbTFfZDFXcG1oVFVEZHVGTThhRjhzaXZZRzZrMk8tWno2OFNTcnJZamlob1EtaUE1em05Tl84eVJR?oc=5" target="_blank" rel="noopener">[보도자료] 경실련 2026년 국정감사 부동산 분야 7대 과제 발표 - 경제정의실천시민연합</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiW0FVX3lxTFA3Y09ZY3JCam91WmFyTlFEaFF5U0x5MG9DdWN1UnNKMGRrajRkbGtJWC1hOU4zYlR3R0hIUTUyYlVTUlRQQ0xKSWp5NzF6V1pYTUtVbkVGMVNLSHc?oc=5" target="_blank" rel="noopener">평택만 가도 분위기 확 달라진다…지방은 미분양 속출 - news.kbs.co.kr</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE5MV1JFNWdzYzh0MzNpaG5XcUFuS1NDaFduYlo3R19kV1lCUWxoUzJvNHdvLVFDOVRSMTdOZzZqQ2Jka1h0b0t2a2tkOUxLWUprdnFzdmhCRXdZaS1fdVN0ddIBYEFVX3lxTE5MV1JFNWdzYzh0MzNpaG5XcUFuS1NDaFduYlo3R19kV1lCUWxoUzJvNHdvLVFDOVRSMTdOZzZqQ2Jka1h0b0t2a2tkOUxLWUprdnFzdmhCRXdZaS1fdVN0dQ?oc=5" target="_blank" rel="noopener">LH 사장 &quot;15억 이하 주택 6억 주택대출 한도규제 강화해야&quot; - 연합뉴스</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE5YSlVvMkVXNkNJUHRaX1dBZWdTUzgwMDhIRWZ1QVhFQldHVDlOc2E4T21aR2R0YWg0RGhwV0N5ZFZrSnNFS0NuVW1KZG90TDQ?oc=5" target="_blank" rel="noopener">“강남은 현금 부자, 노도강은 대출 빚”… 서울 부동산 ‘극과 극’ - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiZEFVX3lxTFBEbXl4Q0g5NFlQejl1OTJTdm5QdDBSdDVrMmJhMlhLRmVuVlJDY1J6NnRLdzlLUlRveXUtS3htT1pRTVdVaWt2VjZKMlF0ZTJNa2Vwb0ZCVEhROHpfNi1UVS1rOTPSAWpBVV95cUxPUmIyY2lvemRiUEJvSHl1VnR1U3dWaENoVmtic0pHZmRDZ240Mk1rT3JBRUN5RTRzNTREX0E5dllQOWZNZUppNUlFZjVKd3hfZ1N3QnRGQ2tTQkdQbkt2WjJPeWtwWkpWMHJR?oc=5" target="_blank" rel="noopener">&quot;이사철에 입주 물량 쏟아진다&quot;…가구업계, 가을 인테리어 수요 경쟁 - 뉴스1</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE9faVh6X0VMSG5qQlJLWmRhS3NTeXpNLVROR3VJU2JzOTVwajlMc1VwdUN4RFBtc2ZuV3ZYRnlvRWdwYm5wZmdadlRWZGZGcW8?oc=5" target="_blank" rel="noopener">중기부, 정책자금 받아 부동산 사업 벌인 업체 40곳 적발 - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE1XbjFmUXRhbWZnSkpoYmw1a1FPWTBjNFVjaHZsM3dwbE9qQ3lpdlVjZ2FuRUNGSmdCU09rOUFXam1faEFTc0xwRHMyUnE3ZTg?oc=5" target="_blank" rel="noopener">대출 더 조이면 누가 영향받나…노도강 매입자금 30%대가 대출 - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiUkFVX3lxTE00MWNDVk9HVXdnRXJGNDNFalBQX2VDeU9rQ24tMzlwN1c4ekoyTDlKbXNPX3BYNnZFZlNvNUtya21iMEkyX3NBT0MwTHdmc0k0R3c?oc=5" target="_blank" rel="noopener">횡령·부당대출 등…NH농협은행 5년여간 426명 징계 - 매일경제 마켓</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE1wM1RVcWVsekRpTUpVQ1pVVGd3US00eEpnMHZLNWZNb1FqMjF6MGc1Q0VXVlowYVR6azJLSlFsUkJpcjVGUzRhcmxFUXM1OGotSGI4RGZVRHl1QQ?oc=5" target="_blank" rel="noopener">9월 全금융권 가계대출 올해 첫 감소…은행 대출여력 확대되나 - fnnews.com</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMijwFBVV95cUxNdWJnWlhGSjgzOWt6T2ItVzdISXNha1U1SVktdWRRZnBLZzkxaTJWSEMteURNVnhmc3h3WkQxcHh0eldaektXd2Ntd2lEb1FHU0Zqb0J3X3NKWVVhTWNMcFdBYlJKckNLUWFCWXRRMHNNRTR2VjNmMGhnR1ZZOWFxaEZQLWIteXRYTEhzTnR6cw?oc=5" target="_blank" rel="noopener">한국타이어, 부동산 개발회사 설립…보유자산 개발 나선다 - Naver Blog</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTFBhVDVOalhYdXZKSHU4ZUNFS19DMFV3LWFNRUdiWktqanU3bnk1S2xJTGFURUpSNlVvQ1Y2ZFRtc19kNjM3ZUtXc3daUGVsdXM?oc=5" target="_blank" rel="noopener">청주, 목포.. 인구 감소 시대에도 살아 남는 지방 부동산의 공통점 - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE8wOGYtbFR0Zko0Y2dqN1VWYnZ6VTZQTjc5RjZYQ2lVeWJudmRhWUU4czB3YjNINVAzQU54b1BVZXBGRnMxNUcyUHF5LXU0emM?oc=5" target="_blank" rel="noopener">서울 전셋값도 86주째 올랐다…5개구는 올해 10% 넘게 뛰어 - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE82X0ZEZmhEb0dJNWZhTDdRX2pJSG5XRWhnUThSdldwamNkT19tdTVmWjV3azlrRHNOb0V0amloWkhLTnctWGZHYkZ0SjZKakhPSThfa1p4RGx5VFdLSHZjetIBeEFVX3lxTE03bzEyTkpKTFpTckJqVHdneTlxV1RTVndaallVTElfTXVHV2FWMUlHeVZlVlBpTkdKaThYWnZFZFJyM0RoOEgxYTNOUnlKeTM2N2VCNHpZb0R6SUVuQzdVclUwazlWUjBPckNLRGZBYVRqNVdvOTVFdA?oc=5" target="_blank" rel="noopener">&quot;재건축하면 돈 번다&quot; 옛말…부동산 전문가 &quot;대지지분·입지부터 봐야&quot; - 뉴시스</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE0xUmpqenFiWGhnTUp5YW5qVlg4d1Q4V19fbUJjbW1yOXhmeFN3YURXb0RpSVVuaFRpUy1naVJYVUhCRi02ZDg4TXFuaWVDb2c?oc=5" target="_blank" rel="noopener">'대출·카드 발급 안 되네'....'내일 아침 놀라지 마세요' - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiT0FVX3lxTE50YXNEVU5sUjJSXzk3YVhFdnQzSmRNcUdVSjk1T1Y4ZmxNaC1lazJ1U3BhbTNvWWdFNlJLeTBQN2xhNHFnZ1RFU0VCSy1KWHM?oc=5" target="_blank" rel="noopener">[비즈토크] &quot;대출 규제 더 강화해야&quot;...이성훈 LH 사장의 '말말말' - v.daum.net</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTE9YMGc5LVVPaXJ3NXBnRXFsZHRDZmRSX2tkbzEzckkxa3BTQXR4Ulpqb1VGdGhVVTJVUlVuMWNUOTBSOVU5RVRSdmRPc2pQSlNrRUx4bjBvckc1QmpuYTZZZNIBeEFVX3lxTE5aYXZ5WExRa3M1MFZicUItWXNad3N3V1hFajNoQWdUZmlTS2Y2Sjk2SXdadkxFaTQ2NGJuUTZCVkN5eVdYbHppeWZTeFJHVndHZWJuZHhSTEJRUDRsdEVubGZvNzJlbnk4c3N0TmZveXRmaUFFMWdJNA?oc=5" target="_blank" rel="noopener">주담대 8% 되면…&quot;5억 빌렸다면 이자만 매달 330만원&quot; - 뉴시스</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTE1kU290Y24yRkZBcWZ6OE1OQmtTakdWWEpnZ3RFTWVDNkRpeFJJVE1qTkZXQUJlaTRjd0NBOHM0QXlzSV80SHVOMjdpcHFscGpMWHBYUEVxRXRGbHBhNDBJWUZIWlR5R2hXdXpPSFJFMmU?oc=5" target="_blank" rel="noopener">미국, Vistra에 42억 달러 대출로 원자력 발전 확대 지원 - Investing.com 한국어</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMiSkFVX3lxTE1NRXpldjZXd1hrLXdIUU9HVnhLamtkQmE4RHBOYmVGWE53MUxfaUZ6UVMtMVgtR0ZCSndGWkdTTW5LMk9ncGJScFhB?oc=5" target="_blank" rel="noopener">기준금리 3%·주담대 4.66%인데 서울 집값은 1.05% 상승…엇갈린 부동산 지표 - 뉴스N연합</a></li>
   </ul>
 
   <h2>🏙️ 검단신도시 뉴스</h2>
   <ul>
-    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMib0FVX3lxTE9MRDl1VUxrc2dhRlBZdEVDZUpRUHBBSlRacFVKandMZGRvaWFzaDlOV1NHTzIyVmhCYWpxQk5sU1RHUVZIcG82VzQ5SDRIU2RPNnlMdHFaR0pTcV9xUjBkYVNyclFNOHVQTHhTdmFNSQ?oc=5" target="_blank" rel="noopener">“이제는 검단구의 성과를 만들어야 할 때”…김진규 구청장, 구민 체감형 행정 주문 - stnsports.co.kr</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE5TUktRVVZGRTdZTWpDdmJ6ZG5iaE9xTzJDUUtZTVlCQnhjTExBZnVLUnZCYzBsbFUtUlVaS0ptMlVjV2p2NFNDUHREMlB2cEV3dkpjZXh1aTJ2eWo2b0lMTC0xNGV2cFNaUjZN?oc=5" target="_blank" rel="noopener">인천 검단구, ‘구청장 공약이행평가단’ 위촉 - 일간투데이</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE9sdHRCWUpIS1hnR2cxNnpobTNMNWl6a1dYS1N5QkdCdGt2aXc4aEdlQk9HcXdhUl9QbUdkZldYclhQR2hXVXYwdnFiWjFNYmo4LWNYb3F4dWtlTUdJLUFhSXpUazFzZUZYUGNZ?oc=5" target="_blank" rel="noopener">인천 검단구, CCTV 통합관제센터 서부경찰서장 감사장 받아 - 일간투데이</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE9XUDlZNUtxa2prZUJCZXNhVnE0aVNrMXdhWjZUd3A3SURHLVVoRHZPSnpLR0oyNUZUVy1rNVBQVWZGd0F3MVNKVmNMLTZLSU8wZWQ5TmN2cFZYckZ4YlFBU2xEcGp6UHpEM3lr?oc=5" target="_blank" rel="noopener">인천 검단구의회 김남원 의장, 검단어린이집 현장 방문 - 일간투데이</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE5FY1B4MXQtVWdBNE1kOWptT3FVczdHRURpRF81NTlsQ2JqZ3NmclBEdUVCRUZGdDlPRExIRGtXZS1WVmxELWM2X0J3N0tHazlnTkxOeXFhYnpKVTgzSzhQQWptODNibm40dGU0?oc=5" target="_blank" rel="noopener">인천 검단구의회 이현주 의원, 검단동 행복마을 가꿈사업 현장 소통 - 일간투데이</a></li>
+    <li class="article"><a href="https://news.google.com/rss/articles/CBMib0FVX3lxTE5oZkJTUTExUGUteGEzM3V5b1l3X1o4NjNKUVRMNlNMb2JzOVVscmlXV09paC0zbTlOUElzRWNYMVVLY2NabEZDSzl5YWRSdTl6dVhTUkgtc0F0djNfZnN5cGRGdERWZEhRaDRFZmZocw?oc=5" target="_blank" rel="noopener">모경종 의원 “수도권매립지 부담 감내한 검단, 이제 주민 목소리 반영해야” - 서프라이즈뉴스</a></li>
   </ul>
 
   <h2>🏘️ 검단신도시 아파트 실거래가</h2>
   <p class="section-note">최근 4개월 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬 · 번호는 순위</p>
-
+<p class="stale-notice">⚠️ 지금 국토부 실거래가 조회가 원활하지 않아, 2026년 10월 4일 AM 6:54 기준으로 마지막에 성공했던 데이터를 임시로 보여드리고 있어요. 다음 자동 갱신 때 정상 데이터로 바뀝니다.</p>
   <ul>
     <li class="txn">
       <div class="txn-top"><span class="txn-rank">1</span><span class="txn-apt">힐스테이트신검단센트럴</span><span class="txn-amount">8억 9,500만원</span></div>
