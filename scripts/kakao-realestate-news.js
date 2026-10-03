@@ -766,6 +766,11 @@ const PAGE_STYLE = `
   .txn-apt { flex: 1; min-width: 0; font-size: 15px; }
   .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; white-space: nowrap; }
   .txn-meta { font-size: 12px; color: #888; margin-top: 1px; }
+  @media (max-width: 440px) {
+    body { padding-left: 8px; padding-right: 8px; }
+    .txn { padding: 8px 10px; }
+    .txn-meta { font-size: 11px; }
+  }
   .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
   .stale-notice { background: #fff6e5; color: #8a5a00; border: 1px solid #f0d999; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
   .empty { color: #666; padding: 14px 0; }
