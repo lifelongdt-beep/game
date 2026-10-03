@@ -727,6 +727,14 @@ function renderArticlesHtml(articles) {
     : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
 }
 
+// 전용면적은 소수 둘째 자리까지만 보여준다(API는 84.8216처럼 넷째 자리까지 준다). 정수면 소수점 없이.
+function formatArea(areaStr) {
+  const n = Number(areaStr);
+  return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : areaStr;
+}
+
+// 거래 한 건은 두 줄: 윗줄은 순위·단지명·거래금액, 아랫줄은 법정동·전용면적·층·계약일·평당가.
+// scripts/card-news/build-card.js의 TXN_RE가 이 마크업을 그대로 파싱하므로 바꾸면 같이 고쳐야 한다.
 function renderTransactionsHtml(transactions) {
   return transactions.length
     ? transactions
@@ -734,9 +742,8 @@ function renderTransactionsHtml(transactions) {
           const perPyeong = pricePerPyeong(t.amount, t.area);
           const perPyeongText = perPyeong ? ` · 평당 ${perPyeong.toLocaleString('ko-KR')}만원` : '';
           return `    <li class="txn">
-      <div class="txn-top"><span class="txn-left"><span class="txn-rank">${i + 1}</span><span class="txn-dong">${escapeHtml(t.dong)}</span></span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
-      <div class="txn-apt">${escapeHtml(t.apt)}</div>
-      <div class="txn-meta">전용 ${escapeHtml(t.area)}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
+      <div class="txn-top"><span class="txn-rank">${i + 1}</span><span class="txn-apt">${escapeHtml(t.apt)}</span><span class="txn-amount">${escapeHtml(formatAmount(t.amount))}</span></div>
+      <div class="txn-meta"><span class="txn-dong">${escapeHtml(t.dong)}</span> · 전용 ${escapeHtml(formatArea(t.area))}㎡ · ${escapeHtml(t.floor)}층 · ${t.year}.${t.month}.${t.day} 계약${perPyeongText}</div>
     </li>`;
         })
         .join('\n')
@@ -753,14 +760,12 @@ const PAGE_STYLE = `
   ul { list-style: none; margin: 0; padding: 0; }
   .article, .txn { background: #fff; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .article a { display: block; padding: 14px 16px; color: #111; text-decoration: none; font-size: 15px; line-height: 1.4; }
-  .txn { padding: 12px 16px; }
-  .txn-top { display: flex; justify-content: space-between; align-items: baseline; }
-  .txn-left { display: flex; align-items: baseline; gap: 6px; }
-  .txn-rank { font-size: 12px; color: #888; font-weight: 700; }
-  .txn-dong { font-size: 12px; color: #888; }
-  .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; }
-  .txn-apt { font-size: 15px; margin-top: 2px; }
-  .txn-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .txn { padding: 8px 12px; margin-bottom: 6px; }
+  .txn-top { display: flex; align-items: baseline; gap: 8px; }
+  .txn-rank { font-size: 12px; color: #888; font-weight: 700; min-width: 22px; }
+  .txn-apt { flex: 1; min-width: 0; font-size: 15px; }
+  .txn-amount { font-size: 15px; font-weight: 700; color: #d3552b; white-space: nowrap; }
+  .txn-meta { font-size: 12px; color: #888; margin-top: 1px; }
   .section-note { color: #666; font-size: 12px; margin: -4px 0 10px; }
   .stale-notice { background: #fff6e5; color: #8a5a00; border: 1px solid #f0d999; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
   .empty { color: #666; padding: 14px 0; }
@@ -772,7 +777,7 @@ const PAGE_STYLE = `
     body { background: #17181a; color: #eee; }
     .article, .txn { background: #232427; box-shadow: none; }
     .article a { color: #eee; }
-    .updated, .txn-rank, .txn-dong, .txn-meta, .source, .section-note { color: #999; }
+    .updated, .txn-rank, .txn-meta, .source, .section-note { color: #999; }
     .stale-notice { background: rgba(240,185,0,.12); color: #e0b23c; border-color: rgba(240,185,0,.3); }
     .txn-amount { color: #ff8a5c; }
     .tag-nearby { color: #7ea6ff; background: rgba(126,166,255,.15); }

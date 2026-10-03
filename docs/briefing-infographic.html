@@ -417,7 +417,8 @@
     .slide-cover, .slide-overlay { padding: 0; }
     .cover-content { padding: 36px 18px 24px; }
     .cover-date { font-size: 15px; padding: 6px 13px; }
-    .full-list-section { padding: 0 12px; }
+    .full-list-section { padding: 0 8px; }
+    .full-list-section h2, .full-list-section .section-note { padding: 0 6px; }
     .hand-title { font-size: 32px; margin-bottom: 14px; }
     .cover-headline { font-size: 34px; }
     .cover-summary { font-size: 14px; margin-bottom: 18px; }
@@ -433,7 +434,10 @@
     .rank-item { grid-template-columns: 22px 1fr 84px; }
     .rank-val { font-size: 13px; }
     .rank-price { font-size: 11.5px; }
-    .slide-ranking { padding-top: 20px; padding-bottom: 16px; }
+    /* 순위 슬라이드는 좌우 여백을 줄여 줄이 넓게 쓰이게 한다(단지명이 두 줄로 꺾이지 않게). */
+    .slide-ranking { padding: 20px 10px 16px; }
+    .slide-ranking .bold-sub, .slide-ranking .bold-title, .slide-ranking .full-list-sub { padding: 0 6px; }
+    .ranking-box { padding: 6px 12px; }
   }
 
   /* ========================================================
@@ -458,14 +462,12 @@
   .full-list-section .article { background: #ffffff; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
   .full-list-section .article a { display: block; padding: 13px 16px; color: var(--text-dark); text-decoration: none; font-size: 14px; line-height: 1.45; }
   .full-list-section .tag-nearby { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--brand-blue); background: rgba(0,102,255,.1); border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
-  .full-list-section .txn { background: #ffffff; border-radius: 10px; margin-bottom: 8px; padding: 12px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-  .full-list-section .txn-top { display: flex; justify-content: space-between; align-items: baseline; }
-  .full-list-section .txn-left { display: flex; align-items: baseline; gap: 6px; }
-  .full-list-section .txn-rank { font-size: 11px; color: var(--text-light); font-weight: 700; }
-  .full-list-section .txn-dong { font-size: 11px; color: var(--text-light); }
-  .full-list-section .txn-amount { font-size: 14px; font-weight: 800; color: var(--brand-red); }
-  .full-list-section .txn-apt { font-size: 14px; margin-top: 2px; font-weight: 600; color: var(--text-dark); }
-  .full-list-section .txn-meta { font-size: 11.5px; color: var(--text-light); margin-top: 2px; }
+  .full-list-section .txn { background: #ffffff; border-radius: 10px; margin-bottom: 6px; padding: 8px 12px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .full-list-section .txn-top { display: flex; align-items: baseline; gap: 8px; }
+  .full-list-section .txn-rank { font-size: 11px; color: var(--text-light); font-weight: 700; min-width: 22px; }
+  .full-list-section .txn-apt { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-dark); }
+  .full-list-section .txn-amount { font-size: 14px; font-weight: 800; color: var(--brand-red); white-space: nowrap; }
+  .full-list-section .txn-meta { font-size: 11.5px; color: var(--text-light); margin-top: 1px; }
   .full-list-section .empty { color: var(--text-light); padding: 14px 0; text-align: center; font-size: 13px; }
 
   .openchat-invite {

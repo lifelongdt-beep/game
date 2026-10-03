@@ -167,8 +167,9 @@ function applyContent(html, c) {
 
 // ---------- 슬라이드 4 · 하단 목록 ----------
 
+// scripts/kakao-realestate-news.js의 renderTransactionsHtml이 만드는 두 줄 마크업(윗줄: 순위·단지명·거래금액, 아랫줄: 법정동·전용·층·계약일·평당가).
 const TXN_RE =
-  /<li class="txn">\s*<div class="txn-top"><span class="txn-left"><span class="txn-rank">(\d+)<\/span><span class="txn-dong">([^<]*)<\/span><\/span><span class="txn-amount">([^<]*)<\/span><\/div>\s*<div class="txn-apt">([^<]*)<\/div>\s*<div class="txn-meta">전용 ([\d.]+)㎡ · (-?\d+)층 · (\d{4}\.\d{2}\.\d{2}) 계약 · 평당 ([\d,]+)만원<\/div>\s*<\/li>/g;
+  /<li class="txn">\s*<div class="txn-top"><span class="txn-rank">(\d+)<\/span><span class="txn-apt">([^<]*)<\/span><span class="txn-amount">([^<]*)<\/span><\/div>\s*<div class="txn-meta"><span class="txn-dong">([^<]*)<\/span> · 전용 ([\d.]+)㎡ · (-?\d+)층 · (\d{4}\.\d{2}\.\d{2}) 계약 · 평당 ([\d,]+)만원<\/div>\s*<\/li>/g;
 
 function parseAmount(s) {
   const m = s.match(/(?:(\d+)억)?\s*(?:([\d,]+)만)?/);
@@ -177,10 +178,10 @@ function parseAmount(s) {
 
 function parseTxns(indexHtml) {
   const txns = [...indexHtml.matchAll(TXN_RE)].map((m) => ({
-    dong: m[2],
+    dong: m[4],
     amountText: m[3],
     amount: parseAmount(m[3]),
-    apt: m[4],
+    apt: m[2],
     area: Number(m[5]),
     floor: m[6],
     date: m[7],
