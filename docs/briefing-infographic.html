@@ -434,6 +434,10 @@
     .tag-pill { padding: 7px 14px; font-size: 12px; }
     .split-row, .split-row.reverse { grid-template-columns: 1fr; gap: 12px; }
     .split-img { width: 100%; }
+    /* 좌우가 번갈아 놓이는 짝수 이슈(.reverse)는 글이 먼저 오는 순서로 만들어져 있어, 세로로 쌓이는 휴대폰에서는
+       사진이 글 아래로 가고 다음 이슈 사진과 맞붙었다. 사진이 항상 글 위에 오게 하고 이슈 사이를 띄운다. */
+    .split-row.reverse .split-img { order: -1; }
+    .slide-split { gap: 22px; }
     .split-title { font-size: 16px; }
     .overlay-script { font-size: 38px; }
     .overlay-lead { font-size: 19px; }
