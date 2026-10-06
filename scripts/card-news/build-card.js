@@ -4,6 +4,7 @@
 //   --content : 슬라이드 1~3 내용(JSON, 형식은 docs/kakao-realestate-news-setup.md 참고). 없으면 슬라이드 1~3은 그대로 둔다.
 //   --index   : 뉴스·실거래가 원본(기본 docs/index.html). 슬라이드 4 랭킹과 하단 목록을 여기서 만든다.
 //   --txn-only: 하단 목록 중 실거래가 구간만 교체한다(뉴스 목록은 기존 유지).
+//   --og-only : 링크 미리보기용 og 태그만 카드의 표지 사진에 맞춰 다시 쓴다(다른 구간은 건드리지 않음).
 const fs = require('fs');
 const path = require('path');
 
@@ -311,7 +312,27 @@ function applyList(html, indexHtml) {
 
 // ---------- 실행 ----------
 
+// ---------- 링크 미리보기(og 태그) ----------
+
+// 카카오톡 등은 og:image가 없으면 페이지 안에서 알아서 사진을 골라, 표지(첫 그림)가 아닌 사진이 미리보기에 나왔다.
+// 그래서 페이지의 첫 그림인 표지 사진을 og:image로 명시한다. 표지 사진이 없으면(글만 있는 표지) og:image는 두지 않는다.
+function syncOpenGraph(html) {
+  const cover = html.match(/<img class="cover-photo" src="([^"]+)"/);
+  const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+  html = html.replace(/\n<meta property="og:(?:type|title|image)" content="[^"]*">/g, '');
+  const tags = ['<meta property="og:type" content="website">'];
+  if (title) tags.push(`<meta property="og:title" content="${title}">`);
+  if (cover) tags.push(`<meta property="og:image" content="${cover[1]}">`);
+  return html.replace(/(<title>[^<]*<\/title>)/, `$1\n${tags.join('\n')}`);
+}
+
 function main() {
+  if (argv.includes('--og-only')) {
+    const synced = syncOpenGraph(fs.readFileSync(CARD_PATH, 'utf8'));
+    fs.writeFileSync(CARD_PATH, synced);
+    console.log(JSON.stringify({ card: path.relative(process.cwd(), CARD_PATH), ogImage: (synced.match(/property="og:image" content="([^"]*)"/) || [])[1] || null }, null, 1));
+    return;
+  }
   let html = fs.readFileSync(CARD_PATH, 'utf8');
   const indexHtml = fs.readFileSync(INDEX_PATH, 'utf8');
   const warnings = [];
@@ -354,11 +375,13 @@ function main() {
   const listTxns = count(/<li class="txn">/g);
   if (listTxns !== txns.length) fail(`하단 실거래 목록(${listTxns})이 원본(${txns.length})과 다릅니다.`);
 
+  html = syncOpenGraph(html);
   fs.writeFileSync(CARD_PATH, html);
   console.log(
     JSON.stringify(
       {
         card: path.relative(process.cwd(), CARD_PATH),
+        ogImage: (html.match(/property="og:image" content="([^"]*)"/) || [])[1] || null,
         transactions: txns.length,
         uniqueComplexes: ranked.length,
         rankingFrom: embedded ? 'index.html의 전체 거래 기준 순위 데이터' : '하단 목록',
