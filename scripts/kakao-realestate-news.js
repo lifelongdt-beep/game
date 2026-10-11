@@ -12,7 +12,7 @@ const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 // 잡아내려고 시장 지표·정책·거래 관련 키워드를 폭넓게 OR로 추가했다.
 const NEWS_QUERY =
   process.env.NEWS_QUERY ||
-  '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급") when:1d';
+  '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급" OR 한국부동산원 OR "주간 아파트값" OR "아파트값 상승률" OR "매매 거래량" OR "KB부동산" OR "주택 공급대책" OR 가계대출 OR 전월세) -기업대출 -대부업 -온투업 -코인 -견본주택 -"부동산 AD" when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 // 설정돼 있으면 평소 뉴스/실거래가 수집·발송을 건너뛰고 이 문구만 카카오톡으로
 // 보낸다(점검 결과 등을 즉석에서 알릴 때 workflow_dispatch 입력으로 채운다).

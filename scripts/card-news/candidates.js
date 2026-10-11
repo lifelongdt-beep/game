@@ -98,6 +98,23 @@ function usedMark(title, cards) {
   return '';
 }
 
+// ---- 가치 등급 표시 ----
+// 사람들이 보고 싶은 건 "부동산 흐름을 판단하게 해 주는 뉴스"다. 제목 키워드로 대략 등급을 매겨 앞에 붙인다.
+//   [A] 가격·거래·수급 지표, 대출·세제·공급 정책, 기준금리  → 표지·이슈·오버레이 우선
+//   [B] 검단·인천·인접 개발·교통 직접 관련              → 시장·정책과 이어질 때만 이슈로, 아니면 하단 목록에만
+//   [제외] 지자체 행사·설명회, 분양 광고, 정치 공방, 기업·금융상품, 해외·코인 등
+//   [-]  판단 불가(제목을 읽고 직접 판단)
+const TIER_EXCLUDE = /설명회|견본주택|\[부동산 AD\]|AD\]|모집|개소|감사패|간담회|특강|소식지|조례|구의회|의장|지지율|블랙리스트|사찰|공방|충돌|국감 이슈|기업대출|동산담보|대부업|온투업|연체액|코인|달러|美|中 |퇴직금|시간외|폐기물|유통혁신|반박|비판|국회의원/;
+const TIER_A = /아파트값|집값|매매가|전세|전셋값|전월세|월세|거래량|매물|미분양|입주 ?물량|청약|분양가|공급|인허가|착공|재건축|재개발|한국부동산원|KB|시세|상승률|하락|주택|DSR|대출 ?규제|주담대|LTV|세제|종부세|양도세|취득세|보유세|토허제|토지거래허가|규제지역|대책|공시가격|기준금리|금리 (인상|인하)|동결|변동금리|국채금리|금통위/;
+const TIER_B = /검단|인천|서구|계양|청라|김포|루원|GTX|광역급행|인천2호선/;
+function tierMark(title) {
+  const head = title.lastIndexOf(' - ') > 0 ? title.slice(0, title.lastIndexOf(' - ')) : title;
+  if (TIER_EXCLUDE.test(head)) return '[제외] ';
+  if (TIER_A.test(head)) return '[A] ';
+  if (TIER_B.test(head)) return '[B] ';
+  return '[-] ';
+}
+
 function main() {
   if (argv.includes('--prev')) return prev();
   const html = fs.readFileSync(INDEX_PATH, 'utf8');
@@ -123,10 +140,12 @@ function main() {
   let n = 0;
   const print = (label, list) => {
     console.log(`[${label}]`);
-    list.forEach((a) => console.log(`${++n}. ${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
+    list.forEach((a) => console.log(`${++n}. ${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
   };
   print('부동산 뉴스', general);
   print('검단신도시 뉴스', geomdan);
+  const goods = all.map((a, i) => [i + 1, a]).filter(([, a]) => tierMark(a.title) === '[A] ' && !usedMark(a.title, cards));
+  console.log(`\n[A등급·미사용 번호] ${goods.map(([i]) => i).join(' ') || '(없음)'}  ← 표지·이슈·오버레이는 여기서 먼저 고른다`);
 }
 
 main();
