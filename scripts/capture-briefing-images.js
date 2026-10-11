@@ -112,7 +112,9 @@ async function main() {
     width: geometry.cover.width,
     height: geometry.bottom - geometry.cover.y,
   };
-  const filename = 'briefing-full.jpg';
+  // 파일명에 캡처 시각(KST)을 넣어, 같은 이름을 덮어써서 생기는 CDN·카카오 미리보기 캐시 문제를 막는다.
+  const stamp = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
+  const filename = `briefing-full-${stamp}.jpg`;
   await page.screenshot({ path: path.join(OUT_DIR, filename), clip, type: 'jpeg', quality: JPEG_QUALITY });
 
   await browser.close();

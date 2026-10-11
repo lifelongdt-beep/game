@@ -270,3 +270,10 @@ Secrets 등록 후 저장소 **Actions → Morning Real Estate News to KakaoTalk
 매일 한국시간 오전 7시·오후 7시, 위 절차 전체(재료 데이터 갱신 → 판단·선별 → 페이지 조립 → 검증 → 커밋·배포 → 카카오톡 발송)를 수행하도록 예약돼 있습니다(Claude Code Remote의 Routine 기능, GitHub Actions의 `schedule` 트리거가 아니라 별도 스케줄러라 정시에 더 안정적으로 실행됩니다). 시간을 바꾸거나 끄고 싶으면 Routine 목록에서 이 카드뉴스용 항목을 찾아 수정·삭제하면 됩니다.
 
 기존 자동 다이제스트(06:07/18:07 KST 예약)는 `docs/index.html`·`docs/geomdan.html` 갱신은 그대로 계속하지만, 카카오톡 발송은 이 카드뉴스와 겹치지 않도록 껐습니다(위 9번 문단 참고 — 정기 스케줄 실행은 항상 `skip_kakao_send`가 자동으로 켜짐). 그래서 카카오톡은 이 큐레이션 카드뉴스(오전 7시·오후 7시)만 하루 2번 옵니다. 자동 다이제스트 자체를 끄지 않는 이유는 오픈채팅방에 고정해 둔 `docs/index.html`/`docs/geomdan.html` 링크가 계속 최신 내용을 보여줘야 하기 때문입니다.
+
+## 발송 안정화 (2026-10-11)
+
+- 캡처 이미지 파일명에 KST 시각이 들어간다(`briefing-full-YYYYMMDD-HHMM.jpg`). 같은 이름을 덮어쓰지 않아 CDN·카카오 미리보기 캐시가 옛 이미지를 보여주는 일을 막는다.
+- 캡처 전에 배포된 카드(`briefing-infographic.html`)가, 캡처 후에는 이미지가 체크아웃한 파일과 SHA-256까지 같을 때만 다음 단계로 간다. 시간 안에 일치하지 않으면 발송 없이 실패한다(옛 내용·깨진 이미지 발송 방지).
+- Playwright 설치는 시도마다 4분 제한, 최대 3회 재시도(스텝 전체 15분 제한)라 멈춰도 알아서 끝난다.
+- `resolve_image_urls`는 이미지 주소를 자동 보정한다: `//`·`http`→`https`, `/news/thumbnail/..._v150`→`/news/photo/...`, `.cache/512/` 제거. 결과의 `note`에 보정/로고/작은 썸네일/작은 용량 경고가 나오고 `actions.js resolved`가 함께 출력한다. 로고·작은 썸네일 경고가 나오면 다른 후보로 교체한다.
