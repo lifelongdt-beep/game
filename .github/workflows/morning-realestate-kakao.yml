@@ -50,10 +50,18 @@ jobs:
 
       - name: Install Playwright Chromium (카드뉴스 이미지 추출/캡처용)
         if: ${{ github.event.inputs.resolve_image_urls != '' || github.event.inputs.send_briefing_images == 'true' }}
+        timeout-minutes: 15
         run: |
           npm init -y >/dev/null
-          npm install --no-save playwright@1.47.0
-          npx playwright install --with-deps chromium
+          # 설치가 가끔 멈추는 문제가 있어 시도마다 4분 제한을 두고 최대 3번 재시도한다.
+          for i in 1 2 3; do
+            if timeout 240 npm install --no-save playwright@1.47.0 && timeout 240 npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Playwright 설치 시도 $i 실패, 재시도합니다."
+          done
+          echo "::error::Playwright 설치에 3번 모두 실패했습니다."
+          exit 1
 
       - name: Resolve article images for card news
         if: ${{ github.event.inputs.resolve_image_urls != '' }}
@@ -124,6 +132,21 @@ jobs:
       # PR 머지로 이미 배포돼 있어야 하고(자세한 절차는
       # docs/kakao-realestate-news-setup.md 10번 문단 참고), 이 단계는 그
       # 배포된 페이지를 그대로 찍기만 한다.
+      # 캡처는 "배포된" 페이지를 찍으므로, Pages가 방금 머지한 카드(체크아웃한 파일)와
+      # 바이트까지 같은 내용을 내려줄 때까지 기다린다(옛 배포가 찍히는 사고 방지).
+      - name: Wait for latest card to be live on GitHub Pages
+        if: ${{ github.event.inputs.send_briefing_images == 'true' }}
+        run: |
+          want=$(sha256sum docs/briefing-infographic.html | cut -d' ' -f1)
+          for i in $(seq 1 30); do
+            got=$(curl -s "https://lifelongdt-beep.github.io/game/briefing-infographic.html?t=$(date +%s)" | sha256sum | cut -d' ' -f1)
+            echo "시도 $i: $([ "$got" = "$want" ] && echo 일치 || echo 불일치)"
+            if [ "$got" = "$want" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::배포된 카드가 최신 파일과 일치하지 않습니다. 옛 내용이 발송되는 것을 막기 위해 중단합니다."
+          exit 1
+
       - name: Capture briefing card images for KakaoTalk
         if: ${{ github.event.inputs.send_briefing_images == 'true' }}
         env:
@@ -152,17 +175,16 @@ jobs:
         if: ${{ github.event.inputs.send_briefing_images == 'true' }}
         run: |
           first_image=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/kakao-captures/manifest.json'))[0])")
+          want=$(sha256sum "docs/kakao-captures/${first_image}" | cut -d' ' -f1)
           url="https://lifelongdt-beep.github.io/game/kakao-captures/${first_image}"
-          for i in $(seq 1 20); do
-            status=$(curl -s -o /dev/null -w '%{http_code}' "${url}?t=$(date +%s)")
-            echo "시도 $i: $status"
-            if [ "$status" = "200" ]; then
-              sleep 5
-              exit 0
-            fi
-            sleep 6
+          for i in $(seq 1 30); do
+            got=$(curl -s "${url}?t=$(date +%s)" | sha256sum | cut -d' ' -f1)
+            echo "시도 $i: $([ "$got" = "$want" ] && echo 일치 || echo 불일치)"
+            if [ "$got" = "$want" ]; then sleep 5; exit 0; fi
+            sleep 8
           done
-          echo "::warning::캡처 이미지가 배포 확인 시간 안에 200으로 응답하지 않았습니다. 다음 단계에서 이미지가 안 보일 수 있습니다."
+          echo "::error::캡처 이미지가 배포 확인 시간 안에 내려받아지지 않았습니다. 이미지가 안 보이는 메시지가 나가는 것을 막기 위해 중단합니다."
+          exit 1
 
       - name: Send briefing card images to KakaoTalk
         if: ${{ github.event.inputs.send_briefing_images == 'true' }}

@@ -17,19 +17,63 @@ const SETTLE_WAIT_MS = 1500;
 // news.google.com도 언론사 도메인도 아닌 별도 GitHub Pages 도메인에서
 // <img src="...">로 이 URL을 그대로 쓰므로, "제3자 사이트에서 이 이미지를
 // 그대로 걸어도 실제로 뜨는지"를 Referer 없이 직접 확인해야 한다.
-async function checkHotlinkable(imageUrl) {
+const UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// 이미지가 정말 뜨는지(Referer 없이) 확인하고 바이트 수도 돌려준다. 실패하면 null.
+async function probeImage(imageUrl) {
   try {
-    const res = await fetch(imageUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
+    const res = await fetch(imageUrl, { headers: { 'User-Agent': UA } });
     const contentType = res.headers.get('content-type') || '';
-    return res.ok && contentType.startsWith('image/');
+    if (!res.ok || !contentType.startsWith('image/')) return null;
+    const bytes = (await res.arrayBuffer()).byteLength;
+    return { bytes };
   } catch (_) {
-    return false;
+    return null;
   }
+}
+
+async function checkHotlinkable(imageUrl) {
+  return (await probeImage(imageUrl)) !== null;
+}
+
+// 카드뉴스 루틴에서 매번 손으로 하던 보정을 자동화한다. 후보 주소를 차례로 시험해
+// 처음으로 실제 이미지가 뜨는 것을 고른다(원래 주소가 이미 정상이면 그대로 둔다).
+//  - 프로토콜 없는 주소(//cdn...) → https
+//  - http 주소 → https
+//  - 작은 썸네일(/news/thumbnail/..._v150.jpg, .cache/512/) → 원본 크기 주소
+// 사이트 로고·아이콘으로 보이는 주소(/logo/, snslogo, favicon)는 note에 표시만 한다.
+function candidateImages(image) {
+  let base = image.startsWith('//') ? `https:${image}` : image;
+  const list = [];
+  const httpsVariant = (u) => u.replace(/^http:\/\//, 'https://');
+  const originals = [];
+  if (/\/news\/thumbnail\/.*_v\d+\.\w+$/.test(base)) {
+    originals.push(base.replace('/news/thumbnail/', '/news/photo/').replace(/_v\d+(\.\w+)$/, '$1'));
+  }
+  if (/\/\.cache\/\d+\//.test(base)) originals.push(base.replace(/\/\.cache\/\d+\//, '/'));
+  // 원본 후보를 먼저(작은 썸네일이면 원본이 더 좋다), 그다음 https 변형, 마지막으로 원래 주소.
+  for (const u of [...originals, base]) {
+    list.push(httpsVariant(u));
+    if (u !== httpsVariant(u)) list.push(u);
+  }
+  return [...new Set(list)];
+}
+
+async function improveImage(image) {
+  const tried = candidateImages(image);
+  for (const cand of tried) {
+    const probe = await probeImage(cand);
+    if (probe) {
+      const notes = [];
+      if (cand !== image) notes.push('주소 보정');
+      if (/\/logo\/|snslogo|favicon|\/common\//i.test(cand)) notes.push('로고로 보임(교체 권장)');
+      if (/_v\d+\.\w+$|\/\.cache\/\d+\//.test(cand)) notes.push('작은 썸네일(교체 권장)');
+      if (probe.bytes < 15000) notes.push(`용량 작음(${probe.bytes}B)`);
+      return { image: cand, hotlinkOk: true, bytes: probe.bytes, note: notes.join(', ') || undefined };
+    }
+  }
+  return { image, hotlinkOk: false };
 }
 
 async function resolveOne(browser, url) {
@@ -54,8 +98,9 @@ async function resolveOne(browser, url) {
         document.querySelector('meta[name="twitter:image"]');
       return meta ? meta.getAttribute('content') : null;
     });
-    const hotlinkOk = image ? await checkHotlinkable(image) : null;
-    return { url, finalUrl: page.url(), image, hotlinkOk };
+    if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null };
+    const improved = await improveImage(image);
+    return { url, finalUrl: page.url(), ...improved, ...(improved.image !== image ? { rawImage: image } : {}) };
   } catch (err) {
     return { url, error: err.message };
   } finally {

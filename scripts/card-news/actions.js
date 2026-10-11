@@ -107,7 +107,7 @@ function resolved(runId) {
     try {
       host = new URL(r.finalUrl).hostname;
     } catch (_) {}
-    console.log(JSON.stringify({ n: r.n, hotlinkOk: r.hotlinkOk, host, image: r.image, error: r.error }));
+    console.log(JSON.stringify({ n: r.n, hotlinkOk: r.hotlinkOk, host, image: r.image, bytes: r.bytes, note: r.note, error: r.error }));
   });
 }
 
