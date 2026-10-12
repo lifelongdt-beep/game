@@ -375,7 +375,14 @@ function applyList(html, indexHtml) {
   const cE = html.indexOf('<p class="source">');
   if (iS < 0 || iE < 0) fail('index.html에서 목록 구간을 찾지 못함');
   if (cS < 0 || cE < 0) fail('카드 HTML에서 목록 구간을 찾지 못함');
-  return html.slice(0, cS) + indexHtml.slice(iS, iE) + html.slice(cE);
+  // 하단 실거래 목록은 화면에서 숨긴다(단지별 거래는 슬라이드 4 랭킹을 눌러 본다). 개수 검증용으로 DOM에는 남긴다.
+  let list = indexHtml.slice(iS, iE);
+  const tS = list.indexOf('<h2>🏘️');
+  if (tS >= 0) list = list.slice(0, tS) + '<div class="txn-list-hidden" hidden>\n' + list.slice(tS) + '\n</div>\n';
+  let out = html.slice(0, cS) + list + html.slice(cE);
+  out = out.replace('실제 기사 원문 링크와 검단신도시 실거래가 전체 내역은 아래에서 확인하세요.', '실제 기사 원문 링크는 아래에서 확인하세요. 단지별 실거래 내역은 슬라이드 4의 단지를 누르면 펼쳐집니다.');
+  out = out.replace('전체 뉴스·실거래가 목록</p>', '전체 뉴스 목록</p>');
+  return out;
 }
 
 // ---------- 실행 ----------
