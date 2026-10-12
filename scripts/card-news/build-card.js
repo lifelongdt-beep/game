@@ -321,7 +321,6 @@ function renderRankDetail(t, txns) {
     .map((x) => {
       const tags = [];
       if (/직거래/.test(x.dealType)) tags.push('직거래');
-      else if (x.dealType) tags.push(x.dealType);
       if (x.buyer && /법인/.test(x.buyer)) tags.push('법인 매수');
       if (x.seller && /법인|공공/.test(x.seller)) tags.push(`${x.seller} 매도`);
       const sub = [];
@@ -330,7 +329,7 @@ function renderRankDetail(t, txns) {
       if (x.agentSgg) sub.push(`중개사 ${x.agentSgg}`);
       if (x.regDate) sub.push(`등기 ${shortDate(x.regDate)}`);
       const tagHtml = tags.map((g) => `<i>${g}</i>`).join('');
-      return `<li><span class="rd-date">${shortDate(x.date)}</span><span class="rd-info">전용 ${x.area}㎡ · ${x.floor}층${tagHtml}${sub.length ? `<small>${sub.join(' · ')}</small>` : ''}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`;
+      return `<li><span class="rd-date">${shortDate(x.date)}</span><span class="rd-info">전용 ${Math.round(x.area * 100) / 100}㎡ · ${x.floor}층${tagHtml}${sub.length ? `<small>${sub.join(' · ')}</small>` : ''}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`;
     })
     .join('');
   return `
