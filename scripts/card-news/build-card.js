@@ -3,6 +3,7 @@
 //   node scripts/card-news/build-card.js [--content content.json] [--index docs/index.html] [--txn-only] [--card <html>]
 //   --content : 슬라이드 1~3 내용(JSON, 형식은 docs/kakao-realestate-news-setup.md 참고). 없으면 슬라이드 1~3은 그대로 둔다.
 //   --index   : 뉴스·실거래가 원본(기본 docs/index.html). 슬라이드 4 랭킹과 하단 목록을 여기서 만든다.
+//   --links   : 기사 링크 파일(candidates.js 출력 links.txt). https 줄을 순서대로 표지 → 이슈 4건 → 오버레이에 연결한다(content의 url 필드가 우선).
 //   --txn-only: 하단 목록 중 실거래가 구간만 교체한다(뉴스 목록은 기존 유지).
 //   --og-only : 링크 미리보기용 og 태그만 카드의 표지 사진에 맞춰 다시 쓴다(다른 구간은 건드리지 않음).
 const fs = require('fs');
@@ -17,6 +18,7 @@ const CARD_PATH = path.resolve(getOpt('--card') || 'docs/briefing-infographic.ht
 const INDEX_PATH = path.resolve(getOpt('--index') || 'docs/index.html');
 const CONTENT_PATH = getOpt('--content');
 const TXN_ONLY = argv.includes('--txn-only');
+const LINKS_PATH = getOpt('--links');
 
 function fail(msg) {
   console.error('오류: ' + msg);
@@ -26,6 +28,9 @@ function fail(msg) {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escAttr = (s) => esc(s).replace(/"/g, '&quot;');
 const withBreaks = (s) => esc(s).replace(/\n/g, '<br>');
+const stripBoiler = (s) => String(s).replace(/\s*자세한 내용은 기사 원문에서 확인해 보세요\.?/g, '').trim();
+// 사진·글 어디를 눌러도 기사로 이동(display:contents라 레이아웃은 그대로).
+const link = (url, inner) => (url ? `<a class="card-link" href="${escAttr(url)}" target="_blank" rel="noopener">${inner}</a>` : inner);
 const num = (n) => n.toLocaleString('en-US');
 
 // ---------- 슬라이드 1~3 ----------
@@ -71,34 +76,34 @@ function renderCover(c) {
   const hl = Number.isInteger(c.highlight) ? c.highlight : 1;
   const lines = c.headline.map((l, i) => (i === hl ? `<span class="highlight">${esc(l)}</span>` : esc(l)));
   return `<section class="card-slide slide-cover">
-    ${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
+    ${link(c.url, `${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
       <div class="cover-category">${renderCategory(c.category || kstCategory())}</div>
       <h1 class="cover-headline">
         ${lines.join('<br>\n        ')}
       </h1>
-      <p class="cover-summary">${esc(c.summary)}</p>
+      <p class="cover-summary">${esc(stripBoiler(c.summary))}</p>
       <div class="cover-divider"></div>
       <div class="tag-pills">
         <span class="tag-pill tag-yellow">${esc(c.tags[0])}</span>
         <span class="tag-pill tag-white">${esc(c.tags[1])}</span>
         <span class="tag-pill tag-black">${esc(c.tags[2])}</span>
       </div>
-    </div>
+    </div>`)}
   </section>`;
 }
 
 const ROW_LABELS = ['첫 번째 행: 사진 왼쪽, 글 오른쪽', '두 번째 행: 글 왼쪽, 사진 오른쪽', '세 번째 행: 사진 왼쪽, 글 오른쪽', '네 번째 행: 글 왼쪽, 사진 오른쪽'];
 
 function renderSplit(c) {
-  const img = (it) => !it.img ? '' : `<div class="split-img">
+  const img = (it) => !it.img ? '' : link(it.url, `<div class="split-img">
         <img src="${escAttr(it.img)}" alt="${escAttr(it.alt)}">
         <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
-      </div>`;
-  const txt = (it, n) => `<div class="split-content">
+      </div>`);
+  const txt = (it, n) => link(it.url, `<div class="split-content">
         <span class="check-tag">✔ Issue 0${n}</span>
         <p class="split-title">${withBreaks(it.title)}</p>
-        <p class="split-text">${esc(it.text)}</p>
-      </div>`;
+        <p class="split-text">${esc(stripBoiler(it.text))}</p>
+      </div>`);
   const rows = c.issues
     .map((it, i) => {
       const reverse = i % 2 === 1;
@@ -125,13 +130,13 @@ ${rows}
 
 function renderOverlay(o) {
   return `<section class="card-slide slide-overlay">
-    ${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n    ` : ''}<div class="overlay-content">
+    ${link(o.url, `${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n    ` : ''}<div class="overlay-content">
       <div class="overlay-script">${esc(o.script)}</div>
       <h2 class="overlay-lead">
         ${o.lead.map(esc).join('<br>\n        ')}
       </h2>
       <p class="overlay-body">
-        ${esc(o.body)}
+        ${esc(stripBoiler(o.body))}
       </p>
 
       <div class="overlay-quote">
@@ -142,7 +147,7 @@ function renderOverlay(o) {
       <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
         <span>출처: ${esc(o.source)}</span>
       </div>
-    </div>
+    </div>`)}
   </section>`;
 }
 
@@ -154,8 +159,18 @@ function replaceSection(html, openTag, body) {
   return html.slice(0, s) + body + html.slice(e + '</section>'.length);
 }
 
+function applyLinks(c) {
+  if (!LINKS_PATH) return;
+  const urls = fs.readFileSync(path.resolve(LINKS_PATH), 'utf8').split('\n').map((l) => l.trim()).filter((l) => /^https:\/\//.test(l));
+  const slots = [c.cover, ...c.issues, c.overlay];
+  if (urls.length < slots.length) fail(`--links에 https 링크가 ${slots.length}개 필요(현재 ${urls.length}개)`);
+  slots.forEach((slot, i) => { if (!slot.url) slot.url = urls[i]; });
+}
+
 function applyContent(html, c) {
   checkContent(c);
+  applyLinks(c);
+  if (!html.includes('.card-link {')) html = html.replace('</style>', '  .card-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }\n</style>');
   html = replaceSection(html, '<section class="card-slide slide-cover">', renderCover(c.cover));
   html = replaceSection(html, '<section class="card-slide slide-split">', renderSplit(c));
   html = replaceSection(html, '<section class="card-slide slide-overlay">', renderOverlay(c.overlay));
