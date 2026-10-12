@@ -109,7 +109,7 @@ async function resolveOne(browser, url) {
         .filter((t) => t.length >= 30 && !/기자|저작권|무단 ?전재|구독|Copyright/i.test(t.slice(-40)) || t.length >= 80);
       let body = paras.join(' ');
       if (body.length < 200) body = (root.innerText || '').replace(/\s+/g, ' ').trim();
-      return { image: meta ? meta.getAttribute('content') : null, text: { desc, body: body.slice(0, 1800) } };
+      return { image: meta ? meta.getAttribute('content') : null, text: { desc, body: body.slice(0, 1400) } };
     });
     if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null, ...text };
     const improved = await improveImage(image);
@@ -137,8 +137,14 @@ async function resolveOne(browser, url) {
     for (const url of urls) {
       n += 1;
       // 로그를 짧게 읽도록 긴 입력 링크는 빼고 입력 순서(n, 1부터)로 구분한다.
-      const { url: _input, ...result } = await resolveOne(browser, url);
+      const { url: _input, desc, body, ...result } = await resolveOne(browser, url);
       const line = JSON.stringify({ n, ...result });
+      // 기사 본문 발췌는 주석 길이 제한(약 2천 자) 때문에 RESOLVED와 따로 남긴다.
+      if (body || desc) {
+        const t = JSON.stringify({ n, text: (body && body.length >= (desc || '').length ? body : desc || '').slice(0, 1300) });
+        console.log('ARTICLE_TEXT ' + t);
+        console.log('::notice title=ARTICLE_TEXT::' + t.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
+      }
       console.log('RESOLVED ' + line);
       // 로그를 못 읽는 세션도 gh api(check-runs/<job_id>/annotations)로 결과만 읽게 주석(notice)으로도 남긴다.
       console.log('::notice title=RESOLVED::' + line.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
