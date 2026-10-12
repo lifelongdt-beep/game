@@ -109,10 +109,7 @@ function resolved(runId) {
     } catch (_) {}
     console.log(JSON.stringify({ n: r.n, hotlinkOk: r.hotlinkOk, host, image: r.image, bytes: r.bytes, note: r.note, error: r.error }));
     // 기사 내용(--text): 카드 본문을 기사에 있는 사실만으로 쓰기 위한 원문 발췌.
-    if (process.argv.includes('--text')) {
-      const t = ann.filter((a) => a.title === 'ARTICLE_TEXT').map((a) => JSON.parse(a.message)).find((x) => x.n === r.n);
-      console.log('  TEXT ' + (t ? t.text : '(본문 없음)'));
-    }
+    if (process.argv.includes('--text')) console.log('  TEXT ' + (r.text || '(본문 없음)'));
   });
 }
 
