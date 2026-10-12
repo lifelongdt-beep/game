@@ -92,15 +92,31 @@ async function resolveOne(browser, url) {
       // 상태에서 이미지 추출을 시도한다 — 실패하면 null로 귀결된다.
     }
     await page.waitForTimeout(SETTLE_WAIT_MS);
-    const image = await page.evaluate(() => {
+    const { image, text } = await page.evaluate(() => {
       const meta =
         document.querySelector('meta[property="og:image"]') ||
         document.querySelector('meta[name="twitter:image"]');
-      return meta ? meta.getAttribute('content') : null;
+      const content = (sel) => {
+        const m = document.querySelector(sel);
+        return m ? (m.getAttribute('content') || '').trim() : '';
+      };
+      // 카드뉴스 본문 문장을 정확하게 쓰기 위한 기사 내용: 대표 설명(og:description)과 본문 앞부분.
+      const desc = content('meta[property="og:description"]') || content('meta[name="description"]');
+      const root =
+        document.querySelector('[itemprop="articleBody"], #articleBody, #article-view-content-div, .article_body, .article-body, #newsct_article, #dic_area, #cont_newstext, .detail-body, .view_cont, .news_view, #news_body_area, .article_txt, #articleBodyContents, .article-view-content, .news_text, #news_text, .art_cont, .article-content') || null;
+      // 본문 영역을 못 찾으면(메뉴·관련기사 목록이 섞이므로) 대표 설명만 쓴다.
+      if (!root) return { image: meta ? meta.getAttribute('content') : null, text: { desc, body: desc } };
+      const paras = [...root.querySelectorAll('p')]
+        .map((p) => p.innerText.replace(/\s+/g, ' ').trim())
+        .filter((t) => t.length >= 30 && !/기자|저작권|무단 ?전재|구독|Copyright/i.test(t.slice(-40)) || t.length >= 80);
+      let body = paras.join(' ');
+      if (body.length < 200) body = (root.innerText || '').replace(/\s+/g, ' ').trim();
+      if (body.length < desc.length) body = desc;
+      return { image: meta ? meta.getAttribute('content') : null, text: { desc, body: body.slice(0, 1400) } };
     });
-    if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null };
+    if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null, ...text };
     const improved = await improveImage(image);
-    return { url, finalUrl: page.url(), ...improved, ...(improved.image !== image ? { rawImage: image } : {}) };
+    return { url, finalUrl: page.url(), ...improved, ...(improved.image !== image ? { rawImage: image } : {}), ...text };
   } catch (err) {
     return { url, error: err.message };
   } finally {
@@ -124,8 +140,14 @@ async function resolveOne(browser, url) {
     for (const url of urls) {
       n += 1;
       // 로그를 짧게 읽도록 긴 입력 링크는 빼고 입력 순서(n, 1부터)로 구분한다.
-      const { url: _input, ...result } = await resolveOne(browser, url);
+      const { url: _input, desc, body, ...result } = await resolveOne(browser, url);
       const line = JSON.stringify({ n, ...result });
+      // 기사 본문 발췌는 주석 길이 제한(약 2천 자) 때문에 RESOLVED와 따로 남긴다.
+      if (body || desc) {
+        const t = JSON.stringify({ n, text: (body && body.length >= (desc || '').length ? body : desc || '').slice(0, 1300) });
+        console.log('ARTICLE_TEXT ' + t);
+        console.log('::notice title=ARTICLE_TEXT::' + t.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
+      }
       console.log('RESOLVED ' + line);
       // 로그를 못 읽는 세션도 gh api(check-runs/<job_id>/annotations)로 결과만 읽게 주석(notice)으로도 남긴다.
       console.log('::notice title=RESOLVED::' + line.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));

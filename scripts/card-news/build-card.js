@@ -261,16 +261,79 @@ const CROWN_SVG =
 // 이름은 이미 HTML 이스케이프된 문자열이라 &amp; 같은 엔티티는 한 글자로 본다.
 const withCrown = (name) => name.replace(/(&#?\w+;|[\s\S])$/, (m) => `<span class="rank-name-end">${m}${CROWN_SVG}</span>`);
 
-// 단지를 누르면 하단 목록(txns)의 그 단지 거래 전부를 날짜순으로 펼쳐 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
+// index.html에 실린 전체 거래 JSON(geomdan-transactions-detail). 건수 상한이 없고 건축년도·거래유형 같은 추가 항목이 있다.
+// 없으면(옛 index.html) 하단 목록에서 파싱한 거래를 쓴다.
+function parseEmbeddedDetails(indexHtml) {
+  const m = indexHtml.match(/<script type="application\/json" id="geomdan-transactions-detail">([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  try {
+    const list = JSON.parse(m[1]);
+    if (!Array.isArray(list) || !list.length) return null;
+    const e = (v) => (v === undefined || v === null ? '' : escAttr(v));
+    return list.map((r) => ({
+      apt: e(r.apt), dong: e(r.dong), area: Number(r.area), amount: Number(r.amount), floor: e(r.floor), date: String(r.date), ppy: Number(r.ppy) || 0,
+      amountText: formatWon(Number(r.amount)),
+      buildYear: e(r.buildYear), dealType: e(r.dealType), agentSgg: e(r.agentSgg), regDate: e(r.regDate), seller: e(r.seller), buyer: e(r.buyer), aptDong: e(r.aptDong), jibun: e(r.jibun), leasehold: e(r.leasehold),
+    }));
+  } catch (_) {
+    return null;
+  }
+}
+
+function formatWon(manwon) {
+  const eok = Math.floor(manwon / 10000);
+  const rest = manwon % 10000;
+  if (eok <= 0) return `${num(manwon)}만원`;
+  return rest > 0 ? `${eok}억 ${num(rest)}만원` : `${eok}억원`;
+}
+
+const shortDate = (d) => String(d).replace(/^\d{2}/, '').replace(/\.$/, '');
+const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+
+// 단지를 누르면 그 단지의 거래 전부를 날짜순으로 펼치고, 맨 위에 요약 통계를 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
 function renderRankDetail(t, txns) {
   const key = aptKey(t.apt);
   const rows = txns.filter((x) => aptKey(x.apt) === key).sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount);
   if (!rows.length) return '';
+  const withPpy = rows.filter((x) => x.ppy > 0);
+  const stats = [];
+  stats.push(`<b>${rows.length}건</b> 거래`);
+  if (withPpy.length) stats.push(`평균 평당 <b>${num(Math.round(mean(withPpy.map((x) => x.ppy))))}만</b>`);
+  const amounts = rows.map((x) => x.amount);
+  stats.push(Math.min(...amounts) === Math.max(...amounts) ? `거래가 <b>${formatWon(amounts[0])}</b>` : `거래가 <b>${formatWon(Math.min(...amounts))} ~ ${formatWon(Math.max(...amounts))}</b>`);
+  const hi = rows.reduce((m, x) => (x.amount > m.amount ? x : m), rows[0]);
+  stats.push(`최고가 ${shortDate(hi.date)} ${hi.floor}층`);
+  stats.push(`최근 계약 ${shortDate(rows[0].date)}`);
+  const byArea = new Map();
+  rows.forEach((x) => byArea.set(Math.round(x.area), (byArea.get(Math.round(x.area)) || 0) + 1));
+  if (byArea.size > 1) stats.push('전용 ' + [...byArea.entries()].sort((a, b) => b[1] - a[1]).map(([a, n]) => `${a}㎡ ${n}건`).join(' · '));
+  else stats.push(`전용 ${[...byArea.keys()][0]}㎡`);
+  const by = [...new Set(rows.map((x) => x.buildYear).filter(Boolean))];
+  if (by.length === 1) stats.push(`${by[0]}년 준공`);
+  const direct = rows.filter((x) => /직거래/.test(x.dealType)).length;
+  if (rows.some((x) => x.dealType)) stats.push(`직거래 ${direct}건 · 중개 ${rows.filter((x) => x.dealType && !/직거래/.test(x.dealType)).length}건`);
+  const corp = rows.filter((x) => /법인/.test(x.buyer)).length;
+  if (rows.some((x) => x.buyer) && corp) stats.push(`법인 매수 ${corp}건`);
+  const reg = rows.filter((x) => x.regDate).length;
+  if (rows.some((x) => 'regDate' in x && x.regDate)) stats.push(`등기 완료 ${reg}/${rows.length}건`);
+
   const lis = rows
-    .map((x) => `<li><span class="rd-date">${x.date.slice(2)}</span><span class="rd-info">전용 ${x.area}㎡ · ${x.floor}층 · ${x.dong}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`)
+    .map((x) => {
+      const tags = [];
+      if (/직거래/.test(x.dealType)) tags.push('직거래');
+      if (x.buyer && /법인/.test(x.buyer)) tags.push('법인 매수');
+      if (x.seller && /법인|공공/.test(x.seller)) tags.push(`${x.seller} 매도`);
+      const sub = [];
+      if (x.aptDong) sub.push(/동$/.test(x.aptDong) ? x.aptDong : `${x.aptDong}동`);
+      if (x.jibun) sub.push(`${x.dong} ${x.jibun}`);
+      if (x.agentSgg) sub.push(`중개사 ${x.agentSgg}`);
+      if (x.regDate) sub.push(`등기 ${shortDate(x.regDate)}`);
+      const tagHtml = tags.map((g) => `<i>${g}</i>`).join('');
+      return `<li><span class="rd-date">${shortDate(x.date)}</span><span class="rd-info">전용 ${Math.round(x.area * 100) / 100}㎡ · ${x.floor}층${tagHtml}${sub.length ? `<small>${sub.join(' · ')}</small>` : ''}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`;
+    })
     .join('');
   return `
-        <div class="rank-detail" hidden><p class="rd-head">최근 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
+        <div class="rank-detail" hidden><p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
 }
 
 function renderRankItems(ranked, txns) {
@@ -336,6 +399,10 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-detail li:first-child { border-top: none; }
   .rank-detail .rd-date { color: var(--text-light); font-variant-numeric: tabular-nums; }
   .rank-detail .rd-amt { font-weight: 800; text-align: right; }
+  .rank-detail .rd-stats { margin: 0 0 8px; font-size: 12px; line-height: 1.7; color: var(--text-dark); }
+  .rank-detail .rd-stats span { color: var(--text-light); }
+  .rank-detail .rd-info small { display: block; font-size: 10.5px; color: var(--text-light); line-height: 1.4; }
+  .rank-detail .rd-info i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--brand-blue); background: rgba(0,102,255,.1); border-radius: 4px; padding: 0 5px; margin-left: 5px; }
   .rank-detail .rd-amt em { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--text-light); }
 `;
 const RANK_DETAIL_JS = `<script id="rank-detail-js">
@@ -362,7 +429,8 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
-  if (!html.includes('.rank-detail ul')) html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
+  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n/, '');
+  html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
 }
@@ -441,7 +509,7 @@ function main() {
       `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
     );
   }
-  const result = applyRanking(html, ranked, customPill, period, txns);
+  const result = applyRanking(html, ranked, customPill, period, parseEmbeddedDetails(indexHtml) || txns);
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;

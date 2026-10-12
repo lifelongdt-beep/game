@@ -416,6 +416,18 @@ async function fetchTransactionsForMonth(dealYmd, deadline) {
     year: xmlTag(item, 'dealYear'),
     month: xmlTag(item, 'dealMonth').padStart(2, '0'),
     day: xmlTag(item, 'dealDay').padStart(2, '0'),
+    // 아래는 실거래가 상세 API가 추가로 내려주는 항목(응답에 없으면 빈 문자열). 카드뉴스 단지 상세에서만 쓴다.
+    buildYear: xmlTag(item, 'buildYear'),
+    dealType: xmlTag(item, 'dealingGbn'), // 중개거래 / 직거래
+    agentSgg: xmlTag(item, 'estateAgentSggNm'), // 중개사 소재지
+    cancelType: xmlTag(item, 'cdealType'), // 'O'면 계약 해제
+    cancelDay: xmlTag(item, 'cdealDay'),
+    regDate: xmlTag(item, 'rgstDate'), // 등기일자(등기까지 끝난 거래만 값이 있다)
+    seller: xmlTag(item, 'slerGbn'), // 개인 / 법인 / 공공기관 …
+    buyer: xmlTag(item, 'buyerGbn'),
+    aptDong: xmlTag(item, 'aptDong'),
+    jibun: xmlTag(item, 'jibun'),
+    leasehold: xmlTag(item, 'landLeaseholdGbn'),
   }));
 }
 
@@ -457,7 +469,10 @@ async function fetchGeomdanTransactionsAttempt(deadline) {
     }
   }
 
-  const newTownOnly = all.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
+  // 계약이 해제된 거래(cdealType 'O')는 실제 거래가 아니라 순위·목록에서 뺀다.
+  const valid = all.filter((t) => t.cancelType !== 'O');
+  if (valid.length !== all.length) console.log(`실거래가: 해제된 계약 ${all.length - valid.length}건 제외`);
+  const newTownOnly = valid.filter((t) => GEOMDAN_DONGS.some((dong) => t.dong.includes(dong)));
   const newTownApts = newTownOnly.filter((t) => !isExcludedApt(t));
 
   // 오늘(KST) 포함 최근 GEOMDAN_TRANSACTION_MONTHS개월 안에 계약된 건만 남긴다.
@@ -485,7 +500,22 @@ async function fetchGeomdanTransactionsAttempt(deadline) {
     if (!best.has(key)) best.set(key, t); // 정렬돼 있어 처음 나온 거래가 그 단지의 최고 평당가
   }
   const ranking = [...best.values()].map(toRankingEntry).filter((r) => r.ppy);
-  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), ranking, hadError };
+  return { transactions: recentOnly.slice(0, GEOMDAN_TRANSACTION_COUNT), ranking, details: recentOnly.map(toDetailEntry), hadError };
+}
+
+// 카드뉴스 단지 상세(펼침)용 전체 거래. 목록 상한(GEOMDAN_TRANSACTION_COUNT)과 무관하게 조회 기간의 모든 거래를 싣는다.
+function toDetailEntry(t) {
+  const e = {
+    apt: t.apt,
+    dong: t.dong,
+    area: Number(t.area),
+    amount: Number(t.amount),
+    floor: t.floor,
+    date: `${t.year}.${t.month}.${t.day}`,
+    ppy: pricePerPyeong(t.amount, t.area),
+  };
+  for (const k of ['buildYear', 'dealType', 'agentSgg', 'regDate', 'seller', 'buyer', 'aptDong', 'jibun', 'leasehold']) if (t[k]) e[k] = t[k];
+  return e;
 }
 
 // 순위용 한 건. 카드뉴스 쪽(build-card.js)이 목록 HTML에서 파싱하는 항목과 같은 모양으로 둔다.
@@ -506,11 +536,11 @@ function toRankingEntry(t) {
 // 정상적인 경우와 달리 hadError가 true) 그 사실을 예외로 알려서 호출부가
 // "실패"로 인식하게 한다.
 async function fetchGeomdanTransactionsLive(deadline) {
-  const { transactions, ranking, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
+  const { transactions, ranking, details, hadError } = await fetchGeomdanTransactionsAttempt(deadline);
   if (hadError && transactions.length === 0) {
     throw new Error('실거래가 API가 예산 시간 안에 응답하지 않았거나 달별 조회에서 모두 실패했습니다.');
   }
-  return { transactions, ranking };
+  return { transactions, ranking, details };
 }
 
 // 이전에 성공한 실거래가 조회 결과를 docs/에 함께 커밋해두고, 이번 조회가
@@ -527,6 +557,7 @@ function loadCachedTransactions() {
           transactions: data.transactions.filter((t) => !isExcludedApt(t)),
           // 순위(단지별 최고 거래)는 이 항목이 생기기 전에 저장된 캐시에는 없다.
           ranking: Array.isArray(data.ranking) ? data.ranking.filter((r) => !isExcludedApt(r)) : null,
+          details: Array.isArray(data.details) ? data.details.filter((r) => !isExcludedApt(r)) : null,
         }
       : null;
   } catch {
@@ -534,12 +565,13 @@ function loadCachedTransactions() {
   }
 }
 
-function saveCachedTransactions(transactions, ranking) {
+function saveCachedTransactions(transactions, ranking, details) {
   if (transactions.length === 0) return;
   const data = {
     generatedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'long', timeStyle: 'short' }),
     transactions,
     ranking,
+    details,
   };
   fs.mkdirSync('docs', { recursive: true });
   fs.writeFileSync(TRANSACTIONS_CACHE_PATH, JSON.stringify(data, null, 2));
@@ -562,9 +594,9 @@ async function fetchGeomdanTransactions() {
   const budgetSec = Math.round(GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS / 1000);
   const deadline = Date.now() + GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS;
   try {
-    const { transactions, ranking } = await fetchGeomdanTransactionsLive(deadline);
-    saveCachedTransactions(transactions, ranking);
-    return { transactions, ranking, stale: false };
+    const { transactions, ranking, details } = await fetchGeomdanTransactionsLive(deadline);
+    saveCachedTransactions(transactions, ranking, details);
+    return { transactions, ranking, details, stale: false };
   } catch (err) {
     console.error(`실거래가 조회 실패: ${err.message}`);
   }
@@ -579,7 +611,7 @@ async function fetchGeomdanTransactions() {
   console.error(
     `실거래가 조회가 ${budgetSec}초 예산 안에 끝나지 않아, ${cached.generatedAt} 기준으로 마지막에 성공했던 데이터를 임시로 보여줍니다.`
   );
-  return { transactions: cached.transactions, ranking: cached.ranking, stale: true, cachedAt: cached.generatedAt };
+  return { transactions: cached.transactions, ranking: cached.ranking, details: cached.details, stale: true, cachedAt: cached.generatedAt };
 }
 
 function formatAmount(manwonStr) {
@@ -797,7 +829,7 @@ const PAGE_STYLE = `
 // 과 docs/geomdan.html 둘 다 같은 내용을 담아서, 예전에 geomdan.html을 따로
 // 북마크/공지해둔 경우에도 링크가 깨지지 않게 한다.
 function renderCombinedPage(articles, geomdanArticles, transactionsResult, generatedAt) {
-  const { transactions, ranking, stale, cachedAt } = transactionsResult;
+  const { transactions, ranking, details, stale, cachedAt } = transactionsResult;
   const staleNotice = stale
     ? `<p class="stale-notice">⚠️ 지금 국토부 실거래가 조회가 원활하지 않아, ${escapeHtml(cachedAt)} 기준으로 마지막에 성공했던 데이터를 임시로 보여드리고 있어요. 다음 자동 갱신 때 정상 데이터로 바뀝니다.</p>`
     : '';
@@ -806,6 +838,10 @@ function renderCombinedPage(articles, geomdanArticles, transactionsResult, gener
   const rankingData =
     ranking && ranking.length
       ? `\n  <script type="application/json" id="geomdan-complex-ranking">${JSON.stringify(ranking).replace(/</g, '\\u003c')}</script>`
+      : '';
+  const detailData =
+    details && details.length
+      ? `\n  <script type="application/json" id="geomdan-transactions-detail">${JSON.stringify(details).replace(/</g, '\\u003c')}</script>`
       : '';
   const title = '🏠 오늘의 부동산 종합';
   return `<!doctype html>
@@ -837,7 +873,7 @@ ${staleNotice}
   <ul>
 ${renderTransactionsHtml(transactions)}
   </ul>
-  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>${rankingData}
+  <p class="source">자료: 국토교통부 아파트 매매 실거래가 상세 자료(공공데이터포털) · 평당가는 공급면적 추정치 기준(전용면적만 제공돼 전용률로 역산)</p>${rankingData}${detailData}
 
   <p class="openchat-invite">${escapeHtml(OPENCHAT_INVITE_TEXT)}<br><a href="${escapeHtml(OPENCHAT_URL)}" target="_blank" rel="noopener">${escapeHtml(OPENCHAT_URL)}</a></p>
 </main>
