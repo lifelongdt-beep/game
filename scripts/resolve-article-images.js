@@ -92,15 +92,28 @@ async function resolveOne(browser, url) {
       // 상태에서 이미지 추출을 시도한다 — 실패하면 null로 귀결된다.
     }
     await page.waitForTimeout(SETTLE_WAIT_MS);
-    const image = await page.evaluate(() => {
+    const { image, text } = await page.evaluate(() => {
       const meta =
         document.querySelector('meta[property="og:image"]') ||
         document.querySelector('meta[name="twitter:image"]');
-      return meta ? meta.getAttribute('content') : null;
+      const content = (sel) => {
+        const m = document.querySelector(sel);
+        return m ? (m.getAttribute('content') || '').trim() : '';
+      };
+      // 카드뉴스 본문 문장을 정확하게 쓰기 위한 기사 내용: 대표 설명(og:description)과 본문 앞부분.
+      const desc = content('meta[property="og:description"]') || content('meta[name="description"]');
+      const root =
+        document.querySelector('[itemprop="articleBody"], #articleBody, #article-view-content-div, .article_body, .article-body, #newsct_article, #dic_area, article') || document.body;
+      const paras = [...root.querySelectorAll('p')]
+        .map((p) => p.innerText.replace(/\s+/g, ' ').trim())
+        .filter((t) => t.length >= 30 && !/기자|저작권|무단 ?전재|구독|Copyright/i.test(t.slice(-40)) || t.length >= 80);
+      let body = paras.join(' ');
+      if (body.length < 200) body = (root.innerText || '').replace(/\s+/g, ' ').trim();
+      return { image: meta ? meta.getAttribute('content') : null, text: { desc, body: body.slice(0, 1800) } };
     });
-    if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null };
+    if (!image) return { url, finalUrl: page.url(), image: null, hotlinkOk: null, ...text };
     const improved = await improveImage(image);
-    return { url, finalUrl: page.url(), ...improved, ...(improved.image !== image ? { rawImage: image } : {}) };
+    return { url, finalUrl: page.url(), ...improved, ...(improved.image !== image ? { rawImage: image } : {}), ...text };
   } catch (err) {
     return { url, error: err.message };
   } finally {
