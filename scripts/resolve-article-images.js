@@ -141,12 +141,13 @@ async function resolveOne(browser, url) {
       n += 1;
       // 로그를 짧게 읽도록 긴 입력 링크는 빼고 입력 순서(n, 1부터)로 구분한다.
       const { url: _input, desc, body, ...result } = await resolveOne(browser, url);
-      const line = JSON.stringify({ n, ...result });
-      // 기사 본문 발췌는 주석 길이 제한(약 2천 자) 때문에 RESOLVED와 따로 남긴다.
-      if (body || desc) {
-        const t = JSON.stringify({ n, text: (body && body.length >= (desc || '').length ? body : desc || '').slice(0, 1300) });
-        console.log('ARTICLE_TEXT ' + t);
-        console.log('::notice title=ARTICLE_TEXT::' + t.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
+      // 기사 본문 발췌(text)도 같은 주석에 넣는다. 주석은 한 스텝에 10개·메시지 약 2천 자 제한이라
+      // 기사당 주석 1개로 맞추고, 전체 줄이 1900자를 넘지 않게 본문을 줄인다.
+      let text = (body && body.length >= (desc || '').length ? body : desc || '').slice(0, 1300);
+      let line = JSON.stringify({ n, ...result, text });
+      while (line.length > 1900 && text.length > 100) {
+        text = text.slice(0, Math.max(100, text.length - 100));
+        line = JSON.stringify({ n, ...result, text });
       }
       console.log('RESOLVED ' + line);
       // 로그를 못 읽는 세션도 gh api(check-runs/<job_id>/annotations)로 결과만 읽게 주석(notice)으로도 남긴다.
