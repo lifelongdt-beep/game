@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 10월 13일 AM 3:51",
+  "generatedAt": "2026년 10월 13일 AM 7:18",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -4811,27 +4811,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "우미린파크뷰2단지",
-      "dong": "당하동",
-      "area": "59.938",
-      "amount": "46750",
-      "floor": "2",
-      "year": "2026",
-      "month": "06",
-      "day": "21",
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "",
-      "jibun": "1311-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": "84.1588",
@@ -7013,6 +6992,27 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
+      "leasehold": "N"
+    },
+    {
+      "apt": "호반써밋프라임뷰",
+      "dong": "당하동",
+      "area": "84.2832",
+      "amount": "58000",
+      "floor": "4",
+      "year": "2026",
+      "month": "10",
+      "day": "10",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "1314-2",
       "leasehold": "N"
     },
     {
@@ -14665,22 +14665,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "우미린파크뷰2단지",
-      "dong": "당하동",
-      "area": 59.938,
-      "amount": 46750,
-      "floor": "2",
-      "date": "2026.06.21",
-      "ppy": 1934,
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "seller": "개인",
-      "buyer": "개인",
-      "jibun": "1311-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": 84.1588,
@@ -16431,6 +16415,22 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "1272-2",
+      "leasehold": "N"
+    },
+    {
+      "apt": "호반써밋프라임뷰",
+      "dong": "당하동",
+      "area": 84.2832,
+      "amount": 58000,
+      "floor": "4",
+      "date": "2026.10.10",
+      "ppy": 1747,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "1314-2",
       "leasehold": "N"
     },
     {
