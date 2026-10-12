@@ -232,7 +232,7 @@ Secrets 등록 후 저장소 **Actions → Morning Real Estate News to KakaoTalk
 
 1. **후보 보기** — `node scripts/card-news/candidates.js [--index <index.html>]`: 일반 뉴스·검단 뉴스 후보를 번호와 제목으로만 출력합니다. `--prev`는 직전 카드의 표지·이슈·오버레이 제목을 보여줍니다(같은 기사·후속 기사 반복 방지용). 고른 번호를 인자로 주면(`candidates.js 3 7 21`) 그 기사들의 구글 뉴스 링크가 줄바꿈으로 출력되며, 그대로 `resolve_image_urls` 입력에 넣으면 됩니다(입력 순서가 결과의 `n`).
 2. **이미지 확인** — `node scripts/card-news/actions.js resolved <run_id>`가 잡 주석에 남은 추출 결과를 한 줄씩 출력합니다(`{"n":입력 순서,"hotlinkOk":...,"host":...,"image":...}`, 로그를 읽을 필요 없음). `hotlinkOk`가 `true`여야 하고, `image`는 `https`여야 하며(`http`면 같은 주소를 `https`로 바꿔 다시 확인), 150px 안팎의 작은 썸네일(`..._v150.jpg` 등)이나 사이트 공용 로고는 다른 후보로 바꿉니다.
-3. **조립** — 슬라이드 1~3 내용을 아래 형식의 JSON(임시 파일, 커밋하지 않음)으로 쓰고 `node scripts/card-news/build-card.js --content <content.json> --index <index.html>`을 실행하면 슬라이드 1~3, 슬라이드 4 랭킹(고유 단지 전체, 각 줄에 실거래가와 평당가, 요약 문구는 데이터로 자동 생성), 하단 전체 목록(뉴스+검단 뉴스+실거래가)이 한 번에 갱신됩니다. `--txn-only`는 하단 목록 중 실거래가 구간만 교체합니다.
+3. **조립** — 슬라이드 1~3 내용을 아래 형식의 JSON(임시 파일, 커밋하지 않음)으로 쓰고 `node scripts/card-news/build-card.js --content <content.json> --index <index.html> --links <links.txt>`을 실행하면 슬라이드 1~3, 슬라이드 4 랭킹(고유 단지 전체, 각 줄에 실거래가와 평당가, 요약 문구는 데이터로 자동 생성), 하단 전체 목록(뉴스+검단 뉴스+실거래가)이 한 번에 갱신됩니다. `--txn-only`는 하단 목록 중 실거래가 구간만 교체합니다.
 4. **검증** — `node scripts/card-news/validate-card.js [--out <폴더>]`: 데스크톱(700px)·모바일(390px)에서 가로 스크롤·겹침·잘림·카드 이음매·랭킹 우측 열 충돌을 검사하고(문제가 있으면 종료 코드 1) 스크린샷을 저장합니다. 이미지는 샌드박스에서 안 뜨므로 회색 자리표시자로 대체합니다.
 
 5. **워크플로·PR 보조** — `gh api`만 쓰는 `node scripts/card-news/actions.js`로 MCP 도구 없이도 처리합니다(Bash timeout은 600000 권장).
