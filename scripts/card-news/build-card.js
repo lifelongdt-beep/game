@@ -261,10 +261,22 @@ const CROWN_SVG =
 // 이름은 이미 HTML 이스케이프된 문자열이라 &amp; 같은 엔티티는 한 글자로 본다.
 const withCrown = (name) => name.replace(/(&#?\w+;|[\s\S])$/, (m) => `<span class="rank-name-end">${m}${CROWN_SVG}</span>`);
 
-function renderRankItems(ranked) {
+// 단지를 누르면 하단 목록(txns)의 그 단지 거래 전부를 날짜순으로 펼쳐 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
+function renderRankDetail(t, txns) {
+  const key = aptKey(t.apt);
+  const rows = txns.filter((x) => aptKey(x.apt) === key).sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount);
+  if (!rows.length) return '';
+  const lis = rows
+    .map((x) => `<li><span class="rd-date">${x.date.slice(2)}</span><span class="rd-info">전용 ${x.area}㎡ · ${x.floor}층 · ${x.dong}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`)
+    .join('');
+  return `
+        <div class="rank-detail" hidden><p class="rd-head">최근 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
+}
+
+function renderRankItems(ranked, txns) {
   return ranked
     .map(
-      (t, i) => `      <div class="rank-item">
+      (t, i) => `      <div class="rank-item" tabindex="0" role="button" aria-expanded="false">
         <span class="rank-idx">${String(i + 1).padStart(2, '0')}</span>
         <div class="rank-meta">
           <b>${i === 0 ? withCrown(t.apt) : t.apt}</b>
@@ -273,7 +285,7 @@ function renderRankItems(ranked) {
         <div class="rank-figures">
           <span class="rank-val">평당 ${num(t.ppy)}만</span>
           <span class="rank-price">${t.amountText}</span>
-        </div>
+        </div>${renderRankDetail(t, txns)}
       </div>`
     )
     .join('\n\n');
@@ -302,16 +314,57 @@ function pillText(ranked, period) {
   return `💡 ${first} ${second}`;
 }
 
-function applyRanking(html, ranked, customPill, period) {
+function applyRanking(html, ranked, customPill, period, txns) {
   const boxS = html.indexOf('<div class="ranking-box">');
   const pillS = html.indexOf('<div class="rank-summary-pill">');
   if (boxS < 0 || pillS < 0) fail('카드 HTML에서 ranking-box / rank-summary-pill을 찾지 못함');
-  html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked)}\n    </div>\n\n    ` + html.slice(pillS);
+  html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked, txns)}\n    </div>\n\n    ` + html.slice(pillS);
   const pill = customPill || pillText(ranked, period);
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
   html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
+  html = addRankDetailUi(html);
   return { html, pill };
+}
+
+const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
+  .rank-item > .rank-detail { grid-column: 1 / -1; margin: 6px 0 4px; padding: 8px 10px; background: #f6f7fb; border-radius: 10px; }
+  .rank-detail[hidden] { display: none; }
+  .rank-detail .rd-head { margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--text-light); }
+  .rank-detail ul { list-style: none; margin: 0; padding: 0; }
+  .rank-detail li { display: grid; grid-template-columns: 52px 1fr auto; gap: 6px; align-items: baseline; padding: 4px 0; border-top: 1px solid #e6e8ef; font-size: 12px; }
+  .rank-detail li:first-child { border-top: none; }
+  .rank-detail .rd-date { color: var(--text-light); font-variant-numeric: tabular-nums; }
+  .rank-detail .rd-amt { font-weight: 800; text-align: right; }
+  .rank-detail .rd-amt em { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--text-light); }
+`;
+const RANK_DETAIL_JS = `<script id="rank-detail-js">
+(function () {
+  function toggle(item) {
+    var d = item.querySelector('.rank-detail');
+    if (!d) return;
+    var open = d.hidden;
+    d.hidden = !open;
+    item.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  document.addEventListener('click', function (e) {
+    var item = e.target.closest && e.target.closest('.rank-item');
+    if (item) toggle(item);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var item = e.target.classList && e.target.classList.contains('rank-item') ? e.target : null;
+    if (item) { e.preventDefault(); toggle(item); }
+  });
+})();
+</script>
+`;
+
+// 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
+function addRankDetailUi(html) {
+  if (!html.includes('.rank-detail ul')) html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
+  html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
+  return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
 }
 
 function applyList(html, indexHtml) {
@@ -381,7 +434,7 @@ function main() {
       `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
     );
   }
-  const result = applyRanking(html, ranked, customPill, period);
+  const result = applyRanking(html, ranked, customPill, period, txns);
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;
