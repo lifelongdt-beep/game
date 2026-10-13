@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 10월 14일 AM 1:51",
+  "generatedAt": "2026년 10월 14일 AM 7:17",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -3425,6 +3425,27 @@
       "leasehold": "N"
     },
     {
+      "apt": "e편한세상검단어반센트로",
+      "dong": "당하동",
+      "area": "59.99",
+      "amount": "50000",
+      "floor": "2",
+      "year": "2026",
+      "month": "10",
+      "day": "12",
+      "buildYear": "2024",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "223-1",
+      "leasehold": "N"
+    },
+    {
       "apt": "파라곤센트럴파크",
       "dong": "당하동",
       "area": "84.986",
@@ -4748,6 +4769,27 @@
       "leasehold": "N"
     },
     {
+      "apt": "우미린파크뷰2단지",
+      "dong": "당하동",
+      "area": "59.938",
+      "amount": "46750",
+      "floor": "2",
+      "year": "2026",
+      "month": "06",
+      "day": "21",
+      "buildYear": "2023",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "1311-1",
+      "leasehold": "N"
+    },
+    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": "84.1588",
@@ -4975,6 +5017,27 @@
       "seller": "개인",
       "buyer": "개인",
       "aptDong": "1108동",
+      "jibun": "1254-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
+      "dong": "당하동",
+      "area": "84.1588",
+      "amount": "63000",
+      "floor": "15",
+      "year": "2026",
+      "month": "10",
+      "day": "10",
+      "buildYear": "2021",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
       "jibun": "1254-1",
       "leasehold": "N"
     },
@@ -5626,6 +5689,27 @@
       "seller": "개인",
       "buyer": "개인",
       "aptDong": "2902동",
+      "jibun": "987-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단신도시디에트르더힐",
+      "dong": "원당동",
+      "area": "75.8458",
+      "amount": "55000",
+      "floor": "7",
+      "year": "2026",
+      "month": "10",
+      "day": "12",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구, 인천 서해구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
       "jibun": "987-1",
       "leasehold": "N"
     },
@@ -8507,6 +8591,27 @@
       "leasehold": "N"
     },
     {
+      "apt": "검단신도시대성베르힐라프리미어",
+      "dong": "당하동",
+      "area": "84.9376",
+      "amount": "53000",
+      "floor": "6",
+      "year": "2026",
+      "month": "10",
+      "day": "10",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "1316-2",
+      "leasehold": "N"
+    },
+    {
       "apt": "예미지더시그너스",
       "dong": "당하동",
       "area": "84.9559",
@@ -8651,6 +8756,27 @@
       "buyer": "개인",
       "aptDong": "2505동",
       "jibun": "1026-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단대광로제비앙센트럴포레",
+      "dong": "불로동",
+      "area": "61.8494",
+      "amount": "38400",
+      "floor": "7",
+      "year": "2026",
+      "month": "09",
+      "day": "30",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "803-1",
       "leasehold": "N"
     },
     {
@@ -8801,6 +8927,27 @@
       "leasehold": "N"
     },
     {
+      "apt": "호반써밋프라임뷰",
+      "dong": "당하동",
+      "area": "93.6432",
+      "amount": "57500",
+      "floor": "2",
+      "year": "2026",
+      "month": "10",
+      "day": "10",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "1314-2",
+      "leasehold": "N"
+    },
+    {
       "apt": "검단신도시모아미래도엘리트파크",
       "dong": "당하동",
       "area": "84.6561",
@@ -8945,6 +9092,27 @@
       "buyer": "개인",
       "aptDong": "2808동",
       "jibun": "987",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단대광로제비앙센트럴포레",
+      "dong": "불로동",
+      "area": "61.9135",
+      "amount": "38000",
+      "floor": "8",
+      "year": "2026",
+      "month": "10",
+      "day": "12",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "803-1",
       "leasehold": "N"
     },
     {
@@ -10773,12 +10941,12 @@
     {
       "apt": "검단대광로제비앙센트럴포레",
       "dong": "불로동",
-      "amountText": "3억 8,250만원",
-      "amount": 38250,
+      "amountText": "3억 8,400만원",
+      "amount": 38400,
       "area": 61.8494,
-      "floor": "8",
-      "date": "2026.09.10",
-      "ppy": 1564
+      "floor": "7",
+      "date": "2026.09.30",
+      "ppy": 1570
     }
   ],
   "details": [
@@ -13492,6 +13660,22 @@
       "leasehold": "N"
     },
     {
+      "apt": "e편한세상검단어반센트로",
+      "dong": "당하동",
+      "area": 59.99,
+      "amount": 50000,
+      "floor": "2",
+      "date": "2026.10.12",
+      "ppy": 2066,
+      "buildYear": "2024",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "223-1",
+      "leasehold": "N"
+    },
+    {
       "apt": "파라곤센트럴파크",
       "dong": "당하동",
       "area": 84.986,
@@ -14550,6 +14734,22 @@
       "leasehold": "N"
     },
     {
+      "apt": "우미린파크뷰2단지",
+      "dong": "당하동",
+      "area": 59.938,
+      "amount": 46750,
+      "floor": "2",
+      "date": "2026.06.21",
+      "ppy": 1934,
+      "buildYear": "2023",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "1311-1",
+      "leasehold": "N"
+    },
+    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": 84.1588,
@@ -14730,6 +14930,22 @@
       "seller": "개인",
       "buyer": "개인",
       "aptDong": "1108동",
+      "jibun": "1254-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
+      "dong": "당하동",
+      "area": 84.1588,
+      "amount": 63000,
+      "floor": "15",
+      "date": "2026.10.10",
+      "ppy": 1901,
+      "buildYear": "2021",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
       "jibun": "1254-1",
       "leasehold": "N"
     },
@@ -15256,6 +15472,22 @@
       "seller": "개인",
       "buyer": "개인",
       "aptDong": "2902동",
+      "jibun": "987-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단신도시디에트르더힐",
+      "dong": "원당동",
+      "area": 75.8458,
+      "amount": 55000,
+      "floor": "7",
+      "date": "2026.10.12",
+      "ppy": 1834,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구, 인천 서해구",
+      "seller": "개인",
+      "buyer": "개인",
       "jibun": "987-1",
       "leasehold": "N"
     },
@@ -17548,6 +17780,22 @@
       "leasehold": "N"
     },
     {
+      "apt": "검단신도시대성베르힐라프리미어",
+      "dong": "당하동",
+      "area": 84.9376,
+      "amount": 53000,
+      "floor": "6",
+      "date": "2026.10.10",
+      "ppy": 1584,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "1316-2",
+      "leasehold": "N"
+    },
+    {
       "apt": "예미지더시그너스",
       "dong": "당하동",
       "area": 84.9559,
@@ -17663,6 +17911,22 @@
       "buyer": "개인",
       "aptDong": "2505동",
       "jibun": "1026-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단대광로제비앙센트럴포레",
+      "dong": "불로동",
+      "area": 61.8494,
+      "amount": 38400,
+      "floor": "7",
+      "date": "2026.09.30",
+      "ppy": 1570,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "803-1",
       "leasehold": "N"
     },
     {
@@ -17784,6 +18048,22 @@
       "leasehold": "N"
     },
     {
+      "apt": "호반써밋프라임뷰",
+      "dong": "당하동",
+      "area": 93.6432,
+      "amount": 57500,
+      "floor": "2",
+      "date": "2026.10.10",
+      "ppy": 1559,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "1314-2",
+      "leasehold": "N"
+    },
+    {
       "apt": "검단신도시모아미래도엘리트파크",
       "dong": "당하동",
       "area": 84.6561,
@@ -17897,6 +18177,22 @@
       "buyer": "개인",
       "aptDong": "2808동",
       "jibun": "987",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단대광로제비앙센트럴포레",
+      "dong": "불로동",
+      "area": 61.9135,
+      "amount": 38000,
+      "floor": "8",
+      "date": "2026.10.12",
+      "ppy": 1552,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "803-1",
       "leasehold": "N"
     },
     {
