@@ -384,12 +384,16 @@ function applyRanking(html, ranked, customPill, period, txns) {
   html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked, txns)}\n    </div>\n\n    ` + html.slice(pillS);
   const pill = customPill || pillText(ranked, period);
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
+  // 랭킹 아래에 단지별 사이클 페이지(scripts/geomdan-cycle.js가 만드는 docs/geomdan-cycle.html) 링크를 단다.
+  html = html.replace(/\n\n    <a class="cycle-link"[^>]*>[\s\S]*?<\/a>/, '');
+  html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_LINK);
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
   html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   html = addRankDetailUi(html);
   return { html, pill };
 }
 
+const CYCLE_LINK = `\n\n    <a class="cycle-link" href="geomdan-cycle.html">📈 단지별 사이클 보기<small>이동평균선 · 고점 대비 · 거래량 4분면 · 상대강도</small></a>`;
 const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-item > .rank-detail { grid-column: 1 / -1; margin: 6px 0 4px; padding: 8px 10px; background: #f6f7fb; border-radius: 10px; }
   .rank-detail[hidden] { display: none; }
@@ -404,6 +408,8 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-detail .rd-info small { display: block; font-size: 10.5px; color: var(--text-light); line-height: 1.4; }
   .rank-detail .rd-info i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--brand-blue); background: rgba(0,102,255,.1); border-radius: 4px; padding: 0 5px; margin-left: 5px; }
   .rank-detail .rd-amt em { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--text-light); }
+  .cycle-link { display: grid; gap: 2px; margin-top: 10px; padding: 12px 16px; border-radius: 8px; background: var(--text-black); color: #fff; font-size: 14px; font-weight: 800; text-decoration: none; }
+  .cycle-link small { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.7); }
 `;
 const RANK_DETAIL_JS = `<script id="rank-detail-js">
 (function () {
@@ -429,7 +435,7 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
-  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n/, '');
+  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.cycle-link[^\n]*\n)*/, '');
   html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');

@@ -194,6 +194,19 @@ jobs:
           IMAGE_BASE_URL: 'https://lifelongdt-beep.github.io/game/kakao-captures'
         run: node scripts/send-kakao-images.js
 
+      # 단지별 사이클 페이지(docs/geomdan-cycle.html): 평당가 이동평균선·고점 대비 낙폭·
+      # 거래량·가격 4분면·상대강도. 몇 년 치 실거래 기록을 docs/geomdan-history-cache.json에
+      # 쌓아 두고 매번 최근 몇 달만 새로 받는다(첫 실행만 3년 치를 받느라 몇 분 걸린다).
+      # 실패해도 뉴스 페이지 갱신은 계속한다. 카드뉴스 이미지 추출 실행에서는 건너뛴다.
+      - name: Build apartment cycle page
+        if: ${{ github.event.inputs.resolve_image_urls == '' }}
+        continue-on-error: true
+        timeout-minutes: 12
+        env:
+          DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+          GEOMDAN_DONGS: '당하동,마전동,불로동,원당동'
+        run: node scripts/geomdan-cycle.js
+
       # 카카오는 오픈채팅방에 대신 글을 올려주는 API가 없어서, 재부키 방에는
       # docs/index.html(고정 링크)을 방장봇 공지로 걸어두고 내용만 매일 갱신하는
       # 방식으로 대신합니다. docs/geomdan.html도 같은 내용(부동산 뉴스+검단신도시
@@ -204,6 +217,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/index.html docs/geomdan.html docs/geomdan-transactions-cache.json
+          git add docs/geomdan-cycle.html docs/geomdan-history-cache.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "변경 사항 없음, 커밋 생략"
           else
