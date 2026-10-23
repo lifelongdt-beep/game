@@ -61,4 +61,47 @@ function pricePerPyeong(amountManwonStr, areaM2Str) {
   return Math.round(amount / (supplyArea / SQM_PER_PYEONG));
 }
 
-module.exports = { normalizeAptName, loadExcludedApartments, pricePerPyeong };
+// 신고가 판정. 쌓아 둔 실거래 기록(docs/geomdan-history-cache.json의 달별 items: {a, ar, p, dt})에서
+// 같은 단지·같은 평형(전용면적을 ㎡ 단위로 반올림)의 이전 거래 최고가를 넘으면 신고가로 본다.
+// "이전"은 계약일이 앞선 거래만 센다(같은 날 거래끼리는 서로 비교하지 않는다). 이전 거래가 하나도
+// 없으면(첫 거래) 신고가로 보지 않는다. 기록이 최근 몇 년 치뿐이라 그 기간 안의 최고가 기준이다.
+const areaBucket = (area) => Math.round(Number(area));
+function makeRecordChecker(items) {
+  const groups = new Map();
+  for (const t of items) {
+    const k = `${normalizeAptName(t.a)}|${areaBucket(t.ar)}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push([t.dt, Number(t.p)]);
+  }
+  for (const arr of groups.values()) {
+    arr.sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+    let max = -Infinity;
+    for (const e of arr) e.push((max = Math.max(max, e[1])));
+  }
+  // date는 'YYYY-MM-DD'(또는 'YYYY.MM.DD')
+  return (apt, area, amount, date) => {
+    const arr = groups.get(`${normalizeAptName(apt)}|${areaBucket(area)}`);
+    if (!arr) return false;
+    const d = String(date).replace(/\./g, '-');
+    let lo = 0;
+    let hi = arr.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[mid][0] < d) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo > 0 && Number(amount) > arr[lo - 1][2];
+  };
+}
+
+// 기록 파일의 모든 달 거래를 한 배열로. 파일이 없으면 null.
+function loadHistoryItems(cachePath) {
+  try {
+    const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    return Object.values(data.months || {}).flatMap((m) => m.items || []);
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { normalizeAptName, loadExcludedApartments, pricePerPyeong, makeRecordChecker, loadHistoryItems };

@@ -8,6 +8,7 @@
 //   --og-only : 링크 미리보기용 og 태그만 카드의 표지 사진에 맞춰 다시 쓴다(다른 구간은 건드리지 않음).
 const fs = require('fs');
 const path = require('path');
+const { makeRecordChecker, loadHistoryItems } = require('../geomdan-common');
 
 const argv = process.argv.slice(2);
 const getOpt = (name) => {
@@ -19,6 +20,8 @@ const INDEX_PATH = path.resolve(getOpt('--index') || 'docs/index.html');
 const CONTENT_PATH = getOpt('--content');
 const TXN_ONLY = argv.includes('--txn-only');
 const LINKS_PATH = getOpt('--links');
+// 신고가 판정용 실거래 기록(scripts/geomdan-cycle.js가 쌓는 파일). 없으면 신고가 표시만 빠진다.
+const HISTORY_PATH = path.resolve(getOpt('--history') || 'docs/geomdan-history-cache.json');
 
 function fail(msg) {
   console.error('오류: ' + msg);
@@ -290,6 +293,18 @@ function formatWon(manwon) {
 const shortDate = (d) => String(d).replace(/^\d{2}/, '').replace(/\.$/, '');
 const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 
+// 거래마다 신고가 여부(newHigh)를 붙인다. 이름은 HTML 이스케이프된 상태라 되돌려서 비교한다.
+const unesc = (s) => String(s).replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+function markNewHighs(txns, warnings) {
+  const items = loadHistoryItems(HISTORY_PATH);
+  if (!items) {
+    warnings.push(`실거래 기록(${path.relative(process.cwd(), HISTORY_PATH)})이 없어 신고가 표시를 건너뜁니다.`);
+    return txns;
+  }
+  const isNewHigh = makeRecordChecker(items);
+  return txns.map((x) => ({ ...x, newHigh: isNewHigh(unesc(x.apt), x.area, x.amount, x.date) }));
+}
+
 // 단지를 누르면 그 단지의 거래 전부를 날짜순으로 펼치고, 맨 위에 요약 통계를 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
 function renderRankDetail(t, txns) {
   const key = aptKey(t.apt);
@@ -314,12 +329,15 @@ function renderRankDetail(t, txns) {
   if (rows.some((x) => x.dealType)) stats.push(`직거래 ${direct}건 · 중개 ${rows.filter((x) => x.dealType && !/직거래/.test(x.dealType)).length}건`);
   const corp = rows.filter((x) => /법인/.test(x.buyer)).length;
   if (rows.some((x) => x.buyer) && corp) stats.push(`법인 매수 ${corp}건`);
+  const newHighs = rows.filter((x) => x.newHigh).length;
+  if (newHighs) stats.push(`<b class="nh">신고가 ${newHighs}건</b>`);
   const reg = rows.filter((x) => x.regDate).length;
   if (rows.some((x) => 'regDate' in x && x.regDate)) stats.push(`등기 완료 ${reg}/${rows.length}건`);
 
   const lis = rows
     .map((x) => {
       const tags = [];
+      if (x.newHigh) tags.push('신고가');
       if (/직거래/.test(x.dealType)) tags.push('직거래');
       if (x.buyer && /법인/.test(x.buyer)) tags.push('법인 매수');
       if (x.seller && /법인|공공/.test(x.seller)) tags.push(`${x.seller} 매도`);
@@ -328,13 +346,16 @@ function renderRankDetail(t, txns) {
       if (x.jibun) sub.push(`${x.dong} ${x.jibun}`);
       if (x.agentSgg) sub.push(`중개사 ${x.agentSgg}`);
       if (x.regDate) sub.push(`등기 ${shortDate(x.regDate)}`);
-      const tagHtml = tags.map((g) => `<i>${g}</i>`).join('');
+      const tagHtml = tags.map((g) => `<i${g === '신고가' ? ' class="nh"' : ''}>${g}</i>`).join('');
       return `<li><span class="rd-date">${shortDate(x.date)}</span><span class="rd-info">전용 ${Math.round(x.area * 100) / 100}㎡ · ${x.floor}층${tagHtml}${sub.length ? `<small>${sub.join(' · ')}</small>` : ''}</span><span class="rd-amt">${x.amountText}<em>평당 ${num(x.ppy)}만</em></span></li>`;
     })
     .join('');
   return `
         <div class="rank-detail" hidden><p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
 }
+
+// 단지의 조회 기간 거래 중 신고가 건수(markNewHighs가 표시해 둔 것).
+const newHighCount = (t, txns) => txns.filter((x) => x.newHigh && aptKey(x.apt) === aptKey(t.apt)).length;
 
 function renderRankItems(ranked, txns) {
   return ranked
@@ -343,7 +364,7 @@ function renderRankItems(ranked, txns) {
         <span class="rank-idx">${String(i + 1).padStart(2, '0')}</span>
         <div class="rank-meta">
           <b>${i === 0 ? withCrown(t.apt) : t.apt}</b>
-          <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>
+          <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>${newHighCount(t, txns) ? `<em class="rank-new">신고가 ${newHighCount(t, txns)}건</em>` : ''}
         </div>
         <div class="rank-figures">
           <span class="rank-val">평당 ${num(t.ppy)}만</span>
@@ -382,7 +403,9 @@ function applyRanking(html, ranked, customPill, period, txns) {
   const pillS = html.indexOf('<div class="rank-summary-pill">');
   if (boxS < 0 || pillS < 0) fail('카드 HTML에서 ranking-box / rank-summary-pill을 찾지 못함');
   html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked, txns)}\n    </div>\n\n    ` + html.slice(pillS);
-  const pill = customPill || pillText(ranked, period);
+  let pill = customPill || pillText(ranked, period);
+  const nhApts = ranked.filter((t) => newHighCount(t, txns)).length;
+  if (!customPill && nhApts) pill += ` 이 기간 같은 단지·평형의 최근 3년 최고가를 넘긴 신고가 거래가 나온 단지는 ${nhApts}곳입니다.`;
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
   // 랭킹 아래에 단지별 사이클 페이지(scripts/geomdan-cycle.js가 만드는 docs/geomdan-cycle.html) 링크를 단다.
   html = html.replace(/\n\n    <a class="cycle-link"[^>]*>[\s\S]*?<\/a>/, '');
@@ -408,6 +431,9 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-detail .rd-info small { display: block; font-size: 10.5px; color: var(--text-light); line-height: 1.4; }
   .rank-detail .rd-info i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--brand-blue); background: rgba(0,102,255,.1); border-radius: 4px; padding: 0 5px; margin-left: 5px; }
   .rank-detail .rd-amt em { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--text-light); }
+  .rank-new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10.5px; font-style: normal; font-weight: 800; line-height: 1.6; color: #fff; background: var(--brand-red); vertical-align: 1px; }
+  .rank-detail .rd-info i.nh { color: var(--brand-red); background: rgba(255,59,48,.12); }
+  .rank-detail .rd-stats b.nh { color: var(--brand-red); }
   .cycle-link { display: grid; gap: 2px; margin-top: 10px; padding: 12px 16px; border-radius: 8px; background: var(--text-black); color: #fff; font-size: 14px; font-weight: 800; text-decoration: none; }
   .cycle-link small { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.7); }
 `;
@@ -435,7 +461,7 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
-  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.cycle-link[^\n]*\n)*/, '');
+  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
   html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
@@ -515,7 +541,8 @@ function main() {
       `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
     );
   }
-  const result = applyRanking(html, ranked, customPill, period, parseEmbeddedDetails(indexHtml) || txns);
+  const rankTxns = markNewHighs(parseEmbeddedDetails(indexHtml) || txns, warnings);
+  const result = applyRanking(html, ranked, customPill, period, rankTxns);
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;
