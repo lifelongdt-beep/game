@@ -15,7 +15,7 @@
 // 필요한 환경 변수: DATA_GO_KR_SERVICE_KEY(없으면 캐시만으로 페이지를 만든다).
 
 const fs = require('fs');
-const { normalizeAptName, loadExcludedApartments, pricePerPyeong } = require('./geomdan-common');
+const { normalizeAptName, loadExcludedApartments, pricePerPyeong, makeRecordChecker } = require('./geomdan-common');
 
 const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 // 2026-07-01 행정구역 개편으로 검단 지역은 서구(28260)에서 검단구(28290)로 나뉘었다.
@@ -267,6 +267,9 @@ function analyze(cache, refIdx) {
   const regionByMonth = months.map(() => []);
   const groups = new Map();
   let coveredMonths = 0;
+  // 신고가: 같은 단지·같은 평형의 이전 최고가(기록 전체 기준)를 넘긴 거래
+  const isNewHigh = makeRecordChecker(Object.values(cache.months).flatMap((m) => m.items));
+  const regionNewHighs = [];
 
   months.forEach((ym, mi) => {
     const entry = cache.months[ym];
@@ -278,8 +281,13 @@ function analyze(cache, refIdx) {
       const ppy = pricePerPyeong(t.p, t.ar);
       if (!ppy) continue;
       regionByMonth[mi].push(ppy);
-      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []) });
+      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []), newHighs: [] });
       const g = groups.get(key);
+      if (isNewHigh(t.a, t.ar, t.p, t.dt)) {
+        const nh = { mi, ppy, amount: t.p, area: t.ar, floor: t.f, dt: t.dt };
+        g.newHighs.push(nh);
+        regionNewHighs.push(nh);
+      }
       g.names.set(t.a, (g.names.get(t.a) || 0) + 1);
       g.dongs.set(t.d, (g.dongs.get(t.d) || 0) + 1);
       g.byMonth[mi].push(ppy);
@@ -292,19 +300,27 @@ function analyze(cache, refIdx) {
   const thin = [];
   for (const g of groups.values()) {
     const a = analyzeSeries(g.byMonth, 2, 4, region);
-    const item = { name: top(g.names), dong: top(g.dongs), ...a };
+    const recentNH = g.newHighs.filter((h) => h.mi >= months.length - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
+    const item = { name: top(g.names), dong: top(g.dongs), ...a, newHighs: g.newHighs, recentNH };
     // 기록 전체 8건 이상, 최근 3개월 안에 3개월 이동 중위값이 있어야 지표를 낸다.
     if (a.total >= 8 && a.current != null) complexes.push(item);
     else thin.push(item);
   }
   complexes.sort((a, b) => b.current - a.current);
   thin.sort((a, b) => b.total - a.total);
+  region.recentNH = regionNewHighs.filter((h) => h.mi >= months.length - 3).length;
+  region.recentTrades = region.count.slice(-3).reduce((x, y) => x + y, 0);
   return { months, region, complexes, thin, coveredMonths };
 }
 
 // ── 그리기 ─────────────────────────────────────────────────────────────────
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const won = (v) => `${Math.round(v).toLocaleString('ko-KR')}`;
+const fmtWon = (manwon) => {
+  const eok = Math.floor(manwon / 10000);
+  const rest = manwon % 10000;
+  return eok > 0 ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}원` : `${manwon.toLocaleString('ko-KR')}만원`;
+};
 const pct = (v, digits = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%`;
 const fmt = (v) => (v == null ? '' : v.toFixed(1));
 
@@ -319,7 +335,7 @@ function niceTicks(min, max, count) {
 }
 
 // 평당가 추세 차트: 달별 중위(점) + 3개월선 + 12개월선 + 고점선 + 아래쪽 거래량 막대.
-function trendChart(months, s, { height = 280, showPeak = true } = {}) {
+function trendChart(months, s, { height = 280, showPeak = true, newHighs = [] } = {}) {
   const W = 560;
   const H = height;
   const pad = { l: 64, r: 14, t: 16, b: 26 };
@@ -382,6 +398,12 @@ function trendChart(months, s, { height = 280, showPeak = true } = {}) {
   };
   svg += `<path class="ma12" d="${path(s.roll12)}"/>`;
   svg += `<path class="ma3" d="${path(s.roll3)}"/>`;
+  // 신고가 거래(▲). 차트 범위를 넘으면 위쪽 끝에 붙인다.
+  for (const h of newHighs) {
+    const cx = x(h.mi);
+    const cy = Math.max(pad.t + 4, y(h.ppy));
+    svg += `<path class="nh-mark" d="M${cx.toFixed(1)},${(cy - 6).toFixed(1)}l5,8.5h-10z"><title>신고가 ${h.dt.replace(/-/g, '.')} 전용 ${Math.round(h.area)}㎡ ${h.floor}층 ${fmtWon(h.amount)} (평당 ${won(h.ppy)}만원)</title></path>`;
+  }
   const lastIdx = s.roll3.length - 1;
   if (s.roll3[lastIdx] != null) svg += `<circle class="ma3-end" cx="${x(lastIdx).toFixed(1)}" cy="${y(s.roll3[lastIdx]).toFixed(1)}" r="4"/>`;
   svg += '</svg>';
@@ -508,9 +530,10 @@ function renderPage(result, refYm, cacheInfo) {
     .map((c, i) => {
       const rel = c.rs ? `${c.rs.value.toFixed(0)}` : '-';
       const relDelta = c.rs && c.rs.delta != null ? `<span class="muted"> (${c.rs.delta >= 0 ? '+' : ''}${c.rs.delta.toFixed(1)})</span>` : '';
-      return `<details class="row" data-price="${c.current}" data-dd="${c.peak ? c.peak.ratio : 0}" data-rs="${c.rs ? c.rs.value : 0}" data-vol="${c.quad ? c.quad.volRecent : 0}">
+      const nh = c.recentNH.length;
+      return `<details class="row" data-price="${c.current}" data-dd="${c.peak ? c.peak.ratio : 0}" data-rs="${c.rs ? c.rs.value : 0}" data-vol="${c.quad ? c.quad.volRecent : 0}" data-nh="${nh}">
   <summary>
-    <span class="c-name"><b>${esc(c.name)}</b><small>${esc(c.dong)} · 기록 ${c.total}건</small></span>
+    <span class="c-name"><b>${esc(c.name)}${nh ? `<em class="nh-badge">신고가 ${nh}</em>` : ''}</b><small>${esc(c.dong)} · 기록 ${c.total}건</small></span>
     <span class="c-price"><b>${won(c.current)}</b><small>만원/평</small></span>
     <span class="c-ma">${maChip(c.ma)}</span>
     <span class="c-dd">${drawdownBar(c.peak)}</span>
@@ -518,8 +541,9 @@ function renderPage(result, refYm, cacheInfo) {
     <span class="c-rs"><span class="rs-num">${rel}${relDelta}</span>${sparkline(c.rel || [])}${rsChip(c.rs)}</span>
   </summary>
   <div class="detail">
-    ${trendChart(months, c)}
+    ${trendChart(months, c, { newHighs: c.newHighs })}
     <ul class="facts">
+      <li><b>신고가</b> ${nh ? `최근 3개월 ${nh}건 · 가장 최근 ${c.recentNH[0].dt.replace(/-/g, '.')} 전용 ${Math.round(c.recentNH[0].area)}㎡ ${c.recentNH[0].floor}층 ${fmtWon(c.recentNH[0].amount)}` : '최근 3개월에는 없음'}${c.newHighs.length ? ` (분석 기간 전체 ${c.newHighs.length}건, 차트의 ▲)` : ''}</li>
       <li><b>이동평균선</b> ${c.ma ? maNote(c.ma) : '12개월치 기록이 모자랍니다'}</li>
       <li><b>고점 대비</b> ${c.peak ? `${ymKorean(months[c.peak.idx])} 고점 ${won(c.peak.value)}만원 대비 ${pct((c.peak.ratio - 1) * 100)}` : '-'}</li>
       <li><b>4분면</b> ${c.quad ? `최근 3개월 거래 ${c.quad.volRecent}건(그 전 ${c.quad.volPrev}건, ${pct(c.quad.x, 0)}) · 평당가 ${pct(c.quad.y)} → ${QUADRANTS[c.quad.q].label}` : '비교할 거래가 모자랍니다'}</li>
@@ -658,6 +682,10 @@ summary::-webkit-details-marker { display: none; }
 .facts { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; display: grid; gap: 4px; }
 .facts b { color: var(--ink); margin-right: 4px; }
 .muted { color: var(--ink-3); font-weight: 400; }
+.nh-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 11px; font-style: normal; font-weight: 800; line-height: 1.6; color: #fff; background: var(--up); vertical-align: 1px; white-space: nowrap; }
+.nh-mark { fill: var(--up); stroke: var(--surface); stroke-width: 1; }
+.nh-num { color: var(--up); }
+.nh-tri { color: var(--up); font-size: 11px; margin-right: 4px; }
 .thin { margin: 0; font-size: 12.5px; color: var(--ink-3); }
 .howto { display: grid; gap: 10px; font-size: 14px; color: var(--ink-2); }
 .howto dt { font-weight: 700; color: var(--ink); }
@@ -698,10 +726,11 @@ footer a { color: var(--accent); }
     <div class="stat"><small>3개월 중위 평당가</small><b>${region.current ? `${won(region.current)}만원` : '-'}</b></div>
     <div class="stat"><small>이동평균선</small><b>${maChip(region.ma)}</b><small>${region.ma ? maNote(region.ma) : ''}</small></div>
     <div class="stat"><small>고점 대비</small><b>${regionDD == null ? '-' : regionDD > -1 ? '고점권' : pct(regionDD)}</b><small>${region.peak ? `${ymKorean(months[region.peak.idx])} 고점 ${won(region.peak.value)}만원` : ''}</small></div>
+    <div class="stat"><small>최근 3개월 신고가</small><b class="nh-num">${region.recentNH}건</b><small>${region.recentTrades ? `같은 기간 거래 ${region.recentTrades}건의 ${((region.recentNH / region.recentTrades) * 100).toFixed(1)}%` : ''}</small></div>
     <div class="stat"><small>4분면</small><b>${quadChip(region.quad)}</b><small>${region.quad ? `거래 ${pct(region.quad.x, 0)} · 평당가 ${pct(region.quad.y)}` : ''}</small></div>
   </div>
   ${trendChart(months, region)}
-  <div class="legend"><span><i></i>3개월 이동 중위</span><span><i class="l12"></i>12개월 이동 중위</span><span><i class="ldot"></i>달별 중위</span><span><i class="lpk"></i>3개월선 최고점</span><span><i class="lvol"></i>월 거래 건수</span></div>
+  <div class="legend"><span><i></i>3개월 이동 중위</span><span><i class="l12"></i>12개월 이동 중위</span><span><i class="ldot"></i>달별 중위</span><span><i class="lpk"></i>3개월선 최고점</span><span><i class="lvol"></i>월 거래 건수</span><span><b class="nh-tri">▲</b>신고가(단지 상세 차트)</span></div>
 </section>
 
 <section>
@@ -721,6 +750,7 @@ footer a { color: var(--accent); }
     <button type="button" data-sort="dd" aria-pressed="false">고점 근접</button>
     <button type="button" data-sort="rs" aria-pressed="false">상대강도</button>
     <button type="button" data-sort="vol" aria-pressed="false">최근 거래</button>
+    <button type="button" data-sort="nh" aria-pressed="false">신고가</button>
   </div>
   <div class="head"><span>단지</span><span>평당가(3개월)</span><span>이동평균선</span><span>고점 대비</span><span>4분면</span><span>상대강도(검단=100)</span></div>
   <div class="list" id="list">
@@ -737,6 +767,7 @@ ${rows}
     <div><dt>고점 대비</dt><dd>3개월선이 분석 기간 안에서 가장 높았던 값과 지금 값을 비교했습니다. 한두 건의 높은 거래에 흔들리지 않도록 단일 거래가 아닌 3개월선 기준입니다.</dd></div>
     <div><dt>4분면</dt><dd>최근 3개월과 그 전 3개월의 거래 건수 변화(가로)와 3개월선 변화(세로)로 국면을 나눴습니다. 그 전 3개월 거래가 2건 미만이면 표시하지 않습니다.</dd></div>
     <div><dt>상대강도</dt><dd>단지 3개월선 ÷ 검단 전체 3개월선 × 100입니다. 6개월 전보다 2 이상 오르면 강세, 2 이상 내리면 약세입니다.</dd></div>
+    <div><dt>신고가</dt><dd>같은 단지·같은 평형(전용면적 ㎡ 반올림)에서 계약일이 앞선 거래들의 최고가를 넘긴 거래입니다. 쌓아 둔 기록(최근 3년) 안에서의 최고가 기준이고, 그 평형의 첫 거래는 신고가로 세지 않습니다. 목록에는 최근 3개월 건수를, 단지 차트에는 분석 기간 전체를 ▲로 표시합니다.</dd></div>
     <div><dt>주의할 점</dt><dd>${ymKorean(refYm)} 계약은 신고 기한(30일)이 남아 일부가 아직 빠져 있을 수 있습니다. 같은 단지라도 층·향·평형에 따라 값이 다르므로 거래가 적은 단지일수록 지표가 크게 흔들립니다. 기록 전체 8건 미만이거나 최근 3개월에 거래가 모자란 단지는 지표를 내지 않았습니다.</dd></div>
   </dl>
 </section>
