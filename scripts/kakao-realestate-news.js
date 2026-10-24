@@ -817,7 +817,6 @@ ${renderArticlesHtml(geomdanArticles)}
 
   <h2>🏘️ 검단신도시 아파트 실거래가</h2>
   <p class="section-note">최근 ${GEOMDAN_TRANSACTION_MONTHS}개월 이내 계약 건을 평당가(공급면적 추정치 기준) 높은 순으로 정렬${transactions.length >= GEOMDAN_TRANSACTION_COUNT ? `(상위 ${GEOMDAN_TRANSACTION_COUNT}건)` : ''} · 번호는 순위</p>
-  <p class="section-note"><a href="geomdan-cycle.html">📈 단지별 사이클 보기(이동평균선·고점 대비·거래량 4분면·상대강도)</a></p>
 ${staleNotice}
   <ul>
 ${renderTransactionsHtml(transactions)}

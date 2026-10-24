@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const { makeRecordChecker, loadHistoryItems } = require('../geomdan-common');
+const cycleLib = require('../geomdan-cycle');
 
 const argv = process.argv.slice(2);
 const getOpt = (name) => {
@@ -305,8 +306,61 @@ function markNewHighs(txns, warnings) {
   return txns.map((x) => ({ ...x, newHigh: isNewHigh(unesc(x.apt), x.area, x.amount, x.date) }));
 }
 
+// 단지별 사이클 지표(평당가 이동평균선·고점 대비·거래량·가격 4분면·상대강도). scripts/geomdan-cycle.js와 같은 계산을
+// 같은 실거래 기록(HISTORY_PATH)으로 해서 랭킹 항목에 바로 붙인다. 기준은 지난달까지(이번 달은 신고 기한 30일 안이라 덜 찼다).
+function loadCycle(warnings) {
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(HISTORY_PATH, 'utf8'));
+  } catch (_) {
+    data = null;
+  }
+  if (!data || !data.months) {
+    warnings.push('실거래 기록이 없어 단지별 사이클 지표를 건너뜁니다.');
+    return null;
+  }
+  const now = cycleLib.kstNow();
+  const result = cycleLib.analyze(data, now.getFullYear() * 12 + now.getMonth() - 1);
+  if (!result.coveredMonths) return null;
+  return { months: result.months, byKey: new Map(result.complexes.map((c) => [aptKey(c.name), c])) };
+}
+const cycleOf = (t, cycle) => (cycle ? cycle.byKey.get(aptKey(unesc(t.apt))) : null);
+const signed = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
+const ymText = (ym) => `${ym.slice(2, 4)}.${ym.slice(4, 6)}`;
+
+// 랭킹 한 줄에 붙는 지표 칩(추세 · 고점 대비 · 국면 · 상대강도).
+function renderCycleChips(c) {
+  if (!c) return '';
+  const out = [];
+  if (c.ma) out.push(`<i class="cy cy-${c.ma.state}">${{ up: '↗ 상승 추세', down: '↘ 하락 추세', flat: '→ 보합' }[c.ma.state]}</i>`);
+  if (c.peak) {
+    const dd = (c.peak.ratio - 1) * 100;
+    out.push(`<i class="cy cy-dd">${dd > -1 ? '고점권' : `고점 대비 ${dd.toFixed(1)}%`}</i>`);
+  }
+  if (c.quad) out.push(`<i class="cy cy-q-${c.quad.q}">${cycleLib.QUADRANTS[c.quad.q].label}</i>`);
+  if (c.rs) out.push(`<i class="cy cy-rs">강도 ${Math.round(c.rs.value)}${c.rs.state === 'up' ? '↑' : c.rs.state === 'down' ? '↓' : ''}</i>`);
+  return out.length ? `
+          <div class="rank-cycle">${out.join('')}</div>` : '';
+}
+
+// 펼친 상세 맨 위: 3년 평당가 추세 차트 + 지표 풀이.
+function renderCycleDetail(c, months) {
+  if (!c) return '';
+  const facts = [];
+  if (c.ma) facts.push(`<p><b>추세</b>${cycleLib.maNote(c.ma)}</p>`);
+  if (c.peak) facts.push(`<p><b>고점 대비</b>${ymText(months[c.peak.idx])} 고점 평당 ${num(Math.round(c.peak.value))}만 대비 ${signed((c.peak.ratio - 1) * 100)}%</p>`);
+  if (c.quad) {
+    const q = cycleLib.QUADRANTS[c.quad.q];
+    facts.push(`<p><b>국면</b>${q.label}(${q.desc}) · 거래 ${c.quad.volPrev}→${c.quad.volRecent}건, 3개월선 ${signed(c.quad.y)}%</p>`);
+  }
+  if (c.rs) facts.push(`<p><b>상대강도</b>검단 전체=100 기준 ${c.rs.value.toFixed(1)}${c.rs.delta != null ? ` (6개월 전보다 ${signed(c.rs.delta)})` : ''}</p>`);
+  if (c.recentNH.length) facts.push(`<p><b>신고가</b>최근 3개월 ${c.recentNH.length}건 (차트의 ▲)</p>`);
+  const chart = cycleLib.trendChart(months, c, { height: 250, newHighs: c.newHighs });
+  return `<div class="rd-cycle"><p class="rd-head">평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend"><span><i class="l3"></i>3개월선</span> <span><i class="l12"></i>12개월선</span> <span><i class="lpk"></i>고점</span> <span><b>▲</b>신고가</span> <span>막대 = 거래량</span></p>${facts.join('')}</div>`;
+}
+
 // 단지를 누르면 그 단지의 거래 전부를 날짜순으로 펼치고, 맨 위에 요약 통계를 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
-function renderRankDetail(t, txns) {
+function renderRankDetail(t, txns, cycle) {
   const key = aptKey(t.apt);
   const rows = txns.filter((x) => aptKey(x.apt) === key).sort((a, b) => b.date.localeCompare(a.date) || b.amount - a.amount);
   if (!rows.length) return '';
@@ -351,25 +405,25 @@ function renderRankDetail(t, txns) {
     })
     .join('');
   return `
-        <div class="rank-detail" hidden><p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
+        <div class="rank-detail" hidden>${cycle ? renderCycleDetail(cycleOf(t, cycle), cycle.months) : ''}<p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
 }
 
 // 단지의 조회 기간 거래 중 신고가 건수(markNewHighs가 표시해 둔 것).
 const newHighCount = (t, txns) => txns.filter((x) => x.newHigh && aptKey(x.apt) === aptKey(t.apt)).length;
 
-function renderRankItems(ranked, txns) {
+function renderRankItems(ranked, txns, cycle) {
   return ranked
     .map(
       (t, i) => `      <div class="rank-item" tabindex="0" role="button" aria-expanded="false">
         <span class="rank-idx">${String(i + 1).padStart(2, '0')}</span>
         <div class="rank-meta">
           <b>${i === 0 ? withCrown(t.apt) : t.apt}</b>
-          <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>${newHighCount(t, txns) ? `<em class="rank-new">신고가 ${newHighCount(t, txns)}건</em>` : ''}
+          <span>${t.dong} · 전용 ${Math.round(t.area)}㎡ · ${t.floor}층</span>${newHighCount(t, txns) ? `<em class="rank-new">신고가 ${newHighCount(t, txns)}건</em>` : ''}${renderCycleChips(cycleOf(t, cycle))}
         </div>
         <div class="rank-figures">
           <span class="rank-val">평당 ${num(t.ppy)}만</span>
           <span class="rank-price">${t.amountText}</span>
-        </div>${renderRankDetail(t, txns)}
+        </div>${renderRankDetail(t, txns, cycle)}
       </div>`
     )
     .join('\n\n');
@@ -398,25 +452,26 @@ function pillText(ranked, period) {
   return `💡 ${first} ${second}`;
 }
 
-function applyRanking(html, ranked, customPill, period, txns) {
+function applyRanking(html, ranked, customPill, period, txns, cycle) {
   const boxS = html.indexOf('<div class="ranking-box">');
   const pillS = html.indexOf('<div class="rank-summary-pill">');
   if (boxS < 0 || pillS < 0) fail('카드 HTML에서 ranking-box / rank-summary-pill을 찾지 못함');
-  html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked, txns)}\n    </div>\n\n    ` + html.slice(pillS);
+  html = html.slice(0, boxS) + `<div class="ranking-box">\n${renderRankItems(ranked, txns, cycle)}\n    </div>\n\n    ` + html.slice(pillS);
   let pill = customPill || pillText(ranked, period);
   const nhApts = ranked.filter((t) => newHighCount(t, txns)).length;
   if (!customPill && nhApts) pill += ` 이 기간 같은 단지·평형의 최근 3년 최고가를 넘긴 신고가 거래가 나온 단지는 ${nhApts}곳입니다.`;
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
-  // 랭킹 아래에 단지별 사이클 페이지(scripts/geomdan-cycle.js가 만드는 docs/geomdan-cycle.html) 링크를 단다.
+  // 단지별 사이클 지표는 각 랭킹 항목에 바로 붙이고, 랭킹 아래에는 칩 읽는 법만 적는다(예전 별도 페이지 링크는 지운다).
   html = html.replace(/\n\n    <a class="cycle-link"[^>]*>[\s\S]*?<\/a>/, '');
-  html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_LINK);
+  html = html.replace(/\n\n    <p class="rank-cycle-note">[\s\S]*?<\/p>/, '');
+  if (cycle) html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_NOTE);
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
   html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   html = addRankDetailUi(html);
   return { html, pill };
 }
 
-const CYCLE_LINK = `\n\n    <a class="cycle-link" href="geomdan-cycle.html">📈 단지별 사이클 보기<small>이동평균선 · 고점 대비 · 거래량 4분면 · 상대강도</small></a>`;
+const CYCLE_NOTE = `\n\n    <p class="rank-cycle-note"><b>단지 아래 표시</b> 추세 = 평당가 3개월선과 12개월선 비교 · 고점 대비 = 최근 3년 3개월선 고점과 비교 · 국면 = 최근 3개월 거래량·가격 변화(4분면) · 강도 = 검단 전체를 100으로 본 평당가(↑↓는 6개월 변화). 단지를 누르면 3년 평당가 흐름이 펼쳐집니다.</p>`;
 const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-item > .rank-detail { grid-column: 1 / -1; margin: 6px 0 4px; padding: 8px 10px; background: #f6f7fb; border-radius: 10px; }
   .rank-detail[hidden] { display: none; }
@@ -434,8 +489,40 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10.5px; font-style: normal; font-weight: 800; line-height: 1.6; color: #fff; background: var(--brand-red); vertical-align: 1px; }
   .rank-detail .rd-info i.nh { color: var(--brand-red); background: rgba(255,59,48,.12); }
   .rank-detail .rd-stats b.nh { color: var(--brand-red); }
-  .cycle-link { display: grid; gap: 2px; margin-top: 10px; padding: 12px 16px; border-radius: 8px; background: var(--text-black); color: #fff; font-size: 14px; font-weight: 800; text-decoration: none; }
-  .cycle-link small { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.7); }
+  .rank-cycle { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+  .rank-cycle .cy { font-style: normal; font-size: 10px; font-weight: 700; line-height: 1.6; padding: 0 5px; border-radius: 4px; color: #5b6070; background: #eef0f5; white-space: nowrap; }
+  .rank-cycle .cy-up { color: #d63a2f; background: #fde9e6; }
+  .rank-cycle .cy-down { color: #2563c9; background: #e5eefc; }
+  .rank-cycle .cy-q-up { color: #d63a2f; background: #fde9e6; }
+  .rank-cycle .cy-q-late { color: #b06a00; background: #fdf0d9; }
+  .rank-cycle .cy-q-down { color: #2563c9; background: #e5eefc; }
+  .rank-cycle .cy-q-bottom { color: #12806c; background: #dff3ee; }
+  .rank-cycle-note { margin: 8px 2px 0; font-size: 11px; line-height: 1.6; color: var(--text-light); }
+  .rank-cycle-note b { color: var(--text-dark); margin-right: 4px; }
+  .rd-cycle { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid #e6e8ef; }
+  .rd-cycle .cy-chart svg { display: block; width: 100%; height: auto; }
+  .rd-cycle .cy-chart text { font-family: inherit; }
+  .rd-cycle .axis { fill: #8a8f9c; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .rd-cycle .grid { stroke: #e3e5ec; stroke-width: 1; }
+  .rd-cycle .vol { fill: #8a8f9c; opacity: 0.35; }
+  .rd-cycle .dot { fill: #8a8f9c; opacity: 0.55; }
+  .rd-cycle .ma3 { fill: none; stroke: #0f9d84; stroke-width: 3; stroke-linejoin: round; }
+  .rd-cycle .ma12 { fill: none; stroke: #2b2b31; stroke-width: 1.8; stroke-dasharray: 6 5; }
+  .rd-cycle .ma3-end { fill: #0f9d84; stroke: #f6f7fb; stroke-width: 2; }
+  .rd-cycle .peak { stroke: #d63a2f; stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .rd-cycle .peak-label { fill: #d63a2f; font-size: 16px; font-weight: 700; }
+  .rd-cycle .nh-mark { fill: #d63a2f; }
+  .rd-cycle .cy-legend { margin: 4px 0 6px; font-size: 10.5px; color: var(--text-light); }
+  .rd-cycle .cy-legend i { display: inline-block; width: 14px; vertical-align: middle; margin-right: 4px; }
+  .rd-cycle .cy-legend i.l3 { border-top: 3px solid #0f9d84; }
+  .rd-cycle .cy-legend i.l12 { border-top: 2px dashed #2b2b31; }
+  .rd-cycle .cy-legend i.lpk { border-top: 1px dashed #d63a2f; }
+  .rd-cycle .cy-legend { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .rd-cycle .cy-legend span { white-space: nowrap; }
+  .rd-cycle .cy-legend b { color: #d63a2f; margin-right: 3px; }
+  .rd-cycle > p { text-align: left; }
+  .rd-cycle > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 54px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
+  .rd-cycle > p:not(.rd-head):not(.cy-legend) b { color: var(--text-light); font-weight: 700; }
 `;
 const RANK_DETAIL_JS = `<script id="rank-detail-js">
 (function () {
@@ -461,7 +548,7 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
-  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
+  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-cycle|rd-cycle|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
   html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
@@ -542,7 +629,7 @@ function main() {
     );
   }
   const rankTxns = markNewHighs(parseEmbeddedDetails(indexHtml) || txns, warnings);
-  const result = applyRanking(html, ranked, customPill, period, rankTxns);
+  const result = applyRanking(html, ranked, customPill, period, rankTxns, loadCycle(warnings));
   html = applyList(result.html, indexHtml);
 
   const count = (re) => (html.match(re) || []).length;
