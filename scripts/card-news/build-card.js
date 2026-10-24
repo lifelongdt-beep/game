@@ -8,7 +8,7 @@
 //   --og-only : 링크 미리보기용 og 태그만 카드의 표지 사진에 맞춰 다시 쓴다(다른 구간은 건드리지 않음).
 const fs = require('fs');
 const path = require('path');
-const { makeRecordChecker, loadHistoryItems } = require('../geomdan-common');
+const { makeRecordChecker, loadHistoryItems, loadExcludedApartments } = require('../geomdan-common');
 const cycleLib = require('../geomdan-cycle');
 
 const argv = process.argv.slice(2);
@@ -322,7 +322,7 @@ function loadCycle(warnings) {
   const now = cycleLib.kstNow();
   const result = cycleLib.analyze(data, now.getFullYear() * 12 + now.getMonth() - 1);
   if (!result.coveredMonths) return null;
-  return { months: result.months, byKey: new Map(result.complexes.map((c) => [aptKey(c.name), c])) };
+  return { months: result.months, region: result.region, complexes: result.complexes, byKey: new Map(result.complexes.map((c) => [aptKey(c.name), c])) };
 }
 const cycleOf = (t, cycle) => (cycle ? cycle.byKey.get(aptKey(unesc(t.apt))) : null);
 const signed = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
@@ -357,6 +357,38 @@ function renderCycleDetail(c, months) {
   if (c.recentNH.length) facts.push(`<p><b>신고가</b>최근 3개월 ${c.recentNH.length}건 (차트의 ▲)</p>`);
   const chart = cycleLib.trendChart(months, c, { height: 250, newHighs: c.newHighs });
   return `<div class="rd-cycle"><p class="rd-head">평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend"><span><i class="l3"></i>3개월선</span> <span><i class="l12"></i>12개월선</span> <span><i class="lpk"></i>고점</span> <span><b>▲</b>신고가</span> <span>막대 = 거래량</span></p>${facts.join('')}</div>`;
+}
+
+// 랭킹 맨 아래: 검단신도시 전체 흐름(3년 평당가 추세)과 단지별 거래량·가격 4분면.
+function renderCycleRegion(cycle) {
+  const { months, region, complexes } = cycle;
+  const last = months[months.length - 1];
+  const dd = region.peak ? (region.peak.ratio - 1) * 100 : null;
+  const maLabel = region.ma ? { up: '상승 추세', down: '하락 추세', flat: '보합' }[region.ma.state] : '-';
+  const stat = (label, value, note, cls = '') => `<div class="cr-stat"><small>${label}</small><b${cls ? ` class="${cls}"` : ''}>${value}</b>${note ? `<small>${note}</small>` : ''}</div>`;
+  const stats = [
+    stat('3개월 중위 평당가', region.current ? `${num(Math.round(region.current))}만원` : '-', `${ymText(last)} 계약까지`),
+    stat('추세', maLabel, region.ma ? cycleLib.maNote(region.ma) : '', region.ma ? `cy-${region.ma.state}` : ''),
+    stat('고점 대비', dd == null ? '-' : dd > -1 ? '고점권' : `${signed(dd)}%`, region.peak ? `${ymText(months[region.peak.idx])} 고점 ${num(Math.round(region.peak.value))}만원` : ''),
+    stat('최근 3개월 신고가', `${region.recentNH}건`, region.recentTrades ? `거래 ${region.recentTrades}건의 ${((region.recentNH / region.recentTrades) * 100).toFixed(1)}%` : '', 'cy-up'),
+  ].join('');
+  const points = complexes.filter((c) => c.quad).map((c) => ({ name: c.name, x: c.quad.x, y: c.quad.y, q: c.quad.q, vol: c.quad.volRecent }));
+  const counts = ['up', 'late', 'down', 'bottom']
+    .map((k) => `<div class="q-${k}"><b>${cycleLib.QUADRANTS[k].label} ${points.filter((p) => p.q === k).length}곳</b><small>${cycleLib.QUADRANTS[k].desc}</small></div>`)
+    .join('');
+  return `
+
+    <div class="cycle-region">
+      <h3 class="cr-title">검단신도시 전체 흐름</h3>
+      <p class="cr-lead">검단신도시 전체 거래의 평당가 중위값을 ${ymText(months[0])}~${ymText(last)} 3년치로 이었습니다.</p>
+      <div class="cr-stats">${stats}</div>
+      <div class="cy-chart">${cycleLib.trendChart(months, region, { height: 260 })}</div>
+      <p class="cy-legend"><span><i class="l3"></i>3개월선</span> <span><i class="l12"></i>12개월선</span> <span><i class="lpk"></i>고점</span> <span>점 = 달별 중위</span> <span>막대 = 거래량</span></p>
+      <h3 class="cr-title">거래량·가격 4분면</h3>
+      <p class="cr-lead">최근 3개월(${ymText(months[months.length - 3])}~${ymText(last)})을 그 전 3개월과 비교했습니다. 오른쪽일수록 거래가 늘었고 위쪽일수록 평당가가 올랐으며, 원이 클수록 최근 거래가 많은 단지입니다.</p>
+      ${points.length ? `<div class="cy-chart cr-quad">${cycleLib.quadrantChart(points)}</div>` : '<p class="cr-lead">비교할 거래가 아직 모자랍니다.</p>'}
+      <div class="cr-qsum">${counts}</div>
+    </div>`;
 }
 
 // 단지를 누르면 그 단지의 거래 전부를 날짜순으로 펼치고, 맨 위에 요약 통계를 보여 준다(기본은 접힘 — 캡처 이미지는 그대로).
@@ -464,7 +496,8 @@ function applyRanking(html, ranked, customPill, period, txns, cycle) {
   // 단지별 사이클 지표는 각 랭킹 항목에 바로 붙이고, 랭킹 아래에는 칩 읽는 법만 적는다(예전 별도 페이지 링크는 지운다).
   html = html.replace(/\n\n    <a class="cycle-link"[^>]*>[\s\S]*?<\/a>/, '');
   html = html.replace(/\n\n    <p class="rank-cycle-note">[\s\S]*?<\/p>/, '');
-  if (cycle) html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_NOTE);
+  html = html.replace(/\n\n    <div class="cycle-region">[\s\S]*?<!-- \/cycle-region -->/, '');
+  if (cycle) html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_NOTE + renderCycleRegion(cycle) + '<!-- /cycle-region -->');
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
   html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   html = addRankDetailUi(html);
@@ -500,27 +533,49 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .rank-cycle-note { margin: 8px 2px 0; font-size: 11px; line-height: 1.6; color: var(--text-light); }
   .rank-cycle-note b { color: var(--text-dark); margin-right: 4px; }
   .rd-cycle { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid #e6e8ef; }
-  .rd-cycle .cy-chart svg { display: block; width: 100%; height: auto; }
-  .rd-cycle .cy-chart text { font-family: inherit; }
-  .rd-cycle .axis { fill: #8a8f9c; font-size: 17px; font-variant-numeric: tabular-nums; }
-  .rd-cycle .grid { stroke: #e3e5ec; stroke-width: 1; }
-  .rd-cycle .vol { fill: #8a8f9c; opacity: 0.35; }
-  .rd-cycle .dot { fill: #8a8f9c; opacity: 0.55; }
-  .rd-cycle .ma3 { fill: none; stroke: #0f9d84; stroke-width: 3; stroke-linejoin: round; }
-  .rd-cycle .ma12 { fill: none; stroke: #2b2b31; stroke-width: 1.8; stroke-dasharray: 6 5; }
-  .rd-cycle .ma3-end { fill: #0f9d84; stroke: #f6f7fb; stroke-width: 2; }
-  .rd-cycle .peak { stroke: #d63a2f; stroke-width: 1.2; stroke-dasharray: 3 4; }
-  .rd-cycle .peak-label { fill: #d63a2f; font-size: 16px; font-weight: 700; }
-  .rd-cycle .nh-mark { fill: #d63a2f; }
-  .rd-cycle .cy-legend { margin: 4px 0 6px; font-size: 10.5px; color: var(--text-light); }
-  .rd-cycle .cy-legend i { display: inline-block; width: 14px; vertical-align: middle; margin-right: 4px; }
-  .rd-cycle .cy-legend i.l3 { border-top: 3px solid #0f9d84; }
-  .rd-cycle .cy-legend i.l12 { border-top: 2px dashed #2b2b31; }
-  .rd-cycle .cy-legend i.lpk { border-top: 1px dashed #d63a2f; }
-  .rd-cycle .cy-legend { display: flex; flex-wrap: wrap; gap: 2px 10px; }
-  .rd-cycle .cy-legend span { white-space: nowrap; }
-  .rd-cycle .cy-legend b { color: #d63a2f; margin-right: 3px; }
+  .cy-chart svg { display: block; width: 100%; height: auto; }
+  .cy-chart text { font-family: inherit; }
+  .cy-chart .axis { fill: #8a8f9c; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .cy-chart .grid { stroke: #e3e5ec; stroke-width: 1; }
+  .cy-chart .vol { fill: #8a8f9c; opacity: 0.35; }
+  .cy-chart .dot { fill: #8a8f9c; opacity: 0.55; }
+  .cy-chart .ma3 { fill: none; stroke: #0f9d84; stroke-width: 3; stroke-linejoin: round; }
+  .cy-chart .ma12 { fill: none; stroke: #2b2b31; stroke-width: 1.8; stroke-dasharray: 6 5; }
+  .cy-chart .ma3-end { fill: #0f9d84; stroke: #f6f7fb; stroke-width: 2; }
+  .cy-chart .peak { stroke: #d63a2f; stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .cy-chart .peak-label { fill: #d63a2f; font-size: 16px; font-weight: 700; }
+  .cy-chart .nh-mark { fill: #d63a2f; }
+  .cy-legend { margin: 4px 0 6px; font-size: 10.5px; color: var(--text-light); }
+  .cy-legend i { display: inline-block; width: 14px; vertical-align: middle; margin-right: 4px; }
+  .cy-legend i.l3 { border-top: 3px solid #0f9d84; }
+  .cy-legend i.l12 { border-top: 2px dashed #2b2b31; }
+  .cy-legend i.lpk { border-top: 1px dashed #d63a2f; }
+  .cy-legend { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .cy-legend span { white-space: nowrap; }
+  .cy-legend b { color: #d63a2f; margin-right: 3px; }
   .rd-cycle > p { text-align: left; }
+  .cycle-region { margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--text-black); display: grid; gap: 8px; text-align: left; }
+  .cycle-region .cr-title { margin: 6px 0 0; font-size: 17px; font-weight: 900; color: var(--text-black); }
+  .cycle-region .cr-lead { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-gray); }
+  .cycle-region .cr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .cycle-region .cr-stat { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; background: #f6f7fb; }
+  .cycle-region .cr-stat small { font-size: 10.5px; line-height: 1.45; color: var(--text-light); }
+  .cycle-region .cr-stat b { font-size: 16px; font-weight: 900; color: var(--text-dark); }
+  .cycle-region .cr-stat b.cy-up { color: #d63a2f; } .cycle-region .cr-stat b.cy-down { color: #2563c9; }
+  .cy-chart .axis-title { fill: #5b6070; font-size: 16px; font-weight: 700; }
+  .cy-chart .axis-line { stroke: #8a8f9c; stroke-width: 1; }
+  .cy-chart .qbg.q-up { fill: #fde9e6; } .cy-chart .qbg.q-late { fill: #fdf0d9; } .cy-chart .qbg.q-down { fill: #e5eefc; } .cy-chart .qbg.q-bottom { fill: #dff3ee; }
+  .cy-chart .qname { font-size: 19px; font-weight: 800; }
+  .cy-chart .t-up { fill: #d63a2f; } .cy-chart .t-late { fill: #b06a00; } .cy-chart .t-down { fill: #2563c9; } .cy-chart .t-bottom { fill: #12806c; }
+  .cy-chart .qdot { stroke: #fff; stroke-width: 1.5; opacity: 0.88; }
+  .cy-chart .qdot.q-up { fill: #d63a2f; } .cy-chart .qdot.q-late { fill: #e09016; } .cy-chart .qdot.q-down { fill: #2563c9; } .cy-chart .qdot.q-bottom { fill: #12806c; }
+  .cy-chart .qlabel { fill: #1c1f26; font-size: 16px; font-weight: 700; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+  .cycle-region .cr-qsum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .cycle-region .cr-qsum div { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
+  .cycle-region .cr-qsum b { font-size: 13.5px; }
+  .cycle-region .cr-qsum small { font-size: 10.5px; color: #5b6070; }
+  .cycle-region .cr-qsum .q-up { background: #fde9e6; color: #d63a2f; } .cycle-region .cr-qsum .q-late { background: #fdf0d9; color: #b06a00; }
+  .cycle-region .cr-qsum .q-down { background: #e5eefc; color: #2563c9; } .cycle-region .cr-qsum .q-bottom { background: #dff3ee; color: #12806c; }
   .rd-cycle > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 54px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
   .rd-cycle > p:not(.rd-head):not(.cy-legend) b { color: var(--text-light); font-weight: 700; }
 `;
@@ -548,7 +603,7 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
-  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-cycle|rd-cycle|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
+  html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-cycle|rd-cycle|cy-chart|cy-legend|cycle-region|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
   html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
@@ -612,8 +667,14 @@ function main() {
     customPill = content.rankPill;
   }
 
-  const txns = parseTxns(indexHtml);
-  const embedded = parseEmbeddedRanking(indexHtml);
+  // 제외 목록(scripts/geomdan-excluded-apartments.txt)은 데이터를 만들 때 이미 걸러지지만, 목록에 새로 넣은 단지가
+  // 다음 데이터 갱신 전 카드에도 바로 빠지도록 여기서 한 번 더 거른다.
+  const excluded = loadExcludedApartments();
+  const keep = (t) => !excluded.has(aptKey(unesc(t.apt)));
+  const allTxns = parseTxns(indexHtml);
+  const txns = allTxns.filter(keep);
+  const embeddedAll = parseEmbeddedRanking(indexHtml);
+  const embedded = embeddedAll && embeddedAll.filter(keep);
   const ranked = embedded ? rankFromEmbedded(embedded, txns) : rankComplexes(txns);
   if (!embedded && /\(상위 \d+건\)/.test(indexHtml)) {
     warnings.push('목록이 상한에 걸려 있는데 단지 순위 데이터(geomdan-complex-ranking)가 index.html에 없어, 평당가가 낮은 단지가 순위에서 빠졌을 수 있습니다.');
@@ -628,7 +689,7 @@ function main() {
       `평당 1,500만 이하 단지 ${low.length}곳이 순위에 있습니다. 검단신도시가 아닌 기존 단지면 scripts/geomdan-excluded-apartments.txt에 추가해야 합니다: ${low.map((t) => t.apt).join(', ')}`
     );
   }
-  const rankTxns = markNewHighs(parseEmbeddedDetails(indexHtml) || txns, warnings);
+  const rankTxns = markNewHighs((parseEmbeddedDetails(indexHtml) || txns).filter(keep), warnings);
   const result = applyRanking(html, ranked, customPill, period, rankTxns, loadCycle(warnings));
   html = applyList(result.html, indexHtml);
 
@@ -636,7 +697,8 @@ function main() {
   if (count(/<section/g) !== 5 || count(/<\/section>/g) !== 5) fail('<section> 개수가 5개가 아닙니다(구조 깨짐).');
   if (count(/class="rank-item"/g) !== ranked.length) fail('랭킹 항목 수가 고유 단지 수와 다릅니다.');
   const listTxns = count(/<li class="txn">/g);
-  if (listTxns !== txns.length) fail(`하단 실거래 목록(${listTxns})이 원본(${txns.length})과 다릅니다.`);
+  // 하단 목록(화면에서는 숨김)은 index.html을 그대로 옮기므로 제외 단지를 거르기 전 건수와 비교한다.
+  if (listTxns !== allTxns.length) fail(`하단 실거래 목록(${listTxns})이 원본(${allTxns.length})과 다릅니다.`);
 
   html = syncOpenGraph(html);
   fs.writeFileSync(CARD_PATH, html);

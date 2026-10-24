@@ -466,7 +466,14 @@ function quadrantChart(points) {
   for (const p of sorted) {
     svg += `<circle class="qdot q-${p.q}" cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${p.r.toFixed(1)}"><title>${esc(p.name)} · 거래 ${pct(p.x, 0)} · 평당가 ${pct(p.y)} (최근 3개월 ${p.vol}건)</title></circle>`;
   }
-  const boxes = [];
+  // 네 귀퉁이의 국면 이름 자리는 비워 둔다(휴대폰에서 커지는 글자 크기 기준).
+  const nameW = (t) => t.length * 21;
+  const boxes = [
+    { x1: pad.l, x2: pad.l + 8 + nameW('과열·막바지'), y1: pad.t, y2: pad.t + 26 },
+    { x1: W - pad.r - 8 - nameW('회복·상승'), x2: W - pad.r, y1: pad.t, y2: pad.t + 26 },
+    { x1: pad.l, x2: pad.l + 8 + nameW('하락'), y1: H - pad.b - 30, y2: H - pad.b },
+    { x1: W - pad.r - 8 - nameW('바닥 다지기'), x2: W - pad.r, y1: H - pad.b - 30, y2: H - pad.b },
+  ];
   const overlaps = (b) => boxes.some((o) => b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1);
   let labels = 0;
   for (const p of sorted) {
@@ -475,7 +482,7 @@ function quadrantChart(points) {
     const tw = text.length * 17.5; // 휴대폰에서 커지는 글자 크기 기준으로 자리를 잡는다
     for (const side of ['right', 'left']) {
       const x1 = side === 'right' ? p.cx + p.r + 3 : p.cx - p.r - 3 - tw;
-      const b = { x1, x2: x1 + tw, y1: p.cy - 8, y2: p.cy + 6 };
+      const b = { x1, x2: x1 + tw, y1: p.cy - 11, y2: p.cy + 9 };
       if (b.x1 < pad.l || b.x2 > W - pad.r || overlaps(b)) continue;
       boxes.push(b);
       svg += `<text class="qlabel${labels >= 5 ? ' minor' : ''}" x="${x1.toFixed(1)}" y="${(p.cy + 4).toFixed(1)}">${esc(text)}</text>`;
@@ -821,4 +828,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { analyze, renderPage, indexYm, ymIndex, kstNow, trendChart, maNote, QUADRANTS, CACHE_PATH };
+module.exports = { analyze, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH };
