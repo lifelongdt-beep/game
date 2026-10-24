@@ -609,7 +609,7 @@ function addRankDetailUi(html) {
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
 }
 
-function applyList(html, indexHtml) {
+function applyList(html, indexHtml, keep) {
   const H = TXN_ONLY ? '<h2>🏘️ 검단신도시 아파트 실거래가</h2>' : '<h2>📰 부동산 뉴스</h2>';
   const iS = indexHtml.indexOf(H);
   const iE = indexHtml.indexOf('<p class="source">');
@@ -621,6 +621,11 @@ function applyList(html, indexHtml) {
   let list = indexHtml.slice(iS, iE);
   const tS = list.indexOf('<h2>🏘️');
   if (tS >= 0) list = list.slice(0, tS) + '<div class="txn-list-hidden" hidden>\n' + list.slice(tS) + '\n</div>\n';
+  // 제외 단지의 거래는 숨은 목록에서도 뺀다(랭킹과 같은 기준).
+  list = list.replace(/\s*<li class="txn">[\s\S]*?<\/li>/g, (li) => {
+    const m = li.match(/<span class="txn-apt">([^<]*)<\/span>/);
+    return m && !keep({ apt: m[1] }) ? '' : li;
+  });
   let out = html.slice(0, cS) + list + html.slice(cE);
   out = out.replace('실제 기사 원문 링크와 검단신도시 실거래가 전체 내역은 아래에서 확인하세요.', '실제 기사 원문 링크는 아래에서 확인하세요. 단지별 실거래 내역은 슬라이드 4의 단지를 누르면 펼쳐집니다.');
   out = out.replace('전체 뉴스·실거래가 목록</p>', '전체 뉴스 목록</p>');
@@ -691,14 +696,14 @@ function main() {
   }
   const rankTxns = markNewHighs((parseEmbeddedDetails(indexHtml) || txns).filter(keep), warnings);
   const result = applyRanking(html, ranked, customPill, period, rankTxns, loadCycle(warnings));
-  html = applyList(result.html, indexHtml);
+  html = applyList(result.html, indexHtml, keep);
 
   const count = (re) => (html.match(re) || []).length;
   if (count(/<section/g) !== 5 || count(/<\/section>/g) !== 5) fail('<section> 개수가 5개가 아닙니다(구조 깨짐).');
   if (count(/class="rank-item"/g) !== ranked.length) fail('랭킹 항목 수가 고유 단지 수와 다릅니다.');
   const listTxns = count(/<li class="txn">/g);
   // 하단 목록(화면에서는 숨김)은 index.html을 그대로 옮기므로 제외 단지를 거르기 전 건수와 비교한다.
-  if (listTxns !== allTxns.length) fail(`하단 실거래 목록(${listTxns})이 원본(${allTxns.length})과 다릅니다.`);
+  if (listTxns !== txns.length) fail(`하단 실거래 목록(${listTxns})이 기준(${txns.length})과 다릅니다.`);
 
   html = syncOpenGraph(html);
   fs.writeFileSync(CARD_PATH, html);
