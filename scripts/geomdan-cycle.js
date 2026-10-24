@@ -821,4 +821,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { analyze, renderPage, indexYm, ymIndex };
+module.exports = { analyze, renderPage, indexYm, ymIndex, kstNow, trendChart, maNote, QUADRANTS, CACHE_PATH };
