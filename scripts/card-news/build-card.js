@@ -569,6 +569,13 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .cy-chart .t-up { fill: #d63a2f; } .cy-chart .t-late { fill: #b06a00; } .cy-chart .t-down { fill: #2563c9; } .cy-chart .t-bottom { fill: #12806c; }
   .cy-chart .qdot { stroke: #fff; stroke-width: 1.5; opacity: 0.88; }
   .cy-chart .qdot.q-up { fill: #d63a2f; } .cy-chart .qdot.q-late { fill: #e09016; } .cy-chart .qdot.q-down { fill: #2563c9; } .cy-chart .qdot.q-bottom { fill: #12806c; }
+  .cy-chart .qpt { outline: none; cursor: default; }
+  .cy-chart .qpt:focus-visible .qdot { stroke: #1c1f26; stroke-width: 2.5; }
+  .cy-chart .qtip { opacity: 0; pointer-events: none; transition: opacity .12s; }
+  .cy-chart .qpt:hover .qtip, .cy-chart .qpt:focus .qtip { opacity: 1; }
+  .cy-chart .qtip-box { fill: #1c1f26; }
+  .cy-chart .qtip-name { fill: #fff; font-size: 15px; font-weight: 800; }
+  .cy-chart .qtip-sub { fill: #d8dbe3; font-size: 12px; font-weight: 500; }
   .cy-chart .qlabel { fill: #1c1f26; font-size: 16px; font-weight: 700; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
   .cycle-region .cr-qsum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .cycle-region .cr-qsum div { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; font-size: 12px; }

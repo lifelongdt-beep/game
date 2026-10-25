@@ -463,8 +463,16 @@ function quadrantChart(points) {
   const placed = points.map((p) => ({ ...p, cx: X(p.x), cy: Y(p.y), r: 4 + Math.sqrt(p.vol / maxVol) * 10 }));
   // 원은 큰 것(거래 많은 단지)부터 그리고, 이름표는 거래가 많은 순으로 겹치지 않는 자리에만 단다.
   const sorted = [...placed].sort((a, b) => b.vol - a.vol);
+  // 점 위에 마우스를 올리거나(휴대폰은 탭하거나) 포커스하면 단지 이름과 수치를 말풍선으로 보여 준다.
+  let dots = '';
   for (const p of sorted) {
-    svg += `<circle class="qdot q-${p.q}" cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${p.r.toFixed(1)}"><title>${esc(p.name)} · 거래 ${pct(p.x, 0)} · 평당가 ${pct(p.y)} (최근 3개월 ${p.vol}건)</title></circle>`;
+    const sub = `거래 ${pct(p.x, 0)} · 평당가 ${pct(p.y)} · 최근 3개월 ${p.vol}건`;
+    const tw = Math.max(p.name.length * 17.5, sub.length * 13) + 20;
+    const th = 48;
+    const tx = Math.min(Math.max(p.cx - tw / 2, pad.l), W - pad.r - tw);
+    const above = p.cy - p.r - 10 - th >= pad.t;
+    const ty = above ? p.cy - p.r - 10 - th : p.cy + p.r + 10;
+    dots += `<g class="qpt" tabindex="0" role="img" aria-label="${esc(p.name)}"><circle class="qdot q-${p.q}" cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${p.r.toFixed(1)}"/><g class="qtip" transform="translate(${tx.toFixed(1)},${ty.toFixed(1)})"><rect class="qtip-box" width="${tw.toFixed(1)}" height="${th}" rx="6"/><text class="qtip-name" x="10" y="20">${esc(p.name)}</text><text class="qtip-sub" x="10" y="38">${esc(sub)}</text></g></g>`;
   }
   // 네 귀퉁이의 국면 이름 자리는 비워 둔다(휴대폰에서 커지는 글자 크기 기준).
   const nameW = (t) => t.length * 21;
@@ -476,6 +484,7 @@ function quadrantChart(points) {
   ];
   const overlaps = (b) => boxes.some((o) => b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1);
   let labels = 0;
+  let labelSvg = '';
   for (const p of sorted) {
     if (labels >= 10) break;
     const text = shortName(p.name);
@@ -485,11 +494,12 @@ function quadrantChart(points) {
       const b = { x1, x2: x1 + tw, y1: p.cy - 11, y2: p.cy + 9 };
       if (b.x1 < pad.l || b.x2 > W - pad.r || overlaps(b)) continue;
       boxes.push(b);
-      svg += `<text class="qlabel${labels >= 5 ? ' minor' : ''}" x="${x1.toFixed(1)}" y="${(p.cy + 4).toFixed(1)}">${esc(text)}</text>`;
+      labelSvg += `<text class="qlabel${labels >= 5 ? ' minor' : ''}" x="${x1.toFixed(1)}" y="${(p.cy + 4).toFixed(1)}">${esc(text)}</text>`;
       labels++;
       break;
     }
   }
+  svg += labelSvg + dots;
   svg += '</svg>';
   return svg;
 }
@@ -647,6 +657,13 @@ section .lead { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch
 .qdot { stroke: var(--surface); stroke-width: 1.5; opacity: 0.88; }
 .qdot.q-up { fill: var(--up); } .qdot.q-late { fill: var(--late); } .qdot.q-down { fill: var(--down); } .qdot.q-bottom { fill: var(--bottom); }
 .qlabel { fill: var(--ink); font-size: 11.5px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.qpt { outline: none; cursor: default; }
+.qpt:focus-visible .qdot { stroke: var(--ink); stroke-width: 2.5; }
+.qtip { opacity: 0; pointer-events: none; transition: opacity .12s; }
+.qpt:hover .qtip, .qpt:focus .qtip { opacity: 1; }
+.qtip-box { fill: #1c1f26; }
+.qtip-name { fill: #fff; font-size: 13px; font-weight: 800; }
+.qtip-sub { fill: #d8dbe3; font-size: 11px; font-weight: 500; }
 .qsum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .qsum div { border-radius: 10px; padding: 10px 12px; font-size: 13px; display: grid; gap: 2px; }
 .qsum b { font-size: 15px; }
@@ -714,6 +731,8 @@ footer a { color: var(--accent); }
   .peak-label { font-size: 17px; }
   .qname { font-size: 20px; }
   .qlabel { font-size: 17px; }
+  .qtip-name { font-size: 17px; }
+  .qtip-sub { font-size: 14px; }
   .qlabel.minor { display: none; }
 }
 </style>
