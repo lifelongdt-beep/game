@@ -701,7 +701,9 @@ function renderArticlesHtml(articles) {
     ? articles
         .map((a) => {
           const badge = a.nearby ? '<span class="tag-nearby">🔗 인접지역</span>' : '';
-          return `    <li class="article"><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
+          // 발행일(한국 날짜)을 data-pub에 남겨 두면 card-news/candidates.js가 오래된 기사를 골라내지 않도록 확인할 수 있다.
+          const pub = a.pubDate && !Number.isNaN(a.pubDate.getTime()) ? ` data-pub="${new Date(a.pubDate.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10)}"` : '';
+          return `    <li class="article"${pub}><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
         })
         .join('\n')
     : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
