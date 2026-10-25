@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 10월 25일 PM 10:39",
+  "generatedAt": "2026년 10월 26일 AM 7:08",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -1132,27 +1132,6 @@
       "seller": "개인",
       "buyer": "개인",
       "aptDong": "",
-      "jibun": "1024",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단 금호어울림 센트럴",
-      "dong": "원당동",
-      "area": "74.94",
-      "amount": "70500",
-      "floor": "27",
-      "year": "2026",
-      "month": "06",
-      "day": "26",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.29",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2409동",
       "jibun": "1024",
       "leasehold": "N"
     },
@@ -3446,27 +3425,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "파라곤센트럴파크",
-      "dong": "당하동",
-      "area": "84.986",
-      "amount": "69000",
-      "floor": "10",
-      "year": "2026",
-      "month": "06",
-      "day": "26",
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.10.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "506동",
-      "jibun": "1276-2",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": "74.2658",
@@ -4929,10 +4887,10 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.10.21",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "2701동",
       "jibun": "1014",
       "leasehold": "N"
     },
@@ -5664,10 +5622,10 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.10.21",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "2702동",
       "jibun": "1014",
       "leasehold": "N"
     },
@@ -5769,10 +5727,10 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.10.23",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "4308동",
       "jibun": "965-2",
       "leasehold": "N"
     },
@@ -7013,27 +6971,6 @@
       "buyer": "개인",
       "aptDong": "1209동",
       "jibun": "1272-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "호반써밋프라임뷰",
-      "dong": "당하동",
-      "area": "84.2832",
-      "amount": "58700",
-      "floor": "24",
-      "year": "2026",
-      "month": "06",
-      "day": "26",
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.08.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "404",
-      "jibun": "1314-2",
       "leasehold": "N"
     },
     {
@@ -10842,16 +10779,6 @@
       "ppy": 2068
     },
     {
-      "apt": "파라곤센트럴파크",
-      "dong": "당하동",
-      "amountText": "6억 9,000만원",
-      "amount": 69000,
-      "area": 84.986,
-      "floor": "10",
-      "date": "2026.06.26",
-      "ppy": 2061
-    },
-    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "amountText": "6억 500만원",
@@ -10860,6 +10787,16 @@
       "floor": "24",
       "date": "2026.10.10",
       "ppy": 2060
+    },
+    {
+      "apt": "파라곤센트럴파크",
+      "dong": "당하동",
+      "amountText": "6억 8,400만원",
+      "amount": 68400,
+      "area": 84.9595,
+      "floor": "19",
+      "date": "2026.08.08",
+      "ppy": 2044
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -11896,24 +11833,6 @@
       "agentSgg": "인천 검단구",
       "seller": "개인",
       "buyer": "개인",
-      "jibun": "1024",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단 금호어울림 센트럴",
-      "dong": "원당동",
-      "area": 74.94,
-      "amount": 70500,
-      "floor": "27",
-      "date": "2026.06.26",
-      "ppy": 2379,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.29",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2409동",
       "jibun": "1024",
       "leasehold": "N"
     },
@@ -13729,24 +13648,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "파라곤센트럴파크",
-      "dong": "당하동",
-      "area": 84.986,
-      "amount": 69000,
-      "floor": "10",
-      "date": "2026.06.26",
-      "ppy": 2061,
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.10.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "506동",
-      "jibun": "1276-2",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
       "dong": "당하동",
       "area": 74.2658,
@@ -14915,8 +14816,10 @@
       "buildYear": "2022",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.10.21",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "2701동",
       "jibun": "1014",
       "leasehold": "N"
     },
@@ -15495,8 +15398,10 @@
       "buildYear": "2022",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.10.21",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "2702동",
       "jibun": "1014",
       "leasehold": "N"
     },
@@ -15579,8 +15484,10 @@
       "buildYear": "2026",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.10.23",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "4308동",
       "jibun": "965-2",
       "leasehold": "N"
     },
@@ -16576,24 +16483,6 @@
       "buyer": "개인",
       "aptDong": "1209동",
       "jibun": "1272-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "호반써밋프라임뷰",
-      "dong": "당하동",
-      "area": 84.2832,
-      "amount": 58700,
-      "floor": "24",
-      "date": "2026.06.26",
-      "ppy": 1768,
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.08.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "404",
-      "jibun": "1314-2",
       "leasehold": "N"
     },
     {
