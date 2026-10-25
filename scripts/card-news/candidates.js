@@ -17,6 +17,9 @@ const INDEX_PATH = path.resolve(getOpt('--index') || 'docs/index.html');
 const CARD_PATH = path.resolve(getOpt('--card') || 'docs/briefing-infographic.html');
 const optValues = new Set(['--index', '--card'].map(getOpt).filter(Boolean));
 const picks = argv.filter((a) => /^\d+$/.test(a) && !optValues.has(a)).map(Number);
+// 발행 후 이만큼 지난 기사는 오래된 것으로 본다(카드는 당일 발행 뉴스가 기본). 고를 때는 막고, --allow-old로만 넘긴다.
+const STALE_DAYS = 3;
+const allowOld = argv.includes('--allow-old');
 
 const decode = (s) =>
   s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -28,12 +31,26 @@ function parseSection(html, heading) {
   const ulS = html.indexOf('<ul>', s);
   const ulE = html.indexOf('</ul>', ulS);
   const block = html.slice(ulS, ulE);
-  return [...block.matchAll(/<li class="article"><a href="([^"]+)"[^>]*>([\s\S]*?)<\/a><\/li>/g)].map((m) => ({
-    link: decode(m[1]),
-    nearby: m[2].includes('tag-nearby'),
-    title: stripTags(m[2]),
+  return [...block.matchAll(/<li class="article"(?: data-pub="([^"]*)")?><a href="([^"]+)"[^>]*>([\s\S]*?)<\/a><\/li>/g)].map((m) => ({
+    pub: m[1] || '',
+    link: decode(m[2]),
+    nearby: m[3].includes('tag-nearby'),
+    title: stripTags(m[3]),
   }));
 }
+
+// 발행일(YYYY-MM-DD, 한국 날짜)과 오늘(한국 날짜) 사이의 일수. 발행일을 모르면 null.
+function daysSince(pub) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(pub)) return null;
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  return Math.round((Date.parse(today) - Date.parse(pub)) / 86400000);
+}
+const pubTag = (a) => {
+  if (!a.pub) return '';
+  const d = daysSince(a.pub);
+  const md = a.pub.slice(5).replace('-', '.');
+  return d !== null && d >= STALE_DAYS ? `[오래됨 ${md}] ` : `[${md}] `;
+};
 
 function prev() {
   const html = fs.readFileSync(CARD_PATH, 'utf8');
@@ -135,8 +152,14 @@ function main() {
         console.error(`오류: ${n}번 후보가 없습니다(1~${all.length}).`);
         process.exit(1);
       }
-      console.error(`${n}. ${all[n - 1].title}`);
-      console.log(all[n - 1].link);
+      const a = all[n - 1];
+      const d = daysSince(a.pub);
+      if (d !== null && d >= STALE_DAYS && !allowOld) {
+        console.error(`오류: ${n}번 기사는 발행 ${d}일 전(${a.pub})이라 카드에 쓰지 않습니다. 다른 후보를 고르세요(정말 써야 하면 --allow-old).`);
+        process.exit(1);
+      }
+      console.error(`${n}. ${a.title}${a.pub ? ` (발행 ${a.pub})` : ''}`);
+      console.log(a.link);
     });
     return;
   }
@@ -144,7 +167,7 @@ function main() {
   let n = 0;
   const print = (label, list) => {
     console.log(`[${label}]`);
-    list.forEach((a) => console.log(`${++n}. ${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
+    list.forEach((a) => console.log(`${++n}. ${pubTag(a)}${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
   };
   print('부동산 뉴스', general);
   print('검단신도시 뉴스', geomdan);
