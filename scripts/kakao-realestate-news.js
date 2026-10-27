@@ -5,7 +5,7 @@
 // 필요한 환경 변수는 docs/kakao-realestate-news-setup.md 참고.
 
 const fs = require('fs');
-const { normalizeAptName, loadExcludedApartments, pricePerPyeong } = require('./geomdan-common');
+const { normalizeAptName, loadExcludedApartments, pricePerPyeong, isRealEstateNews } = require('./geomdan-common');
 
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 // "부동산" 같은 일반 언급뿐 아니라, 그 단어 없이 지표명만으로 쓰이는 기사도
@@ -339,8 +339,7 @@ function isWithinLastDay(date) {
 // ②인접지역(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
 // 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
 // 독립적으로 실패를 처리한다.
-// 부동산과 상관없는 지역 동정(행사·캠페인·교육·소식지·위촉·구의회 현장 점검 등)은 검단 뉴스 목록에서 뺀다.
-const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|페스티벌|축제|기부제|공연|봉사|위촉|개최|출범|소식지|시상|기념|체험|전시|공모전|반려|심폐소생|응급처치|구의회|의장|현장 ?점검|간담회|감사패|특강|설명회/;
+// 부동산과 상관없는 지역 동정(행사·기부·복지관 수업·사고·행정 갈등 등)은 빼고 부동산 기사만 남긴다(scripts/geomdan-common.js의 isRealEstateNews).
 async function fetchGeomdanArticles(limit) {
   const [directCandidates, nearbyCandidates] = await Promise.all([
     fetchNewsCandidates(GEOMDAN_QUERY, GEOMDAN_KEYWORD).catch((err) => {
@@ -356,7 +355,7 @@ async function fetchGeomdanArticles(limit) {
     ),
   ]);
 
-  const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate) && !GEOMDAN_NOISE_RE.test(c.title));
+  const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate) && isRealEstateNews(c.title));
   return clusterArticles(freshCandidates, limit);
 }
 
