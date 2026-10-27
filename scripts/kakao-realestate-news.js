@@ -276,16 +276,18 @@ async function fetchNewsCandidates(query, requireKeyword) {
 // 높다는, 조회수의 현실적인 대체 지표다. 매체 수가 같으면 최신순(pubDate)으로
 // 다음 기준을 삼는다. 마지막에 대표만 골라야 하므로 `limit`에 도달해도 중간에
 // 끊지 않고 후보를 전부 훑는다.
-function clusterArticles(candidates, limit) {
+function clusterArticles(candidates, limit, eventKeys) {
   const clusters = [];
   for (const candidate of candidates) {
     const dedupKey = newsDedupKey(candidate.title);
     const grams = charBigrams(dedupKey);
-    const cluster = clusters.find((c) => isSimilarHeadline(grams, c.grams));
+    const keys = eventKeys ? eventKeys(dedupKey) : [];
+    const cluster = clusters.find((c) => isSimilarHeadline(grams, c.grams) || keys.some((k) => c.keys.has(k)));
     if (!cluster) {
-      clusters.push({ grams, article: candidate, detailLen: dedupKey.length, anyDirect: !candidate.nearby, sourceCount: 1 });
+      clusters.push({ grams, keys: new Set(keys), article: candidate, detailLen: dedupKey.length, anyDirect: !candidate.nearby, sourceCount: 1 });
     } else {
       cluster.sourceCount += 1;
+      keys.forEach((k) => cluster.keys.add(k));
       if (!candidate.nearby) cluster.anyDirect = true;
       if (dedupKey.length > cluster.detailLen) {
         cluster.article = candidate;
@@ -340,6 +342,20 @@ function isWithinLastDay(date) {
 // 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
 // 독립적으로 실패를 처리한다.
 // 지역 동정(행사·기부·복지관 수업 등)은 빼고 부동산 기사와 구 전체 주요 사건(대형 사고, 정산금 갈등 등)만 남긴다(scripts/geomdan-common.js의 isGeomdanNews).
+// 검단 뉴스는 같은 사건을 매체마다 전혀 다른 문구로 써서(예: "상가에서 폭발 추정 사고…4명 부상" vs "굉음과 함께
+// 유리창 와르르…") 글자 겹침만으로는 묶이지 않았다. 하루치 검단 뉴스 안에서는 같은 종류의 큰 사건이 둘 이상 나는
+// 일이 드물어, 사건 종류 단어나 큰 금액(예: 648억)이 같으면 같은 사건으로 묶는다(사건별로 한 건만 보이게 — 사용자 요청).
+const GEOMDAN_EVENT_GROUPS = [
+  ['폭발', /폭발|폭음|굉음/],
+  ['화재', /화재|불길|큰불/],
+  ['정산', /정산|분쟁조정|재정 ?(?:위기|지원|SOS|부담)|자금 ?고갈|행정 ?마비/],
+];
+function geomdanEventKeys(title) {
+  const keys = GEOMDAN_EVENT_GROUPS.filter(([, re]) => re.test(title)).map(([k]) => k);
+  for (const m of title.matchAll(/(\d{3,})\s*억/g)) keys.push(`${m[1]}억`);
+  return keys;
+}
+
 async function fetchGeomdanArticles(limit) {
   const [directCandidates, nearbyCandidates] = await Promise.all([
     fetchNewsCandidates(GEOMDAN_QUERY, GEOMDAN_KEYWORD).catch((err) => {
@@ -356,7 +372,7 @@ async function fetchGeomdanArticles(limit) {
   ]);
 
   const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate) && isGeomdanNews(c.title));
-  return clusterArticles(freshCandidates, limit);
+  return clusterArticles(freshCandidates, limit, geomdanEventKeys);
 }
 
 function xmlTag(xml, tag) {
