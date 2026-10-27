@@ -15,7 +15,7 @@
 // 필요한 환경 변수: DATA_GO_KR_SERVICE_KEY(없으면 캐시만으로 페이지를 만든다).
 
 const fs = require('fs');
-const { normalizeAptName, loadExcludedApartments, pricePerPyeong, makeRecordChecker } = require('./geomdan-common');
+const { normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker } = require('./geomdan-common');
 
 const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 // 2026-07-01 행정구역 개편으로 검단 지역은 서구(28260)에서 검단구(28290)로 나뉘었다.
@@ -418,6 +418,152 @@ function analyze(cache, refIdx) {
   return { months, region, complexes, thin, coveredMonths };
 }
 
+// ── 전세 지표 ──────────────────────────────────────────────────────────────
+// 매매 기록(saleCache)과 전월세 기록(rentCache)으로 단지·검단 전체의 전세 지표를 만든다.
+//  - 전세 평당가: 순수 전세(월세 0) 중 갱신계약을 뺀 신규 계약의 보증금을 공급면적 추정 평당으로 환산
+//  - 전세가율: 전세 3개월 이동 중위 평당가 ÷ 매매 3개월 이동 중위 평당가
+//  - 갭: 매매 평당가 − 전세 평당가(전용 85㎡형으로 환산한 금액도 같이)
+//  - 전세 4분면·신고가·고점 대비·이동평균선: 매매와 같은 방식
+//  - 갱신 비중: 전세 계약 중 갱신계약 비율(높을수록 세입자가 눌러앉음)
+//  - 월세 전환율: 월세×12 ÷ (전세 추정액 − 보증금), 월세 거래 3건 이상일 때
+function analyzeRent(saleCache, rentCache, refIdx) {
+  const startIdx = refIdx - CYCLE_MONTHS + 1;
+  const months = Array.from({ length: CYCLE_MONTHS }, (_, i) => indexYm(startIdx + i));
+  const n = months.length;
+  const zeros = () => months.map(() => 0);
+  const groups = new Map();
+  const grp = (key, t) => {
+    if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros(), deals: [], items: [] });
+    const g = groups.get(key);
+    g.names.set(t.a, (g.names.get(t.a) || 0) + 1);
+    g.dongs.set(t.d, (g.dongs.get(t.d) || 0) + 1);
+    return g;
+  };
+  const reg = { sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros() };
+  const jeonItems = [];
+  let covered = 0;
+
+  months.forEach((ym, mi) => {
+    const se = saleCache.months[ym];
+    if (se) {
+      for (const t of se.items) {
+        const key = normalizeAptName(t.a);
+        if (EXCLUDED.has(key)) continue;
+        const ppy = pricePerPyeong(t.p, t.ar);
+        if (!ppy) continue;
+        reg.sale[mi].push(ppy);
+        grp(key, t).sale[mi].push(ppy);
+      }
+    }
+    const re = rentCache.months[ym];
+    if (!re) return;
+    covered++;
+    for (const t of re.items) {
+      const key = normalizeAptName(t.a);
+      if (EXCLUDED.has(key)) continue;
+      const g = grp(key, t);
+      if (t.mr === 0 && t.dep > 0) {
+        g.all[mi]++;
+        reg.all[mi]++;
+        if (t.ct === '갱신') {
+          g.renew[mi]++;
+          reg.renew[mi]++;
+          continue; // 갱신계약은 가격이 눌려 있어 신규 계약 가격 지표에서 뺀다
+        }
+        const ppy = pricePerPyeong(t.dep, t.ar);
+        if (!ppy) continue;
+        g.jeon[mi].push(ppy);
+        reg.jeon[mi].push(ppy);
+        const rec = { a: t.a, ar: t.ar, p: t.dep, dt: t.dt, f: t.f, mi, ppy, key };
+        jeonItems.push(rec);
+        g.items.push(rec);
+      } else if (t.mr > 0) {
+        g.wolse[mi]++;
+        reg.wolse[mi]++;
+        g.deals.push({ mi, dep: t.dep, mr: t.mr, ar: t.ar, key });
+      }
+    }
+  });
+
+  const isNewHigh = makeRecordChecker(jeonItems);
+  const ratioSeries = (j3, s3) => j3.map((v, i) => (v != null && s3[i] != null ? (v / s3[i]) * 100 : null));
+  const gapSeries = (j3, s3) => j3.map((v, i) => (v != null && s3[i] != null ? s3[i] - v : null));
+  const gapAt85 = (gap) => (gap == null ? null : gap * (estimateSupplyArea(85) / SQM_PER_PYEONG));
+  const share = (a, b, from) => {
+    const x = a.slice(from).reduce((p, q) => p + q, 0);
+    const y = b.slice(from).reduce((p, q) => p + q, 0);
+    return y ? (x / y) * 100 : null;
+  };
+  const summarize = (series, sale3, g) => {
+    const ratio = ratioSeries(series.roll3, sale3);
+    const gap = gapSeries(series.roll3, sale3);
+    const now = lastNonNull(ratio, n - 1, 2);
+    const before = lastNonNull(ratio, n - 1 - 6, 1);
+    const gapNow = lastNonNull(gap, n - 1, 2);
+    const gapBefore = lastNonNull(gap, n - 1 - 6, 1);
+    return {
+      sale3,
+      ratio,
+      gap,
+      ratioNow: now ? now.v : null,
+      ratioDelta: now && before ? now.v - before.v : null,
+      gapNow: gapNow ? gapNow.v : null,
+      gapAt85: gapNow ? gapAt85(gapNow.v) : null,
+      gapDelta: gapNow && gapBefore ? gapNow.v - gapBefore.v : null,
+      renewShare: share(g.renew, g.all, n - 12),
+      wolseShare: (() => {
+        const w = g.wolse.slice(n - 12).reduce((p, q) => p + q, 0);
+        const j = g.all.slice(n - 12).reduce((p, q) => p + q, 0);
+        return w + j ? (w / (w + j)) * 100 : null;
+      })(),
+    };
+  };
+
+  const regionSale3 = rolling(reg.sale, 3, 5);
+  const regionJ = analyzeSeries(reg.jeon, 5, 20, null);
+  const region = { ...regionJ, ...summarize(regionJ, regionSale3, reg), renewSeries: reg.renew.map((v, i) => (reg.all[i] ? (v / reg.all[i]) * 100 : null)) };
+  region.recentNH = jeonItems.filter((r) => r.mi >= n - 3 && isNewHigh(r.a, r.ar, r.p, r.dt)).length;
+  region.recentTrades = regionJ.count.slice(-3).reduce((x, y) => x + y, 0);
+
+  // 월세 전환율: 월세 거래마다 같은 단지·같은 평형(전용 ㎡ 반올림)의 전후 3개월 신규 전세 보증금 중위값(J)을 찾아
+  // 월세×12 ÷ (J − 보증금)으로 계산한다. 짝이 되는 전세 거래가 2건 이상일 때만 쓰고, 월세 3건 이상일 때 중위값을 낸다.
+  const jeonByBucket = new Map();
+  for (const r of jeonItems) {
+    const k = `${r.key}|${Math.round(r.ar)}`;
+    if (!jeonByBucket.has(k)) jeonByBucket.set(k, []);
+    jeonByBucket.get(k).push({ mi: r.mi, dep: r.p });
+  }
+  const convOf = (deals) => {
+    const vals = [];
+    for (const d of deals) {
+      if (d.mi < n - 12) continue;
+      const near = (jeonByBucket.get(`${d.key}|${Math.round(d.ar)}`) || []).filter((x) => Math.abs(x.mi - d.mi) <= 3);
+      if (near.length < 2) continue;
+      const diff = median(near.map((x) => x.dep)) - d.dep;
+      if (diff < 3000) continue;
+      const rate = (d.mr * 12) / diff;
+      if (rate > 0.005 && rate < 0.15) vals.push(rate * 100);
+    }
+    return vals.length >= 3 ? { rate: median(vals), n: vals.length } : null;
+  };
+  region.conv = convOf([...groups.values()].flatMap((g) => g.deals));
+
+  const top = (m) => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const complexes = [];
+  for (const [key, g] of groups) {
+    const j = analyzeSeries(g.jeon, 2, 4, regionJ);
+    if (j.total < 8 || j.current == null) continue;
+    const sale3 = rolling(g.sale, 3, 2);
+    const item = { key, name: top(g.names), dong: top(g.dongs), ...j, ...summarize(j, sale3, g) };
+    item.newHighs = g.items.filter((r) => isNewHigh(r.a, r.ar, r.p, r.dt)).map((r) => ({ mi: r.mi, ppy: r.ppy, amount: r.p, area: r.ar, floor: r.f, dt: r.dt }));
+    item.recentNH = item.newHighs.filter((h) => h.mi >= n - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
+    item.conv = convOf(g.deals);
+    complexes.push(item);
+  }
+  complexes.sort((a, b) => b.current - a.current);
+  return { months, region, complexes, byKey: new Map(complexes.map((c) => [c.key, c])), coveredMonths: covered };
+}
+
 // ── 그리기 ─────────────────────────────────────────────────────────────────
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const won = (v) => `${Math.round(v).toLocaleString('ko-KR')}`;
@@ -513,6 +659,138 @@ function trendChart(months, s, { height = 280, showPeak = true, newHighs = [] } 
   if (s.roll3[lastIdx] != null) svg += `<circle class="ma3-end" cx="${x(lastIdx).toFixed(1)}" cy="${y(s.roll3[lastIdx]).toFixed(1)}" r="4"/>`;
   svg += '</svg>';
   return svg;
+}
+
+// 전세 추세 차트: 매매·전세 3개월 이동 중위 평당가 두 줄 + 둘 사이 간격(=갭) 색칠 + 아래쪽 전세 거래량 막대.
+function rentTrendChart(months, s, { height = 260 } = {}) {
+  const W = 560;
+  const H = height;
+  const pad = { l: 64, r: 14, t: 20, b: 26 };
+  const volH = 40;
+  const priceBottom = H - pad.b - volH - 10;
+  const vals = [...s.roll3, ...s.sale3].filter((v) => v != null);
+  if (!vals.length) return '';
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const padV = (hi - lo) * 0.1 || hi * 0.05;
+  lo -= padV;
+  hi += padV;
+  const n = months.length;
+  const x = (i) => pad.l + ((W - pad.l - pad.r) * (i + 0.5)) / n;
+  const y = (v) => pad.t + ((hi - v) / (hi - lo)) * (priceBottom - pad.t);
+  const maxVol = Math.max(1, ...s.count);
+  const barW = Math.max(2, ((W - pad.l - pad.r) / n) * 0.6);
+  const volBase = H - pad.b;
+  let svg = `<svg class="chart rentchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="매매·전세 평당가 추세 차트">`;
+  for (const t of niceTicks(lo, hi, 4)) {
+    svg += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>`;
+    svg += `<text class="axis" x="${pad.l - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${won(t)}</text>`;
+  }
+  s.count.forEach((c, i) => {
+    if (!c) return;
+    const h = (c / maxVol) * volH;
+    svg += `<rect class="vol" x="${(x(i) - barW / 2).toFixed(1)}" y="${(volBase - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}"><title>${ymKorean(months[i])} 신규 전세 ${c}건</title></rect>`;
+  });
+  svg += `<text class="axis" x="${pad.l - 6}" y="${volBase - volH + 8}" text-anchor="end">전세</text>`;
+  months.forEach((ym, i) => {
+    if ((n - 1 - i) % 6 === 0) svg += `<text class="axis" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${ymLabel(ym)}</text>`;
+  });
+  // 갭 색칠: 두 선이 다 있는 구간마다 매매선 위로 → 전세선 아래로 되돌아오는 다각형
+  const both = (i) => s.sale3[i] != null && s.roll3[i] != null;
+  let run = [];
+  const flush = () => {
+    if (run.length >= 2) {
+      const top = run.map((i) => `${x(i).toFixed(1)},${y(s.sale3[i]).toFixed(1)}`);
+      const bot = [...run].reverse().map((i) => `${x(i).toFixed(1)},${y(s.roll3[i]).toFixed(1)}`);
+      svg += `<polygon class="gap-fill" points="${top.concat(bot).join(' ')}"/>`;
+    }
+    run = [];
+  };
+  for (let i = 0; i < n; i++) (both(i) ? run.push(i) : flush());
+  flush();
+  const path = (arr) => {
+    let d = '';
+    let pen = false;
+    arr.forEach((v, i) => {
+      if (v == null) {
+        pen = false;
+        return;
+      }
+      d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+      pen = true;
+    });
+    return d;
+  };
+  svg += `<path class="ln-sale" d="${path(s.sale3)}"/>`;
+  svg += `<path class="ln-jeon" d="${path(s.roll3)}"/>`;
+  const endLabel = (arr, cls, label) => {
+    const e = lastNonNull(arr, n - 1, 2);
+    if (!e) return '';
+    return `<circle class="${cls}-end" cx="${x(e.i).toFixed(1)}" cy="${y(e.v).toFixed(1)}" r="4"/><text class="rlabel ${cls}-txt" x="${(W - pad.r).toFixed(1)}" y="${(y(e.v) - 12).toFixed(1)}" text-anchor="end">${label} ${won(e.v)}</text>`;
+  };
+  svg += endLabel(s.sale3, 'ln-sale', '매매') + endLabel(s.roll3, 'ln-jeon', '전세');
+  svg += '</svg>';
+  return svg;
+}
+
+// 전세가율 차트: 전세 평당가 ÷ 매매 평당가(%)의 3개월선.
+function ratioChart(months, ratio, { height = 190 } = {}) {
+  const W = 560;
+  const H = height;
+  const pad = { l: 64, r: 14, t: 22, b: 26 };
+  const vals = ratio.filter((v) => v != null);
+  if (vals.length < 2) return '';
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const padV = Math.max((hi - lo) * 0.15, 2);
+  lo -= padV;
+  hi += padV;
+  const n = months.length;
+  const x = (i) => pad.l + ((W - pad.l - pad.r) * (i + 0.5)) / n;
+  const y = (v) => pad.t + ((hi - v) / (hi - lo)) * (H - pad.b - pad.t);
+  let svg = `<svg class="chart ratiochart" viewBox="0 0 ${W} ${H}" role="img" aria-label="전세가율 추세 차트">`;
+  for (const t of niceTicks(lo, hi, 4)) {
+    svg += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>`;
+    svg += `<text class="axis" x="${pad.l - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${Math.round(t)}%</text>`;
+  }
+  months.forEach((ym, i) => {
+    if ((n - 1 - i) % 6 === 0) svg += `<text class="axis" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${ymLabel(ym)}</text>`;
+  });
+  let d = '';
+  let pen = false;
+  ratio.forEach((v, i) => {
+    if (v == null) {
+      pen = false;
+      return;
+    }
+    d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+    pen = true;
+  });
+  svg += `<path class="ln-ratio" d="${d}"/>`;
+  ratio.forEach((v, i) => {
+    if (v != null) svg += `<circle class="ratio-dot" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4"><title>${ymKorean(months[i])} 전세가율 ${v.toFixed(1)}%</title></circle>`;
+  });
+  const e = lastNonNull(ratio, n - 1, 2);
+  if (e) svg += `<circle class="ln-ratio-end" cx="${x(e.i).toFixed(1)}" cy="${y(e.v).toFixed(1)}" r="4"/><text class="rlabel ln-ratio-txt" x="${(W - pad.r).toFixed(1)}" y="${(y(e.v) - 14).toFixed(1)}" text-anchor="end">전세가율 ${e.v.toFixed(1)}%</text>`;
+  svg += '</svg>';
+  return svg;
+}
+
+// 전세 지표를 글로 풀어 쓴 [이름, 설명] 목록(카드·사이클 페이지 공통).
+function rentFacts(info, months) {
+  const f = [];
+  const sgn = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
+  f.push(['전세 평당가', `${won(info.current)}만원(신규 전세 3개월 중위)`]);
+  if (info.ratioNow != null) f.push(['전세가율', `${info.ratioNow.toFixed(1)}%${info.ratioDelta != null ? ` · 6개월 전보다 ${sgn(info.ratioDelta)}%p` : ''}`]);
+  if (info.gapNow != null) f.push(['갭', `평당 ${won(info.gapNow)}만원 · 전용 85㎡형 환산 약 ${fmtWon(Math.round(info.gapAt85))}${info.gapDelta != null ? ` · 6개월 전보다 평당 ${sgn(info.gapDelta, 0)}만` : ''}`]);
+  if (info.ma) f.push(['전세 추세', maNote(info.ma)]);
+  if (info.peak) f.push(['전세 고점 대비', `${ymKorean(months[info.peak.idx])} 고점 ${won(info.peak.value)}만원 대비 ${pct((info.peak.ratio - 1) * 100)}`]);
+  if (info.quad) f.push(['전세 국면', `${QUADRANTS[info.quad.q].label} · 신규 전세 ${info.quad.volPrev}→${info.quad.volRecent}건, 평당가 ${pct(info.quad.y)}`]);
+  const nh = info.recentNH || [];
+  if (info.recentNH != null) f.push(['전세 신고가', nh.length ? `최근 3개월 ${nh.length}건 · 가장 최근 ${nh[0].dt.replace(/-/g, '.')} 전용 ${Math.round(nh[0].area)}㎡ ${nh[0].floor}층 ${fmtWon(nh[0].amount)}` : '최근 3개월에는 없음']);
+  if (info.renewShare != null) f.push(['갱신 비중', `최근 12개월 전세 계약의 ${info.renewShare.toFixed(0)}%가 갱신계약`]);
+  if (info.wolseShare != null) f.push(['월세', `최근 12개월 전월세 계약의 ${info.wolseShare.toFixed(0)}%가 월세${info.conv ? ` · 월세 전환율 약 ${info.conv.rate.toFixed(1)}%(같은 평형 전세와 짝지은 ${info.conv.n}건)` : ''}`]);
+  return f;
 }
 
 function sparkline(values, { w = 120, h = 30 } = {}) {
@@ -641,7 +919,76 @@ function drawdownBar(peak) {
   return `<div class="dd"><div class="dd-track"><div class="dd-fill${atPeak ? ' at-peak' : ''}" style="width:${(ratio * 100).toFixed(1)}%"></div></div><span class="dd-num">${atPeak ? '고점권' : pct(dd)}</span></div>`;
 }
 
-function renderPage(result, refYm, cacheInfo) {
+// 사이클 페이지의 전세 부분: 검단 전체 전세 흐름 · 전세 4분면 · 단지별 전세가율·갭.
+function renderRentSections(rent) {
+  const { months, region: R, complexes } = rent;
+  const last = months[months.length - 1];
+  const sgn = (v, d = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
+  const dd = R.peak ? (R.peak.ratio - 1) * 100 : null;
+  const tile = (label, value, note, cls = '') => `<div class="stat"><small>${label}</small><b${cls ? ` class="${cls}"` : ''}>${value}</b>${note ? `<small>${note}</small>` : ''}</div>`;
+  const tiles = [
+    tile('3개월 중위 전세 평당가', R.current ? `${won(R.current)}만원` : '-', `${ymKorean(last)}까지 · 신규 전세`),
+    tile('전세가율', R.ratioNow != null ? `${R.ratioNow.toFixed(1)}%` : '-', R.ratioDelta != null ? `6개월 전보다 ${sgn(R.ratioDelta)}%p` : ''),
+    tile('평당 갭(매매−전세)', R.gapNow != null ? `${won(R.gapNow)}만원` : '-', R.gapAt85 != null ? `전용 85㎡형 환산 약 ${fmtWon(Math.round(R.gapAt85))}` : ''),
+    tile('전세 이동평균선', maChip(R.ma), R.ma ? maNote(R.ma) : ''),
+    tile('전세 고점 대비', dd == null ? '-' : dd > -1 ? '고점권' : pct(dd), R.peak ? `${ymKorean(months[R.peak.idx])} 고점 ${won(R.peak.value)}만원` : ''),
+    tile('최근 3개월 전세 신고가', `${R.recentNH}건`, R.recentTrades ? `신규 전세 ${R.recentTrades}건의 ${((R.recentNH / R.recentTrades) * 100).toFixed(1)}%` : '', 'nh-num'),
+    tile('전세 갱신 비중', R.renewShare != null ? `${R.renewShare.toFixed(0)}%` : '-', '최근 12개월 전세 계약 중 갱신계약'),
+    tile('월세 전환율(추정)', R.conv ? `${R.conv.rate.toFixed(1)}%` : '-', `${R.wolseShare != null ? `월세 비중 ${R.wolseShare.toFixed(0)}% · ` : ''}같은 평형 전세와 짝지은 ${R.conv ? R.conv.n : 0}건`),
+  ].join('');
+  const points = complexes.filter((c) => c.quad).map((c) => ({ name: c.name, x: c.quad.x, y: c.quad.y, q: c.quad.q, vol: c.quad.volRecent }));
+  const counts = ['up', 'late', 'down', 'bottom'].map((k) => `<div class="q-${k}"><b>${QUADRANTS[k].label} ${points.filter((p) => p.q === k).length}곳</b><small>${QUADRANTS[k].desc}</small></div>`).join('');
+  const rows = [...complexes]
+    .sort((a, b) => (b.ratioNow ?? -1) - (a.ratioNow ?? -1))
+    .map((c) => {
+      const nh = c.recentNH.length;
+      const facts = rentFacts(c, months).map(([k, v]) => `<li><b>${k}</b> ${esc(v)}</li>`).join('');
+      return `<details class="row">
+  <summary class="rsum">
+    <span class="c-name"><b>${esc(c.name)}${nh ? `<em class="nh-badge">전세 신고가 ${nh}</em>` : ''}</b><small>${esc(c.dong)} · 신규 전세 ${c.total}건</small></span>
+    <span class="c-price"><b>${won(c.current)}</b><small>전세 만원/평</small></span>
+    <span class="r-ratio"><b>${c.ratioNow != null ? `${c.ratioNow.toFixed(0)}%` : '-'}</b><small>${c.ratioDelta != null ? `전세가율 (${sgn(c.ratioDelta)}%p)` : '전세가율'}</small></span>
+    <span class="r-gap"><b>${c.gapAt85 != null ? fmtWon(Math.round(c.gapAt85)) : '-'}</b><small>85㎡형 갭</small></span>
+    <span class="c-ma">${maChip(c.ma)}</span>
+    <span class="c-quad">${quadChip(c.quad)}</span>
+  </summary>
+  <div class="detail">
+    ${rentTrendChart(months, c)}
+    <div class="legend"><span><i class="lsale"></i>매매 3개월 중위</span><span><i class="ljeon"></i>전세 3개월 중위</span><span><i class="lgap"></i>갭</span><span><i class="lvol"></i>신규 전세 거래량</span></div>
+    <ul class="facts">${facts}</ul>
+  </div>
+</details>`;
+    })
+    .join('\n');
+  return `
+<section>
+  <h2>검단신도시 전세 흐름</h2>
+  <p class="lead">전월세 실거래 중 순수 전세의 신규 계약(갱신계약 제외) 보증금을 매매와 같은 방식(공급면적 추정 평당)으로 바꿨습니다. 전세가율은 전세 평당가 ÷ 매매 평당가, 갭은 둘의 차이입니다.</p>
+  <div class="stats">${tiles}</div>
+  ${rentTrendChart(months, R, { height: 280 })}
+  <div class="legend"><span><i class="lsale"></i>매매 3개월 중위</span><span><i class="ljeon"></i>전세 3개월 중위</span><span><i class="lgap"></i>갭</span><span><i class="lvol"></i>신규 전세 거래량</span></div>
+  <h3>전세가율 흐름</h3>
+  ${ratioChart(months, R.ratio)}
+</section>
+
+<section>
+  <h2>전세 거래량·가격 4분면</h2>
+  <p class="lead">최근 3개월(${ymLabel(months[months.length - 3])}~${ymLabel(last)})의 신규 전세를 그 전 3개월과 비교했습니다. 오른쪽일수록 전세 거래가 늘었고 위쪽일수록 전세 평당가가 올랐으며, 원이 클수록 최근 거래가 많은 단지입니다. 점에 마우스를 올리거나 탭하면 단지 이름이 보입니다.</p>
+  ${points.length ? quadrantChart(points) : '<p class="lead">비교할 전세 거래가 아직 모자랍니다.</p>'}
+  <div class="qsum">${counts}</div>
+</section>
+
+<section>
+  <h2>단지별 전세가율·갭</h2>
+  <p class="lead">전세가율이 높은 순입니다. 단지를 누르면 매매·전세 평당가 차트와 전세 지표 설명이 펼쳐집니다. 갭은 전용 85㎡형으로 환산한 금액입니다.</p>
+  <div class="list">
+${rows}
+  </div>
+</section>
+`;
+}
+
+function renderPage(result, refYm, rent) {
   const { months, region, complexes, thin, coveredMonths } = result;
   const startYm = months[0];
   const quadPoints = complexes.filter((c) => c.quad).map((c) => ({ name: c.name, x: c.quad.x, y: c.quad.y, q: c.quad.q, vol: c.quad.volRecent }));
@@ -681,6 +1028,8 @@ function renderPage(result, refYm, cacheInfo) {
     : '';
 
   const regionDD = region.peak ? (region.peak.ratio - 1) * 100 : null;
+
+  const rentSections = rent ? renderRentSections(rent) : '';
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -755,6 +1104,23 @@ section .lead { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch
 .legend i.l12 { border-top: 2px dashed var(--ma12); }
 .legend i.lpk { border-top: 1px dashed var(--up); }
 .legend i.ldot { width: 7px; height: 7px; border: 0; border-radius: 50%; background: var(--ink-3); opacity: .6; }
+.legend i.lsale { border-top: 3px solid var(--ink); }
+.legend i.ljeon { border-top: 3px solid var(--accent); }
+.legend i.lgap { height: 8px; border: 0; background: var(--accent); opacity: .22; }
+.ln-sale { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
+.ln-jeon { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linejoin: round; }
+.gap-fill { fill: var(--accent); opacity: .14; stroke: none; }
+.ln-sale-end { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.ln-jeon-end { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.rlabel { font-size: 12.5px; font-weight: 800; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.ln-sale-txt { fill: var(--ink); } .ln-jeon-txt { fill: var(--accent); } .ln-ratio-txt { fill: var(--down); }
+.ln-ratio { fill: none; stroke: var(--down); stroke-width: 2.4; stroke-linejoin: round; }
+.ratio-dot { fill: var(--down); opacity: .5; }
+.ln-ratio-end { fill: var(--down); stroke: var(--surface); stroke-width: 2; }
+.rsum { grid-template-columns: minmax(0, 2.2fr) 1fr 1fr 1.2fr 1.1fr 1.2fr; }
+.r-ratio, .r-gap { display: grid; font-variant-numeric: tabular-nums; }
+.r-ratio b, .r-gap b { font-size: 15px; }
+.r-ratio small, .r-gap small { color: var(--ink-3); font-size: 11.5px; }
 .legend i.lvol { width: 8px; height: 10px; border: 0; background: var(--ink-3); opacity: .35; }
 .qbg.q-up { fill: var(--up-bg); } .qbg.q-late { fill: var(--late-bg); } .qbg.q-down { fill: var(--down-bg); } .qbg.q-bottom { fill: var(--bottom-bg); }
 .qname { font-size: 13px; font-weight: 700; }
@@ -826,6 +1192,10 @@ footer a { color: var(--accent); }
   section { padding: 16px; }
   .head { display: none; }
   summary { grid-template-columns: 1fr auto; grid-template-areas: "name price" "ma quad" "dd dd" "rs rs"; row-gap: 8px; }
+  .rsum { grid-template-columns: 1fr 1fr; grid-template-areas: "name name" "price ratio" "gap ma" "quad quad"; }
+  .rsum .c-name { grid-area: name; } .rsum .c-price { grid-area: price; text-align: left; } .rsum .r-ratio { grid-area: ratio; } .rsum .r-gap { grid-area: gap; }
+  .rsum .c-ma { grid-area: ma; text-align: right; } .rsum .c-quad { grid-area: quad; text-align: left; }
+  .rlabel { font-size: 17px; }
   .c-name { grid-area: name; } .c-price { grid-area: price; text-align: right; }
   .c-ma { grid-area: ma; } .c-quad { grid-area: quad; text-align: right; }
   .c-dd { grid-area: dd; } .c-rs { grid-area: rs; }
@@ -873,6 +1243,7 @@ footer a { color: var(--accent); }
   </div>
 </section>
 
+${rentSections}
 <section>
   <h2>단지별 사이클</h2>
   <p class="lead">단지를 누르면 평당가 이동평균선 차트와 지표별 설명이 펼쳐집니다. 상대강도는 단지의 3개월 중위 평당가를 검단 전체(100)와 비교한 값이고, 괄호는 6개월 전보다 얼마나 변했는지입니다.</p>
@@ -950,7 +1321,16 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  fs.writeFileSync(OUT_PATH, renderPage(result, refYm));
+  let rentResult = null;
+  try {
+    if (Object.keys(rentCache.months).length) {
+      const r = analyzeRent(cache, rentCache, refIdx);
+      if (r.coveredMonths) rentResult = r;
+    }
+  } catch (err) {
+    console.error(`전세 지표를 계산하지 못했습니다: ${err.message}`);
+  }
+  fs.writeFileSync(OUT_PATH, renderPage(result, refYm, rentResult));
   console.log(`사이클 페이지 생성: ${OUT_PATH} (단지 ${result.complexes.length}곳, 기록 ${result.coveredMonths}/${result.months.length}개월)`);
 }
 
@@ -961,4 +1341,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { analyze, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH };
+module.exports = { analyze, analyzeRent, rentTrendChart, ratioChart, rentFacts, loadRentCache, fmtWon, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH, RENT_CACHE_PATH };
