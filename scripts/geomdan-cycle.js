@@ -300,6 +300,12 @@ const QUADRANTS = {
   bottom: { label: '바닥 다지기', desc: '값은 내렸지만 거래가 늘어남' },
 };
 
+// 차트에 보여 줄 가격의 기준 전용면적(㎡): 최근 12개월에 가장 많이 거래된 평형. 없으면 fallback, 그것도 없으면 85.
+function modeArea(areas, fallback) {
+  const pick = (m) => (m && m.size ? [...m.entries()].sort((a, b) => b[1] - a[1])[0][0] : null);
+  return pick(areas) || pick(fallback) || 85;
+}
+
 function analyzeSeries(byMonth, minRoll3, minRoll12, region) {
   const n = byMonth.length;
   const last = n - 1;
@@ -375,6 +381,7 @@ function analyze(cache, refIdx) {
   // 신고가: 같은 단지·같은 평형의 이전 최고가(기록 전체 기준)를 넘긴 거래
   const isNewHigh = makeRecordChecker(Object.values(cache.months).flatMap((m) => m.items));
   const regionNewHighs = [];
+  const regionAreas = new Map();
 
   months.forEach((ym, mi) => {
     const entry = cache.months[ym];
@@ -386,8 +393,13 @@ function analyze(cache, refIdx) {
       const ppy = pricePerPyeong(t.p, t.ar);
       if (!ppy) continue;
       regionByMonth[mi].push(ppy);
-      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []), newHighs: [] });
+      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []), newHighs: [], areas: new Map() });
       const g = groups.get(key);
+      if (mi >= months.length - 12) {
+        const ab = Math.round(Number(t.ar));
+        g.areas.set(ab, (g.areas.get(ab) || 0) + 1);
+        regionAreas.set(ab, (regionAreas.get(ab) || 0) + 1);
+      }
       if (isNewHigh(t.a, t.ar, t.p, t.dt)) {
         const nh = { mi, ppy, amount: t.p, area: t.ar, floor: t.f, dt: t.dt };
         g.newHighs.push(nh);
@@ -406,13 +418,14 @@ function analyze(cache, refIdx) {
   for (const g of groups.values()) {
     const a = analyzeSeries(g.byMonth, 2, 4, region);
     const recentNH = g.newHighs.filter((h) => h.mi >= months.length - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
-    const item = { name: top(g.names), dong: top(g.dongs), ...a, newHighs: g.newHighs, recentNH };
+    const item = { name: top(g.names), dong: top(g.dongs), ...a, newHighs: g.newHighs, recentNH, refArea: modeArea(g.areas, regionAreas) };
     // 기록 전체 8건 이상, 최근 3개월 안에 3개월 이동 중위값이 있어야 지표를 낸다.
     if (a.total >= 8 && a.current != null) complexes.push(item);
     else thin.push(item);
   }
   complexes.sort((a, b) => b.current - a.current);
   thin.sort((a, b) => b.total - a.total);
+  region.refArea = modeArea(regionAreas);
   region.recentNH = regionNewHighs.filter((h) => h.mi >= months.length - 3).length;
   region.recentTrades = region.count.slice(-3).reduce((x, y) => x + y, 0);
   return { months, region, complexes, thin, coveredMonths };
@@ -433,7 +446,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   const zeros = () => months.map(() => 0);
   const groups = new Map();
   const grp = (key, t) => {
-    if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros(), deals: [], items: [] });
+    if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros(), deals: [], items: [], areas: new Map(), jareas: new Map() });
     const g = groups.get(key);
     g.names.set(t.a, (g.names.get(t.a) || 0) + 1);
     g.dongs.set(t.d, (g.dongs.get(t.d) || 0) + 1);
@@ -441,6 +454,8 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   };
   const reg = { sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros() };
   const jeonItems = [];
+  const regAreas = new Map();
+  const regJAreas = new Map();
   let covered = 0;
 
   months.forEach((ym, mi) => {
@@ -452,7 +467,13 @@ function analyzeRent(saleCache, rentCache, refIdx) {
         const ppy = pricePerPyeong(t.p, t.ar);
         if (!ppy) continue;
         reg.sale[mi].push(ppy);
-        grp(key, t).sale[mi].push(ppy);
+        const sg = grp(key, t);
+        sg.sale[mi].push(ppy);
+        if (mi >= n - 12) {
+          const ab = Math.round(Number(t.ar));
+          sg.areas.set(ab, (sg.areas.get(ab) || 0) + 1);
+          regAreas.set(ab, (regAreas.get(ab) || 0) + 1);
+        }
       }
     }
     const re = rentCache.months[ym];
@@ -474,6 +495,11 @@ function analyzeRent(saleCache, rentCache, refIdx) {
         if (!ppy) continue;
         g.jeon[mi].push(ppy);
         reg.jeon[mi].push(ppy);
+        if (mi >= n - 12) {
+          const ab = Math.round(Number(t.ar));
+          g.jareas.set(ab, (g.jareas.get(ab) || 0) + 1);
+          regJAreas.set(ab, (regJAreas.get(ab) || 0) + 1);
+        }
         const rec = { a: t.a, ar: t.ar, p: t.dep, dt: t.dt, f: t.f, mi, ppy, key };
         jeonItems.push(rec);
         g.items.push(rec);
@@ -522,6 +548,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   const regionSale3 = rolling(reg.sale, 3, 5);
   const regionJ = analyzeSeries(reg.jeon, 5, 20, null);
   const region = { ...regionJ, ...summarize(regionJ, regionSale3, reg), renewSeries: reg.renew.map((v, i) => (reg.all[i] ? (v / reg.all[i]) * 100 : null)) };
+  region.refArea = modeArea(regAreas, regJAreas);
   region.recentNH = jeonItems.filter((r) => r.mi >= n - 3 && isNewHigh(r.a, r.ar, r.p, r.dt)).length;
   region.recentTrades = regionJ.count.slice(-3).reduce((x, y) => x + y, 0);
 
@@ -554,7 +581,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
     const j = analyzeSeries(g.jeon, 2, 4, regionJ);
     if (j.total < 8 || j.current == null) continue;
     const sale3 = rolling(g.sale, 3, 2);
-    const item = { key, name: top(g.names), dong: top(g.dongs), ...j, ...summarize(j, sale3, g) };
+    const item = { key, name: top(g.names), dong: top(g.dongs), ...j, ...summarize(j, sale3, g), refArea: modeArea(g.areas.size ? g.areas : g.jareas, regAreas) };
     item.newHighs = g.items.filter((r) => isNewHigh(r.a, r.ar, r.p, r.dt)).map((r) => ({ mi: r.mi, ppy: r.ppy, amount: r.p, area: r.ar, floor: r.f, dt: r.dt }));
     item.recentNH = item.newHighs.filter((h) => h.mi >= n - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
     item.conv = convOf(g.deals);
@@ -572,6 +599,14 @@ const fmtWon = (manwon) => {
   const rest = manwon % 10000;
   return eok > 0 ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}원` : `${manwon.toLocaleString('ko-KR')}만원`;
 };
+// 차트 라벨용 짧은 가격(100만원 단위 반올림): 85,900 → "8억 5,900만"
+const fmtEok = (manwon) => {
+  const v = Math.round(manwon / 100) * 100;
+  const e = Math.floor(v / 10000);
+  const r = v % 10000;
+  return e > 0 ? `${e}억${r ? ` ${r.toLocaleString('ko-KR')}만` : ''}` : `${v.toLocaleString('ko-KR')}만`;
+};
+const axisEok = (v) => (v >= 10000 ? `${Number((v / 10000).toFixed(1))}억` : `${Math.round(v).toLocaleString('ko-KR')}만`);
 const pct = (v, digits = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%`;
 const fmt = (v) => (v == null ? '' : v.toFixed(1));
 
@@ -661,21 +696,27 @@ function trendChart(months, s, { height = 280, showPeak = true, newHighs = [] } 
   return svg;
 }
 
-// 통합 추세 차트 하나에 매매·전세를 같이 그린다:
+// 통합 추세 차트 하나에 매매·전세를 같이 그린다(세로축은 가격, 평당가는 작은 글씨):
 //  매매 3개월선(실선)·12개월선(점선)·달별 중위 점, 전세 3개월선·12개월선, 두 선 사이 갭 색칠,
 //  매매·전세 고점선, 신고가 ▲(매매 빨강·전세 초록), 아래쪽 거래량 막대(왼쪽 매매·오른쪽 전세).
+// 평당가 × (기준 전용면적의 공급 평수)로 가격을 환산해 보여 준다(기준 면적 = 최근 12개월에 가장 많이 거래된 평형).
 // c = 매매 분석(없을 수 있음), r = 전세 분석(없을 수 있음). 검단 전체도 같은 방식으로 그린다.
-function combinedChart(months, c, r, { height = 300 } = {}) {
-  const sale3 = c ? c.roll3 : r ? r.sale3 : null;
-  const sale12 = c ? c.roll12 : null;
-  const jeon3 = r ? r.roll3 : null;
-  const jeon12 = r ? r.roll12 : null;
+function combinedChart(months, c, r, { height = 310, refArea } = {}) {
+  const area = refArea || (c && c.refArea) || (r && r.refArea) || 85;
+  const K = estimateSupplyArea(area) / SQM_PER_PYEONG; // 기준 평형의 공급 평수
+  const P = (v) => (v == null ? null : v * K);
+  const mapP = (arr) => (arr ? arr.map(P) : null);
+  const sale3 = mapP(c ? c.roll3 : r ? r.sale3 : null);
+  const sale12 = mapP(c ? c.roll12 : null);
+  const jeon3 = mapP(r ? r.roll3 : null);
+  const jeon12 = mapP(r ? r.roll12 : null);
+  const saleMonthly = mapP(c ? c.monthly : null);
   const W = 560;
   const H = height;
-  const pad = { l: 64, r: 14, t: 22, b: 26 };
+  const pad = { l: 64, r: 14, t: 34, b: 26 };
   const volH = 46;
   const priceBottom = H - pad.b - volH - 10;
-  const vals = [sale3, sale12, c && c.monthly, jeon3, jeon12].filter(Boolean).flat().filter((v) => v != null);
+  const vals = [sale3, sale12, saleMonthly, jeon3, jeon12].filter(Boolean).flat().filter((v) => v != null);
   if (!vals.length) return '';
   let lo = Math.min(...vals);
   let hi = Math.max(...vals);
@@ -684,17 +725,17 @@ function combinedChart(months, c, r, { height = 300 } = {}) {
   hi += padV;
   const n = months.length;
   const slot = (W - pad.l - pad.r) / n;
-  const x = (i) => pad.l + (slot * (i + 0.5));
+  const x = (i) => pad.l + slot * (i + 0.5);
   const y = (v) => pad.t + ((hi - v) / (hi - lo)) * (priceBottom - pad.t);
   const saleCount = c ? c.count : r ? months.map(() => 0) : null;
   const jeonCount = r ? r.count : null;
   const maxVol = Math.max(1, ...(saleCount || [0]), ...(jeonCount || [0]));
   const bw = Math.max(1.4, slot * 0.34);
   const volBase = H - pad.b;
-  let svg = `<svg class="chart combochart" viewBox="0 0 ${W} ${H}" role="img" aria-label="매매·전세 평당가 추세 차트">`;
+  let svg = `<svg class="chart combochart" viewBox="0 0 ${W} ${H}" role="img" aria-label="전용 ${area}㎡형 환산 매매·전세 가격 추세 차트">`;
   for (const t of niceTicks(lo, hi, 4)) {
     svg += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>`;
-    svg += `<text class="axis" x="${pad.l - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${won(t)}</text>`;
+    svg += `<text class="axis" x="${pad.l - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${axisEok(t)}</text>`;
   }
   months.forEach((ym, i) => {
     const sc = saleCount ? saleCount[i] : 0;
@@ -718,18 +759,16 @@ function combinedChart(months, c, r, { height = 300 } = {}) {
     for (let i = 0; i < n; i++) (sale3[i] != null && jeon3[i] != null ? run.push(i) : flush());
     flush();
   }
-  // 고점선(매매 빨강 점선·전세 초록 점선). 라벨은 왼쪽에 둬서 오른쪽 끝 라벨과 겹치지 않게 한다.
-  if (c && c.peak) {
-    const py = y(c.peak.value).toFixed(1);
-    svg += `<line class="peak" x1="${pad.l}" x2="${W - pad.r}" y1="${py}" y2="${py}"/><text class="peak-label" x="${pad.l + 6}" y="${(Number(py) - 5).toFixed(1)}">매매 고점 ${won(c.peak.value)}</text>`;
-  }
-  if (r && r.peak) {
-    const py = y(r.peak.value).toFixed(1);
-    svg += `<line class="peakj" x1="${pad.l}" x2="${W - pad.r}" y1="${py}" y2="${py}"/><text class="peakj-label" x="${pad.l + 6}" y="${(Number(py) - 5).toFixed(1)}">전세 고점 ${won(r.peak.value)}</text>`;
-  }
-  if (c) {
-    c.monthly.forEach((v, i) => {
-      if (v != null) svg += `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4"><title>${ymKorean(months[i])} 매매 중위 ${won(v)}만원/평 · ${c.count[i]}건</title></circle>`;
+  // 고점선(매매 빨강·전세 초록 점선). 라벨(가격 + 작은 글씨 평당가)은 왼쪽에 둬서 오른쪽 끝 라벨과 겹치지 않게 한다.
+  const peakLine = (peak, cls, name) => {
+    const py = y(P(peak.value));
+    return `<line class="${cls}" x1="${pad.l}" x2="${W - pad.r}" y1="${py.toFixed(1)}" y2="${py.toFixed(1)}"/><text class="${cls}-label" x="${pad.l + 6}" y="${(py - 16).toFixed(1)}">${name} 고점 ${fmtEok(P(peak.value))}</text><text class="${cls}-sub" x="${pad.l + 6}" y="${(py - 4).toFixed(1)}">평당 ${won(peak.value)}만</text>`;
+  };
+  if (c && c.peak) svg += peakLine(c.peak, 'peak', '매매');
+  if (r && r.peak) svg += peakLine(r.peak, 'peakj', '전세');
+  if (saleMonthly) {
+    saleMonthly.forEach((v, i) => {
+      if (v != null) svg += `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4"><title>${ymKorean(months[i])} 매매 중위 ${fmtEok(v)} (평당 ${won(c.monthly[i])}만원) · ${c.count[i]}건</title></circle>`;
     });
   }
   const path = (arr) => {
@@ -753,18 +792,19 @@ function combinedChart(months, c, r, { height = 300 } = {}) {
     let out = '';
     for (const h of list || []) {
       const cx = x(h.mi);
-      const cy = Math.max(pad.t + 4, y(h.ppy));
+      const cy = Math.max(pad.t + 4, y(P(h.ppy)));
       out += `<path class="${cls}" d="M${cx.toFixed(1)},${(cy - 6).toFixed(1)}l5,8.5h-10z"><title>${label} 신고가 ${h.dt.replace(/-/g, '.')} 전용 ${Math.round(h.area)}㎡ ${h.floor}층 ${fmtWon(h.amount)} (평당 ${won(h.ppy)}만원)</title></path>`;
     }
     return out;
   };
   svg += mark(c && c.newHighs, 'nh-mark', '매매') + mark(r && r.newHighs, 'nh-markj', '전세');
-  const endLabel = (arr, cls, label) => {
+  // 오른쪽 끝 값: 큰 글씨 가격 + 작은 글씨 평당가
+  const endLabel = (arr, orig, cls, label) => {
     const e = arr && lastNonNull(arr, n - 1, 2);
     if (!e) return '';
-    return `<circle class="${cls}-end" cx="${x(e.i).toFixed(1)}" cy="${y(e.v).toFixed(1)}" r="4"/><text class="rlabel ${cls}-txt" x="${(W - pad.r).toFixed(1)}" y="${(y(e.v) - 12).toFixed(1)}" text-anchor="end">${label} ${won(e.v)}</text>`;
+    return `<circle class="${cls}-end" cx="${x(e.i).toFixed(1)}" cy="${y(e.v).toFixed(1)}" r="4"/><text class="rlabel ${cls}-txt" x="${(W - pad.r).toFixed(1)}" y="${(y(e.v) - 22).toFixed(1)}" text-anchor="end">${label} ${fmtEok(e.v)}</text><text class="rsub ${cls}-txt" x="${(W - pad.r).toFixed(1)}" y="${(y(e.v) - 9).toFixed(1)}" text-anchor="end">평당 ${won(orig[e.i])}만</text>`;
   };
-  svg += endLabel(sale3, 'ln-sale', '매매') + endLabel(jeon3, 'ln-jeon', '전세');
+  svg += endLabel(sale3, c ? c.roll3 : r ? r.sale3 : null, 'ln-sale', '매매') + endLabel(jeon3, r ? r.roll3 : null, 'ln-jeon', '전세');
   svg += '</svg>';
   return svg;
 }
@@ -1168,6 +1208,9 @@ section .lead { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch
 .ln-sale-end { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
 .ln-jeon-end { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .rlabel { font-size: 12.5px; font-weight: 800; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.rsub { font-size: 10.5px; font-weight: 600; }
+.peak-sub, .peakj-sub { font-size: 10px; font-weight: 600; }
+.peak-sub { fill: var(--up); } .peakj-sub { fill: var(--accent); }
 .ln-sale-txt { fill: var(--ink); } .ln-jeon-txt { fill: var(--accent); } .ln-ratio-txt { fill: var(--down); }
 .ln-ratio { fill: none; stroke: var(--down); stroke-width: 2.4; stroke-linejoin: round; }
 .ratio-dot { fill: var(--down); opacity: .5; }
@@ -1251,6 +1294,8 @@ footer a { color: var(--accent); }
   .rsum .c-name { grid-area: name; } .rsum .c-price { grid-area: price; text-align: left; } .rsum .r-ratio { grid-area: ratio; } .rsum .r-gap { grid-area: gap; }
   .rsum .c-ma { grid-area: ma; text-align: right; } .rsum .c-quad { grid-area: quad; text-align: left; }
   .rlabel { font-size: 17px; }
+  .rsub { font-size: 14px; }
+  .peak-sub, .peakj-sub { font-size: 13px; }
   .c-name { grid-area: name; } .c-price { grid-area: price; text-align: right; }
   .c-ma { grid-area: ma; } .c-quad { grid-area: quad; text-align: right; }
   .c-dd { grid-area: dd; } .c-rs { grid-area: rs; }
@@ -1396,4 +1441,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { analyze, analyzeRent, combinedChart, combinedLegendItems, ratioChart, rentFacts, loadRentCache, fmtWon, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH, RENT_CACHE_PATH };
+module.exports = { analyze, analyzeRent, fmtEok, combinedChart, combinedLegendItems, ratioChart, rentFacts, loadRentCache, fmtWon, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH, RENT_CACHE_PATH };
