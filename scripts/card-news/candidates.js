@@ -32,11 +32,12 @@ function parseSection(html, heading) {
   const ulS = html.indexOf('<ul>', s);
   const ulE = html.indexOf('</ul>', ulS);
   const block = html.slice(ulS, ulE);
-  return [...block.matchAll(/<li class="article"(?: data-pub="([^"]*)")?><a href="([^"]+)"[^>]*>([\s\S]*?)<\/a><\/li>/g)].map((m) => ({
+  return [...block.matchAll(/<li class="article"(?: data-pub="([^"]*)")?(?: data-src="(\d+)")?><a href="([^"]+)"[^>]*>([\s\S]*?)<\/a><\/li>/g)].map((m) => ({
     pub: m[1] || '',
-    link: decode(m[2]),
-    nearby: m[3].includes('tag-nearby'),
-    title: stripTags(m[3]),
+    src: m[2] ? Number(m[2]) : 0,
+    link: decode(m[3]),
+    nearby: m[4].includes('tag-nearby'),
+    title: stripTags(m[4]),
   }));
 }
 
@@ -46,6 +47,8 @@ function daysSince(pub) {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   return Math.round((Date.parse(today) - Date.parse(pub)) / 86400000);
 }
+// 같은 사건을 다룬 매체 수(많을수록 지금 핫한 뉴스). 목록은 이 수가 많은 순으로 정렬돼 있다.
+const srcTag = (a) => (a.src > 0 ? `[매체 ${a.src}] ` : '');
 const pubTag = (a) => {
   if (!a.pub) return '';
   const d = daysSince(a.pub);
@@ -196,7 +199,7 @@ function main() {
   let n = 0;
   const print = (label, list) => {
     console.log(`[${label}]`);
-    list.forEach((a) => console.log(`${++n}. ${pubTag(a)}${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
+    list.forEach((a) => console.log(`${++n}. ${srcTag(a)}${pubTag(a)}${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
   };
   print('부동산 뉴스', general);
   print('검단신도시 뉴스', geomdan);
@@ -204,9 +207,9 @@ function main() {
   console.log(`\n[A·A정책 미사용 번호] ${goods.map(([i]) => i).join(' ') || '(없음)'}  ← 표지·이슈·오버레이는 여기서 먼저 고른다`);
   const gd = all.map((a, i) => [i + 1, a]).filter(([, a]) => isGeomdanRealEstate(a.title) && !usedMark(a.title, cards));
   if (gd.length) {
-    console.log(`[검단 부동산 필수 번호] ${gd.map(([i]) => i).join(' ')}  ← 검단신도시 부동산 정보는 무조건 카드에 담는다(표지·이슈·오버레이 6칸에 먼저 배치, 칸이 모자라면 중요한 순)`);
+    console.log(`[검단 부동산 우선 후보 번호] ${gd.map(([i]) => i).join(' ')}  ← 같은 가치의 다른 후보보다 먼저 고른다(쓸 만한 기사일 때만)`);
   } else {
-    console.log('[검단 부동산 필수 번호] (없음)  ← 새 검단 부동산 기사가 없는 날도 검단 정보를 뺄 수 없다: `candidates.js --geomdan --index <임시>/index.html`의 실거래가 요약으로 이슈 한 칸을 채운다');
+    console.log('[검단 부동산 우선 후보 번호] (없음)  ← 쓸 만한 검단 기사가 없으면 억지로 넣지 않는다');
   }
 }
 
