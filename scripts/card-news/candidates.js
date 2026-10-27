@@ -8,6 +8,7 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const path = require('path');
+const { isRealEstateNews } = require('../geomdan-common');
 
 const argv = process.argv.slice(2);
 const getOpt = (name) => {
@@ -143,11 +144,9 @@ function tierMark(title) {
 // 검단신도시 부동산 정보 — 카드에 무조건 담는다. 제목에 "검단"이 있고 부동산 키워드(분양·청약·입주·실거래·교통·개발 등)가
 // 있으면 필수 후보로 본다. 행사·홍보·인사 같은 [제외] 소식이나 부동산과 무관한 행정·재정 공방은 키워드가 없어 걸러진다.
 const GEOMDAN_RE = /검단/;
-const GEOMDAN_REALESTATE_RE = /분양|청약|입주|아파트|단지|실거래|시세|집값|매매|전세|월세|재건축|재개발|정비|개통|도로|노선|철도|GTX|지하철|역세권|택지|개발|호재|공급|미분양|임대|부동산|상가|오피스텔|학교 ?신설|병원|대형 ?마트/;
-const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|페스티벌|축제|기부제|공연|봉사|위촉|개최|출범|소식지|시상|협약|기념|체험|전시|공모전|반려/;
 const isGeomdanRealEstate = (title) => {
   const head = title.lastIndexOf(' - ') > 0 ? title.slice(0, title.lastIndexOf(' - ')) : title;
-  return GEOMDAN_RE.test(head) && GEOMDAN_REALESTATE_RE.test(head) && !TIER_EXCLUDE.test(head) && !GEOMDAN_NOISE_RE.test(head);
+  return GEOMDAN_RE.test(head) && isRealEstateNews(head) && !TIER_EXCLUDE.test(head);
 };
 
 // 검단 실거래가 요약: 검단 부동산 기사가 하나도 없는 날, 이슈 한 칸을 이 숫자로 채운다(숫자는 모두 index.html 데이터).

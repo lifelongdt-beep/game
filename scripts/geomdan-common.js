@@ -104,4 +104,15 @@ function loadHistoryItems(cachePath) {
   }
 }
 
-module.exports = { normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
+// 검단 뉴스는 부동산과 관련된 기사만 남긴다(사용자 피드백: 기부·복지관 수업·사고·행정 갈등 같은 지역 동정은 필요 없음).
+// 예전처럼 걸러낼 단어만 나열하면 새 유형의 동정 기사가 계속 새어 들어와, 부동산 단어가 제목에 있어야 통과하는 방식으로 바꿨다.
+const GEOMDAN_REALESTATE_RE = /분양|청약|입주|아파트|단지|실거래|시세|집값|매매|전세|월세|재건축|재개발|정비사업|개통|도로|노선|철도|GTX|지하철|역세권|택지|신도시|개발|호재|공급|미분양|임대|부동산|상가|오피스텔|주택|부지|착공|준공|학교 ?신설|대형 ?마트|예타|호선|고속도로|IC|광역|역 ?신설/;
+const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|수업|페스티벌|축제|기부|기탁|나눔|복지관|공연|봉사|위촉|개최|출범|소식지|시상|협약|기념|체험|전시|공모전|반려|심폐소생|응급처치|구의회|의장|현장 ?점검|간담회|감사패|특강|설명회|폭발|화재|사고|부상|사망|화상|정산금/;
+// 제목 끝의 " - 매체명"은 빼고 본다(매체명에 "부동산" 등이 들어가 잘못 통과하지 않게).
+function isRealEstateNews(title) {
+  const t = String(title);
+  const head = t.lastIndexOf(' - ') > 0 ? t.slice(0, t.lastIndexOf(' - ')) : t;
+  return GEOMDAN_REALESTATE_RE.test(head) && !GEOMDAN_NOISE_RE.test(head);
+}
+
+module.exports = { isRealEstateNews, GEOMDAN_REALESTATE_RE, GEOMDAN_NOISE_RE, normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
