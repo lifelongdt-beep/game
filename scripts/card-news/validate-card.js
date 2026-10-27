@@ -18,7 +18,7 @@ const OUT = path.resolve(getOpt('--out') || path.join(os.tmpdir(), 'card-shots')
 fs.mkdirSync(OUT, { recursive: true });
 
 const SEL = [
-  '.cover-category', '.cover-headline', '.cover-summary', '.cover-divider', '.tag-pills',
+  '.cover-category', '.cover-headline', '.cover-summary', '.tag-pills', '.cover-foot',
   '.hand-title', '.check-tag', '.split-title', '.split-text', '.split-img', '.slide-footer-label',
   '.overlay-script', '.overlay-lead', '.overlay-body', '.overlay-quote',
   '.bold-sub', '.bold-title', '.rank-item', '.rank-summary-pill',
