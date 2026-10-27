@@ -29,6 +29,9 @@ const FETCH_BUDGET_MS = Number(process.env.CYCLE_FETCH_BUDGET_MS || 8 * 60 * 100
 const FETCH_TIMEOUT_MS = 20000;
 const CACHE_PATH = process.env.CYCLE_CACHE_PATH || 'docs/geomdan-history-cache.json';
 const OUT_PATH = process.env.CYCLE_OUT_PATH || 'docs/geomdan-cycle.html';
+// 전월세 실거래 기록(전세가율·갭·전세 추세 지표용). 매매 기록과 같은 방식으로 쌓는다.
+const RENT_CACHE_PATH = process.env.CYCLE_RENT_CACHE_PATH || 'docs/geomdan-rent-cache.json';
+const RENT_FETCH_BUDGET_MS = Number(process.env.CYCLE_RENT_FETCH_BUDGET_MS || 7 * 60 * 1000);
 
 const EXCLUDED = loadExcludedApartments();
 
@@ -105,6 +108,15 @@ async function fetchMonth(lawd, ym, deadline) {
   return out;
 }
 
+function loadRentCache() {
+  try {
+    const data = JSON.parse(fs.readFileSync(RENT_CACHE_PATH, 'utf8'));
+    return data && data.months ? data : { months: {} };
+  } catch {
+    return { months: {} };
+  }
+}
+
 function loadCache() {
   try {
     const data = JSON.parse(fs.readFileSync(CACHE_PATH, 'utf8'));
@@ -155,14 +167,107 @@ async function updateCache(cache, refIdx) {
   console.log(`실거래가 기록: ${fetched}개월 새로 받음, ${failed}개월 실패`);
 }
 
-function saveCache(cache, refIdx) {
+function saveCache(cache, refIdx, path = CACHE_PATH) {
   // 분석 기간보다 오래된 달은 지운다(캐시가 끝없이 커지지 않게).
   const keepFrom = refIdx - CYCLE_MONTHS + 1;
   const months = {};
   for (const ym of Object.keys(cache.months).sort()) if (ymIndex(ym) >= keepFrom) months[ym] = cache.months[ym];
   // 한 달을 한 줄로 써서, 매번 최근 몇 달만 바뀔 때 git 변경분이 그 줄들로만 잡히게 한다.
   const lines = Object.entries(months).map(([ym, v]) => `${JSON.stringify(ym)}:${JSON.stringify(v)}`);
-  fs.writeFileSync(CACHE_PATH, `{"updatedAt":${JSON.stringify(new Date().toISOString())},"months":{\n${lines.join(',\n')}\n}}\n`);
+  fs.writeFileSync(path, `{"updatedAt":${JSON.stringify(new Date().toISOString())},"months":{\n${lines.join(',\n')}\n}}\n`);
+}
+
+// ── 전월세 수집 ────────────────────────────────────────────────────────────
+// 국토부 아파트 전월세 실거래가(RTMSDataSvcAptRent). 매매와 별개 서비스라 인증키에 이 서비스 활용신청이 돼 있어야 한다.
+// 주소가 바뀌었을 때를 대비해 상세형(...Dev)도 차례로 시도하고, 되는 쪽을 계속 쓴다.
+const RENT_ENDPOINTS = [
+  'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent',
+  'https://apis.data.go.kr/1613000/RTMSDataSvcAptRentDev/getRTMSDataSvcAptRentDev',
+];
+let rentEndpoint = 0;
+const num0 = (v) => Number(String(v || '0').replace(/[,\s]/g, '')) || 0;
+
+async function fetchRentMonth(lawd, ym, deadline) {
+  const out = [];
+  for (let page = 1; page <= 10; page++) {
+    let text;
+    for (;;) {
+      const url = `${RENT_ENDPOINTS[rentEndpoint]}?serviceKey=${SERVICE_KEY}&LAWD_CD=${lawd}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=${page}`;
+      const res = await fetchText(url, deadline);
+      const code = xmlTag(res.text, 'resultCode');
+      const bad = !res.ok || res.text.includes('<cmmMsgHeader>') || (code && !['00', '000'].includes(code));
+      if (!bad) {
+        text = res.text;
+        break;
+      }
+      const msg = xmlTag(res.text, 'returnAuthMsg') || xmlTag(res.text, 'errMsg') || xmlTag(res.text, 'resultMsg') || `HTTP ${res.status}`;
+      if (rentEndpoint + 1 < RENT_ENDPOINTS.length) {
+        console.error(`전월세 API 오류(${msg}) — 다른 주소로 다시 시도합니다.`);
+        rentEndpoint++;
+        continue;
+      }
+      throw new Error(`전월세 API 오류(${lawd} ${ym}): ${msg}`);
+    }
+    const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
+    for (const item of items) {
+      const dong = xmlTag(item, 'umdNm');
+      if (!GEOMDAN_DONGS.some((d) => dong.includes(d))) continue;
+      out.push({
+        a: xmlTag(item, 'aptNm'),
+        d: dong,
+        ar: Number(xmlTag(item, 'excluUseAr')),
+        dep: num0(xmlTag(item, 'deposit')),
+        mr: num0(xmlTag(item, 'monthlyRent')),
+        f: xmlTag(item, 'floor'),
+        dt: `${xmlTag(item, 'dealYear')}-${xmlTag(item, 'dealMonth').padStart(2, '0')}-${xmlTag(item, 'dealDay').padStart(2, '0')}`,
+        ct: xmlTag(item, 'contractType'), // 신규 / 갱신(없으면 빈 값)
+      });
+    }
+    const total = Number(xmlTag(text, 'totalCount') || 0);
+    if (page * 1000 >= total) break;
+  }
+  return out;
+}
+
+async function updateRentCache(cache, refIdx) {
+  if (!SERVICE_KEY) {
+    console.log('DATA_GO_KR_SERVICE_KEY가 없어 전월세는 새로 받지 않습니다.');
+    return;
+  }
+  const deadline = Date.now() + RENT_FETCH_BUDGET_MS;
+  const nowIdx = refIdx + 1;
+  const startIdx = refIdx - CYCLE_MONTHS + 1;
+  let fetched = 0;
+  let failed = 0;
+  for (let i = nowIdx; i >= startIdx; i--) {
+    const ym = indexYm(i);
+    const cached = cache.months[ym];
+    const recent = i > nowIdx - REFRESH_RECENT_MONTHS;
+    if (cached && cached.complete && !recent) continue;
+    if (Date.now() >= deadline) {
+      console.log(`전월세 수집 예산을 다 써서 ${ym} 이전 달은 다음 실행에 받습니다.`);
+      break;
+    }
+    try {
+      const seen = new Set();
+      const items = [];
+      for (const lawd of LAWD_CODES) {
+        for (const t of await fetchRentMonth(lawd, ym, deadline)) {
+          const key = [t.a, t.ar, t.f, t.dt, t.dep, t.mr, t.ct].join('|');
+          if (seen.has(key)) continue;
+          seen.add(key);
+          items.push(t);
+        }
+      }
+      cache.months[ym] = { complete: true, fetchedAt: new Date().toISOString(), items };
+      fetched++;
+    } catch (err) {
+      failed++;
+      console.error(`${ym} 전월세 수집 실패(기존 기록 유지): ${err.message}`);
+      if (/SERVICE|KEY|등록|인증|ACCESS|DENIED/i.test(err.message)) break; // 키 문제면 달마다 반복하지 않는다
+    }
+  }
+  console.log(`전월세 기록: ${fetched}개월 새로 받음, ${failed}개월 실패 (사용한 주소: ${RENT_ENDPOINTS[rentEndpoint].split('/')[4]})`);
 }
 
 // ── 지표 계산 ──────────────────────────────────────────────────────────────
@@ -829,6 +934,15 @@ async function main() {
   const cache = loadCache();
   await updateCache(cache, refIdx);
   if (SERVICE_KEY) saveCache(cache, refIdx);
+
+  // 전월세 기록은 실패해도 매매 사이클 페이지 만들기를 막지 않는다.
+  const rentCache = loadRentCache();
+  try {
+    await updateRentCache(rentCache, refIdx);
+    if (SERVICE_KEY && Object.keys(rentCache.months).length) saveCache(rentCache, refIdx, RENT_CACHE_PATH);
+  } catch (err) {
+    console.error(`전월세 기록을 갱신하지 못했습니다: ${err.message}`);
+  }
 
   const result = analyze(cache, refIdx);
   if (!result.coveredMonths) {
