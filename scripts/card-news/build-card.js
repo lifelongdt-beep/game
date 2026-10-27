@@ -618,6 +618,10 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .cy-chart .ln-a1 { stroke: #e09016; } .cy-chart .ln-a2 { stroke: #7b5cd6; }
   .cy-chart .ln-a1-end { fill: #e09016; stroke: #fff; stroke-width: 2; } .cy-chart .ln-a2-end { fill: #7b5cd6; stroke: #fff; stroke-width: 2; }
   .cy-chart .ln-a1-txt { fill: #c27a05; } .cy-chart .ln-a2-txt { fill: #7b5cd6; }
+  .cy-chart .ln-j1 { stroke: #5ac4b1; } .cy-chart .ln-j2 { stroke: #a4e0d5; }
+  .cy-chart .ln-j1-end { fill: #5ac4b1; stroke: #fff; stroke-width: 2; } .cy-chart .ln-j2-end { fill: #a4e0d5; stroke: #fff; stroke-width: 2; }
+  .cy-chart .ln-j1-txt { fill: #35a08d; } .cy-chart .ln-j2-txt { fill: #4aa898; }
+  .cy-legend i.lj0 { border-top: 3px solid #0f9d84; } .cy-legend i.lj1 { border-top: 3px solid #5ac4b1; } .cy-legend i.lj2 { border-top: 3px solid #a4e0d5; }
   .cy-legend i.la0 { border-top: 3px solid #2b2b31; } .cy-legend i.la1 { border-top: 3px solid #e09016; } .cy-legend i.la2 { border-top: 3px solid #7b5cd6; }
   .cy-chart .rsub { font-size: 12px; font-weight: 600; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
   .cy-chart .peak-sub { fill: #d63a2f; font-size: 12px; font-weight: 600; }
