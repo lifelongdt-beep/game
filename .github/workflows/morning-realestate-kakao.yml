@@ -201,7 +201,7 @@ jobs:
       - name: Build apartment cycle page
         if: ${{ github.event.inputs.resolve_image_urls == '' }}
         continue-on-error: true
-        timeout-minutes: 12
+        timeout-minutes: 20
         env:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
           GEOMDAN_DONGS: '당하동,마전동,불로동,원당동'
@@ -217,7 +217,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/index.html docs/geomdan.html docs/geomdan-transactions-cache.json
-          git add docs/geomdan-cycle.html docs/geomdan-history-cache.json 2>/dev/null || true
+          git add docs/geomdan-cycle.html docs/geomdan-history-cache.json docs/geomdan-rent-cache.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "변경 사항 없음, 커밋 생략"
           else
