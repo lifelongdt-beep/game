@@ -383,7 +383,7 @@ function renderCycleDetail(c, months, r) {
   if (c && c.recentNH.length) facts.push(`<p><b>신고가</b>최근 3개월 ${c.recentNH.length}건 (차트의 빨간 ▲)</p>`);
   if (r) for (const [k, v] of cycleLib.rentFacts(r, months)) facts.push(`<p><b>${k}</b>${v}</p>`);
   const chart = cycleLib.combinedChart(months, c, r, { height: 290 });
-  return `<div class="rd-cycle"><p class="rd-head">평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend">${cycleLib.combinedLegendItems(c, r).join(' ')}</p>${facts.join('')}</div>`;
+  return `<div class="rd-cycle"><p class="rd-head">매매·전세 가격 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (전용 ${(c && c.refArea) || (r && r.refArea) || 85}㎡형 환산 · 평당가는 작은 글씨)</p><div class="cy-chart">${chart}</div><p class="cy-legend">${cycleLib.combinedLegendItems(c, r).join(' ')}</p>${facts.join('')}</div>`;
 }
 
 // 랭킹 맨 아래: 검단신도시 전체 흐름(3년 평당가 추세)과 단지별 거래량·가격 4분면.
@@ -407,7 +407,7 @@ function renderCycleRegion(cycle) {
 
     <div class="cycle-region">
       <h3 class="cr-title">검단신도시 전체 흐름</h3>
-      <p class="cr-lead">검단신도시 전체 거래의 평당가 중위값을 ${ymText(months[0])}~${ymText(last)} 3년치로 이었습니다.</p>
+      <p class="cr-lead">검단신도시 전체 거래의 중위 가격을 전용 ${region.refArea || 85}㎡형으로 환산해 ${ymText(months[0])}~${ymText(last)} 3년치로 이었습니다. 매매·전세·고점이 한 그래프에 있고, 평당가는 작은 글씨로 같이 표시합니다.</p>
       <div class="cr-stats">${stats}</div>
       <div class="cy-chart">${cycleLib.combinedChart(months, region, cycle.rent && cycle.rent.region, { height: 290 })}</div>
       <p class="cy-legend">${cycleLib.combinedLegendItems(region, cycle.rent && cycle.rent.region).join(' ')} <span><i class="ldot"></i>달별 매매 중위</span></p>
@@ -613,6 +613,9 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .cy-chart .gap-fill { fill: rgba(15,157,132,.14); stroke: none; }
   .cy-chart .ln-sale-end { fill: #2b2b31; stroke: #fff; stroke-width: 2; }
   .cy-chart .ln-jeon-end { fill: #0f9d84; stroke: #fff; stroke-width: 2; }
+  .cy-chart .rsub { font-size: 12px; font-weight: 600; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+  .cy-chart .peak-sub { fill: #d63a2f; font-size: 12px; font-weight: 600; }
+  .cy-chart .peakj-sub { fill: #0f9d84; font-size: 12px; font-weight: 600; }
   .cy-chart .rlabel { font-size: 16px; font-weight: 800; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
   .cy-chart .ln-sale-txt { fill: #2b2b31; } .cy-chart .ln-jeon-txt { fill: #0f9d84; } .cy-chart .ln-ratio-txt { fill: #2563c9; }
   .cy-chart .ln-ratio { fill: none; stroke: #2563c9; stroke-width: 2.6; stroke-linejoin: round; }
