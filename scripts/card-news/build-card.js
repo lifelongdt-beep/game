@@ -70,63 +70,63 @@ function kstCategory() {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${wd}요일 ${period} · Daily Real Estate Briefing`;
 }
 
-// 표지 맨 위 줄. "날짜 · 브랜드" 형태면 날짜는 사진 위에서도 또렷한 알약(.cover-date), 브랜드는 작은 글씨(.cover-brand)로 나눈다.
-function renderCategory(text) {
-  const [date, ...brand] = text.split(' · ');
-  const brandHtml = brand.length ? ` <span class="cover-brand">${esc(brand.join(' · '))}</span>` : '';
-  return `<span class="cover-date">${esc(date)}</span>${brandHtml}`;
+// 인스타그램 게시물처럼 각 장 맨 위에 계정 줄(노란 프로필 원 + 이름)을 둔다. right는 이미 이스케이프된 HTML.
+const IG_NAME = '재부키 부동산 분석';
+const igHead = (right, dark) =>
+  `<div class="ig-head${dark ? ' ig-dark' : ''}"><span class="ig-avatar" aria-hidden="true">재</span><span class="ig-name">${IG_NAME}</span>${right ? `<span class="ig-right">${right}</span>` : ''}</div>`;
+
+// "2026.10.27 화요일 저녁 · ..." → "10.27 화 저녁"(형식이 다르면 날짜 부분 그대로).
+function coverDate(category) {
+  const date = String(category).split(' · ')[0];
+  const m = date.match(/^\d{4}\.(\d{2})\.(\d{2}) (.)요일 (.+)$/);
+  return m ? `${m[1]}.${m[2]} ${m[3]} ${m[4]}` : date;
 }
 
-function renderCover(c) {
+// 이슈 제목: 둘째 줄(없으면 전체)에 노란 형광펜 밑줄.
+function markedTitle(t) {
+  const [first, ...rest] = String(t).split('\n');
+  return rest.length ? `${esc(first)}<br><mark class="ig-mark">${rest.map(esc).join('<br>')}</mark>` : `<mark class="ig-mark">${esc(first)}</mark>`;
+}
+
+function renderCover(c, source) {
   const hl = Number.isInteger(c.highlight) ? c.highlight : 1;
   const lines = c.headline.map((l, i) => (i === hl ? `<span class="highlight">${esc(l)}</span>` : esc(l)));
+  const tags = c.tags.map((t) => `<span class="tag-pill">#${esc(String(t).replace(/^#\s*/, ''))}</span>`).join('\n        ');
   return `<section class="card-slide slide-cover">
     ${link(c.url, `${c.img ? `<img class="cover-photo" src="${escAttr(c.img)}" alt="${escAttr(c.alt)}">\n    ` : ''}<div class="cover-content">
-      <div class="cover-category">${renderCategory(c.category || kstCategory())}</div>
+      ${igHead(`<span class="cover-date">${esc(coverDate(c.category || kstCategory()))}</span>`, true)}
+      <div class="cover-category"><span class="cover-kicker">오늘의 부동산</span></div>
       <h1 class="cover-headline">
         ${lines.join('<br>\n        ')}
       </h1>
       <p class="cover-summary">${esc(stripBoiler(c.summary))}</p>
-      <div class="cover-divider"></div>
       <div class="tag-pills">
-        <span class="tag-pill tag-yellow">${esc(c.tags[0])}</span>
-        <span class="tag-pill tag-white">${esc(c.tags[1])}</span>
-        <span class="tag-pill tag-black">${esc(c.tags[2])}</span>
+        ${tags}
       </div>
+      <div class="cover-foot"><span>${source ? `출처 ${esc(source)}` : ''}</span><span class="cover-next">아래로 이어집니다 ↓</span></div>
     </div>`)}
   </section>`;
 }
 
-const ROW_LABELS = ['첫 번째 행: 사진 왼쪽, 글 오른쪽', '두 번째 행: 글 왼쪽, 사진 오른쪽', '세 번째 행: 사진 왼쪽, 글 오른쪽', '네 번째 행: 글 왼쪽, 사진 오른쪽'];
-
 function renderSplit(c) {
-  const img = (it) => !it.img ? '' : link(it.url, `<div class="split-img">
-        <img src="${escAttr(it.img)}" alt="${escAttr(it.alt)}">
-        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
-      </div>`);
-  const txt = (it, n) => link(it.url, `<div class="split-content">
-        <span class="check-tag">✔ Issue 0${n}</span>
-        <p class="split-title">${withBreaks(it.title)}</p>
-        <p class="split-text">${esc(stripBoiler(it.text))}</p>
-      </div>`);
-  const rows = c.issues
+  const cards = c.issues
     .map((it, i) => {
-      const reverse = i % 2 === 1;
-      if (!it.img) return `    <!-- ${ROW_LABELS[i]} (사진 없음) -->
-    <div class="split-row" style="grid-template-columns:1fr">
-      ${txt(it, i + 1)}
-    </div>`;
-      return `    <!-- ${ROW_LABELS[i]} -->
-    <div class="split-row${reverse ? ' reverse' : ''}">
-      ${reverse ? txt(it, i + 1) + '\n      ' + img(it) : img(it) + '\n      ' + txt(it, i + 1)}
-    </div>`;
+      const img = !it.img ? '' : link(it.url, `<div class="split-img">
+        <img src="${escAttr(it.img)}" alt="${escAttr(it.alt)}">
+      </div>`) + '\n      ';
+      return `    <article class="issue-card">
+      ${img}${link(it.url, `<div class="split-content">
+        <span class="check-tag">이슈 ${i + 1}</span>
+        <p class="split-title">${markedTitle(it.title)}</p>
+        <p class="split-text">${esc(stripBoiler(it.text))}</p>
+      </div>`)}
+    </article>`;
     })
-    .join('\n\n');
+    .join('\n');
   return `<section class="card-slide slide-split">
+    ${igHead(`<span class="ig-count">핵심 이슈 ${c.issues.length}건</span>`)}
     <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
-
-${rows}
-
+${cards}
     <div class="slide-footer-label">
       <span>출처: ${esc(c.outlets)}</span>
     </div>
@@ -135,6 +135,7 @@ ${rows}
 
 function renderOverlay(o) {
   return `<section class="card-slide slide-overlay">
+    ${igHead('<span class="ig-count">재부키 한 줄 정리</span>')}
     ${link(o.url, `${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n    ` : ''}<div class="overlay-content">
       <div class="overlay-script">${esc(o.script)}</div>
       <h2 class="overlay-lead">
@@ -145,11 +146,11 @@ function renderOverlay(o) {
       </p>
 
       <div class="overlay-quote">
-        💡 <b>재부키 인사이트</b><br>
+        <b>재부키 인사이트</b>
         ${esc(o.insight)}
       </div>
 
-      <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
+      <div class="slide-footer-label">
         <span>출처: ${esc(o.source)}</span>
       </div>
     </div>`)}
@@ -176,7 +177,7 @@ function applyContent(html, c) {
   checkContent(c);
   applyLinks(c);
   if (!html.includes('.card-link {')) html = html.replace('</style>', '  .card-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }\n</style>');
-  html = replaceSection(html, '<section class="card-slide slide-cover">', renderCover(c.cover));
+  html = replaceSection(html, '<section class="card-slide slide-cover">', renderCover(c.cover, (c.sources || {}).cover));
   html = replaceSection(html, '<section class="card-slide slide-split">', renderSplit(c));
   html = replaceSection(html, '<section class="card-slide slide-overlay">', renderOverlay(c.overlay));
   const s = c.sources || {};
@@ -742,6 +743,96 @@ function applyList(html, indexHtml, keep) {
 
 // ---------- 실행 ----------
 
+// ---------- 인스타그램 스타일 ----------
+
+// 카드 전체를 인스타그램 카드뉴스처럼 보이게 하는 CSS. 예전 스타일 뒤에 덧붙여 같은 우선순위에서 이기게 하고,
+// 매 빌드마다 표시 주석 사이를 통째로 바꿔 끼워 중복되지 않게 한다.
+const IG_CSS = `  /* ig-style:start */
+  :root { --ig-yellow: #ffe600; --ig-ink: #141414; --ig-gray: #6b6f75; --font-display: 'Gothic A1', 'Pretendard', -apple-system, sans-serif; --font-main: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { background: #eef0f2; }
+  .card-flow { border-radius: 0; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+  .card-slide { background: #ffffff; padding: 30px 36px 34px; min-height: 0; }
+  .slide-cover { padding: 0; }
+  .ig-head { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font-size: 14px; font-weight: 700; color: var(--ig-ink); }
+  .ig-avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--ig-yellow); color: var(--ig-ink); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 16px; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px var(--ig-ink); }
+  .ig-right { margin-left: auto; }
+  .ig-count { font-size: 12.5px; font-weight: 700; color: var(--ig-gray); }
+  .ig-dark { color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .ig-dark .ig-avatar { text-shadow: none; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 0 3.5px var(--ig-yellow); }
+  .ig-mark { background: linear-gradient(transparent 58%, var(--ig-yellow) 58%); color: inherit; padding: 0 2px; }
+  .cover-content { padding: 24px 32px 26px; justify-content: flex-end; background: linear-gradient(180deg, rgba(10,10,12,.45) 0%, rgba(10,10,12,0) 20%, rgba(10,10,12,.2) 45%, rgba(10,10,12,.9) 100%); }
+  .slide-cover .ig-head { margin-bottom: auto; padding-bottom: 56px; }
+  .cover-date { background: rgba(0,0,0,.55); color: #ffffff; font-size: 13px; font-weight: 700; padding: 6px 13px; box-shadow: none; text-shadow: none; }
+  .cover-category { margin-bottom: 14px; }
+  .cover-kicker { display: inline-block; background: var(--ig-yellow); color: var(--ig-ink); font-family: var(--font-display); font-weight: 800; font-size: 14px; padding: 5px 11px; border-radius: 5px; }
+  .cover-headline { font-family: var(--font-display); font-size: 50px; line-height: 1.22; letter-spacing: -0.045em; margin-bottom: 14px; }
+  .cover-headline .highlight { background: var(--ig-yellow); color: var(--ig-ink); padding: 0 8px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .cover-summary { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.86); margin-bottom: 18px; }
+  .tag-pills { flex-wrap: wrap; gap: 8px; }
+  .tag-pill { background: transparent; color: #ffffff; border: 1.5px solid rgba(255,255,255,.6); font-weight: 600; font-size: 13px; padding: 6px 14px; }
+  .cover-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; font-size: 12px; color: rgba(255,255,255,.72); }
+  .cover-next { font-weight: 700; color: #ffffff; }
+  .slide-split { gap: 0; justify-content: flex-start; }
+  .hand-title { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.2; letter-spacing: -0.04em; margin-bottom: 4px; color: var(--ig-ink); }
+  .issue-card { display: flex; flex-direction: column; gap: 14px; padding: 24px 0; border-bottom: 1px solid #e6e8eb; }
+  .issue-card:last-of-type { border-bottom: 0; }
+  .slide-split .split-img { width: 100%; border-radius: 14px; box-shadow: none; }
+  .split-content { gap: 10px; }
+  .check-tag { align-self: flex-start; background: var(--ig-ink); color: #ffffff; font-family: var(--font-display); font-weight: 800; font-size: 12.5px; padding: 4px 10px; border-radius: 5px; }
+  .split-title { font-family: var(--font-display); font-weight: 900; font-size: 25px; line-height: 1.32; letter-spacing: -0.04em; color: var(--ig-ink); }
+  .split-text { font-size: 15px; line-height: 1.68; color: #3c4046; }
+  .slide-overlay { display: flex; flex-direction: column; padding: 30px 36px 34px; background: var(--ig-yellow); color: var(--ig-ink); }
+  .slide-overlay .ig-avatar { background: var(--ig-ink); color: var(--ig-yellow); box-shadow: 0 0 0 2px var(--ig-yellow), 0 0 0 3.5px var(--ig-ink); }
+  .slide-overlay .ig-count { color: #4a4c50; }
+  .overlay-photo { width: 100%; height: auto; border-radius: 14px; margin-bottom: 22px; }
+  .overlay-content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 0; background: none; }
+  .overlay-script { font-family: var(--font-display); font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; background: var(--ig-ink); padding: 6px 12px; border-radius: 5px; margin-bottom: 14px; }
+  .overlay-lead { font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 1.22; letter-spacing: -0.045em; color: var(--ig-ink); margin-bottom: 14px; }
+  .overlay-body { font-size: 15.5px; line-height: 1.7; color: #26282c; max-width: none; margin-bottom: 20px; }
+  .overlay-quote { background: #ffffff; border: 0; border-radius: 14px; padding: 18px 20px; font-size: 14.5px; line-height: 1.65; color: #3c4046; }
+  .overlay-quote b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 15.5px; color: var(--ig-ink); margin-bottom: 6px; }
+  .slide-overlay .slide-footer-label { color: #4a4c50; width: 100%; }
+  .slide-ranking { background: #ffffff; }
+  .bold-sub { color: var(--ig-gray); letter-spacing: .12em; }
+  .bold-title { font-family: var(--font-display); font-size: 40px; line-height: 1.2; letter-spacing: -0.045em; }
+  .ranking-box { box-shadow: none; border: 1.5px solid var(--ig-ink); border-radius: 14px; }
+  .rank-idx { font-family: var(--font-display); }
+  .ranking-box .rank-item:nth-child(-n+3) .rank-idx { color: var(--ig-ink); }
+  .rank-val { color: var(--ig-ink); font-family: var(--font-display); font-weight: 900; }
+  .rank-summary-pill { background: #fff6a8; border: 0; color: #3a3200; border-radius: 12px; }
+  @media (max-width: 560px) {
+    .card-slide { padding: 22px 18px 24px; }
+    .slide-cover { padding: 0; }
+    .cover-content { padding: 18px 18px 22px; }
+    .slide-cover .ig-head { padding-bottom: 40px; }
+    .cover-headline { font-size: 32px; }
+    .cover-summary { font-size: 13.5px; }
+    .hand-title { font-size: 25px; }
+    .issue-card { padding: 20px 0; }
+    .split-title { font-size: 20px; }
+    .split-text { font-size: 14px; }
+    .slide-overlay { padding: 22px 18px 24px; }
+    .overlay-lead { font-size: 26px; }
+    .overlay-body { font-size: 14px; }
+    .bold-title { font-size: 28px; }
+    .slide-ranking { padding: 20px 10px 16px; }
+    .slide-ranking .ig-head { padding: 0 6px; }
+  }
+  /* ig-style:end */
+`;
+
+function applyInstaStyle(html) {
+  html = html.replace(/  \/\* ig-style:start \*\/[\s\S]*?\/\* ig-style:end \*\/\n/, '');
+  html = html.replace('</style>', () => IG_CSS + '</style>');
+  if (!html.includes('family=Gothic+A1')) html = html.replace('fonts.googleapis.com/css2?family=', 'fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800;900&family=Noto+Sans+KR:wght@400;500;700&family=');
+  // 순위 장에도 계정 줄과 형광펜 제목을 붙인다(이 장은 HTML 틀을 그대로 쓰므로 여기서 한 번만 넣는다).
+  if (!/slide-ranking">\s*<div class="ig-head/.test(html)) {
+    html = html.replace('<section class="card-slide slide-ranking">', () => `<section class="card-slide slide-ranking">\n    ${igHead('<span class="ig-count">검단신도시 실거래</span>')}`);
+  }
+  html = html.replace('<h2 class="bold-title">검단신도시 실거래<br>평당 순위</h2>', '<h2 class="bold-title">검단신도시 실거래<br><mark class="ig-mark">평당 순위</mark></h2>');
+  return html;
+}
+
 // ---------- 링크 미리보기(og 태그) ----------
 
 // 카카오톡 등은 og:image가 없으면 페이지 안에서 알아서 사진을 골라, 표지(첫 그림)가 아닌 사진이 미리보기에 나왔다.
@@ -813,6 +904,7 @@ function main() {
   // 하단 목록(화면에서는 숨김)은 index.html을 그대로 옮기므로 제외 단지를 거르기 전 건수와 비교한다.
   if (listTxns !== txns.length) fail(`하단 실거래 목록(${listTxns})이 기준(${txns.length})과 다릅니다.`);
 
+  html = applyInstaStyle(html);
   html = syncOpenGraph(html);
   fs.writeFileSync(CARD_PATH, html);
   console.log(

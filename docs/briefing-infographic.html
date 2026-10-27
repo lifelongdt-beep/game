@@ -9,7 +9,7 @@
 <meta property="og:image" content="https://cdn.newscj.com/news/photo/202610/3443402_3566541_3456.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Pretendard:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800;900&family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Pen+Script&family=Pretendard:wght@400;500;600;700;800;900&display=swap">
 <style>
   :root {
     --bg-page: #e9ecef;
@@ -622,6 +622,78 @@
   .cycle-region .cr-qsum .q-down { background: #e5eefc; color: #2563c9; } .cycle-region .cr-qsum .q-bottom { background: #dff3ee; color: #12806c; }
   .rd-cycle > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 96px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
   .rd-cycle > p:not(.rd-head):not(.cy-legend) b { color: var(--text-light); font-weight: 700; }
+  /* ig-style:start */
+  :root { --ig-yellow: #ffe600; --ig-ink: #141414; --ig-gray: #6b6f75; --font-display: 'Gothic A1', 'Pretendard', -apple-system, sans-serif; --font-main: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { background: #eef0f2; }
+  .card-flow { border-radius: 0; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+  .card-slide { background: #ffffff; padding: 30px 36px 34px; min-height: 0; }
+  .slide-cover { padding: 0; }
+  .ig-head { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font-size: 14px; font-weight: 700; color: var(--ig-ink); }
+  .ig-avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--ig-yellow); color: var(--ig-ink); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 16px; box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px var(--ig-ink); }
+  .ig-right { margin-left: auto; }
+  .ig-count { font-size: 12.5px; font-weight: 700; color: var(--ig-gray); }
+  .ig-dark { color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .ig-dark .ig-avatar { text-shadow: none; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 0 3.5px var(--ig-yellow); }
+  .ig-mark { background: linear-gradient(transparent 58%, var(--ig-yellow) 58%); color: inherit; padding: 0 2px; }
+  .cover-content { padding: 24px 32px 26px; justify-content: flex-end; background: linear-gradient(180deg, rgba(10,10,12,.45) 0%, rgba(10,10,12,0) 20%, rgba(10,10,12,.2) 45%, rgba(10,10,12,.9) 100%); }
+  .slide-cover .ig-head { margin-bottom: auto; padding-bottom: 56px; }
+  .cover-date { background: rgba(0,0,0,.55); color: #ffffff; font-size: 13px; font-weight: 700; padding: 6px 13px; box-shadow: none; text-shadow: none; }
+  .cover-category { margin-bottom: 14px; }
+  .cover-kicker { display: inline-block; background: var(--ig-yellow); color: var(--ig-ink); font-family: var(--font-display); font-weight: 800; font-size: 14px; padding: 5px 11px; border-radius: 5px; }
+  .cover-headline { font-family: var(--font-display); font-size: 50px; line-height: 1.22; letter-spacing: -0.045em; margin-bottom: 14px; }
+  .cover-headline .highlight { background: var(--ig-yellow); color: var(--ig-ink); padding: 0 8px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .cover-summary { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.86); margin-bottom: 18px; }
+  .tag-pills { flex-wrap: wrap; gap: 8px; }
+  .tag-pill { background: transparent; color: #ffffff; border: 1.5px solid rgba(255,255,255,.6); font-weight: 600; font-size: 13px; padding: 6px 14px; }
+  .cover-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; font-size: 12px; color: rgba(255,255,255,.72); }
+  .cover-next { font-weight: 700; color: #ffffff; }
+  .slide-split { gap: 0; justify-content: flex-start; }
+  .hand-title { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.2; letter-spacing: -0.04em; margin-bottom: 4px; color: var(--ig-ink); }
+  .issue-card { display: flex; flex-direction: column; gap: 14px; padding: 24px 0; border-bottom: 1px solid #e6e8eb; }
+  .issue-card:last-of-type { border-bottom: 0; }
+  .slide-split .split-img { width: 100%; border-radius: 14px; box-shadow: none; }
+  .split-content { gap: 10px; }
+  .check-tag { align-self: flex-start; background: var(--ig-ink); color: #ffffff; font-family: var(--font-display); font-weight: 800; font-size: 12.5px; padding: 4px 10px; border-radius: 5px; }
+  .split-title { font-family: var(--font-display); font-weight: 900; font-size: 25px; line-height: 1.32; letter-spacing: -0.04em; color: var(--ig-ink); }
+  .split-text { font-size: 15px; line-height: 1.68; color: #3c4046; }
+  .slide-overlay { display: flex; flex-direction: column; padding: 30px 36px 34px; background: var(--ig-yellow); color: var(--ig-ink); }
+  .slide-overlay .ig-avatar { background: var(--ig-ink); color: var(--ig-yellow); box-shadow: 0 0 0 2px var(--ig-yellow), 0 0 0 3.5px var(--ig-ink); }
+  .slide-overlay .ig-count { color: #4a4c50; }
+  .overlay-photo { width: 100%; height: auto; border-radius: 14px; margin-bottom: 22px; }
+  .overlay-content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 0; background: none; }
+  .overlay-script { font-family: var(--font-display); font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; background: var(--ig-ink); padding: 6px 12px; border-radius: 5px; margin-bottom: 14px; }
+  .overlay-lead { font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 1.22; letter-spacing: -0.045em; color: var(--ig-ink); margin-bottom: 14px; }
+  .overlay-body { font-size: 15.5px; line-height: 1.7; color: #26282c; max-width: none; margin-bottom: 20px; }
+  .overlay-quote { background: #ffffff; border: 0; border-radius: 14px; padding: 18px 20px; font-size: 14.5px; line-height: 1.65; color: #3c4046; }
+  .overlay-quote b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 15.5px; color: var(--ig-ink); margin-bottom: 6px; }
+  .slide-overlay .slide-footer-label { color: #4a4c50; width: 100%; }
+  .slide-ranking { background: #ffffff; }
+  .bold-sub { color: var(--ig-gray); letter-spacing: .12em; }
+  .bold-title { font-family: var(--font-display); font-size: 40px; line-height: 1.2; letter-spacing: -0.045em; }
+  .ranking-box { box-shadow: none; border: 1.5px solid var(--ig-ink); border-radius: 14px; }
+  .rank-idx { font-family: var(--font-display); }
+  .ranking-box .rank-item:nth-child(-n+3) .rank-idx { color: var(--ig-ink); }
+  .rank-val { color: var(--ig-ink); font-family: var(--font-display); font-weight: 900; }
+  .rank-summary-pill { background: #fff6a8; border: 0; color: #3a3200; border-radius: 12px; }
+  @media (max-width: 560px) {
+    .card-slide { padding: 22px 18px 24px; }
+    .slide-cover { padding: 0; }
+    .cover-content { padding: 18px 18px 22px; }
+    .slide-cover .ig-head { padding-bottom: 40px; }
+    .cover-headline { font-size: 32px; }
+    .cover-summary { font-size: 13.5px; }
+    .hand-title { font-size: 25px; }
+    .issue-card { padding: 20px 0; }
+    .split-title { font-size: 20px; }
+    .split-text { font-size: 14px; }
+    .slide-overlay { padding: 22px 18px 24px; }
+    .overlay-lead { font-size: 26px; }
+    .overlay-body { font-size: 14px; }
+    .bold-title { font-size: 28px; }
+    .slide-ranking { padding: 20px 10px 16px; }
+    .slide-ranking .ig-head { padding: 0 6px; }
+  }
+  /* ig-style:end */
 </style>
 </head>
 <body>
@@ -634,19 +706,20 @@
   <section class="card-slide slide-cover">
     <a class="card-link" href="https://news.google.com/rss/articles/CBMiakFVX3lxTE43T0dpUVVsZjJESWpSaGljdGFWZGROLU9vaEppdVppN0NkdUxpb3FkbDBqb0FKSWZOMmFtWjVxbmZHUXVDc3VBOTBYaTI1MnExTERHcEoyQXRGallQLS11VHNkZl9xTEhEQ0E?oc=5" target="_blank" rel="noopener"><img class="cover-photo" src="https://cdn.newscj.com/news/photo/202610/3443402_3566541_3456.jpg" alt="이재명 대통령 국무회의 사진">
     <div class="cover-content">
-      <div class="cover-category"><span class="cover-date">2026.10.27 화요일 저녁</span> <span class="cover-brand">Daily Real Estate Briefing</span></div>
+      <div class="ig-head ig-dark"><span class="ig-avatar" aria-hidden="true">재</span><span class="ig-name">재부키 부동산 분석</span><span class="ig-right"><span class="cover-date">10.27 화 저녁</span></span></div>
+      <div class="cover-category"><span class="cover-kicker">오늘의 부동산</span></div>
       <h1 class="cover-headline">
         대통령 "주택 착공<br>
         <span class="highlight">실적 최대한 높여라"</span><br>
         재정 지원도 고려
       </h1>
       <p class="cover-summary">이재명 대통령이 27일 청와대 국무회의에서 집행이 부진한 공공사업에 속도를 내고 주택 착공 실적을 최대한 높이라고 지시했습니다. 필요하면 국가적인 신용 지원뿐 아니라 재정 지원도 고려해 달라고 했습니다. 대통령은 주택 부문이 공급 자체로도 의미가 있고 부진한 건설 경기를 살리는 측면도 있다고 밝혔습니다.</p>
-      <div class="cover-divider"></div>
       <div class="tag-pills">
-        <span class="tag-pill tag-yellow"># 주택착공</span>
-        <span class="tag-pill tag-white"># 재정지원</span>
-        <span class="tag-pill tag-black"># 국무회의</span>
+        <span class="tag-pill">#주택착공</span>
+        <span class="tag-pill">#재정지원</span>
+        <span class="tag-pill">#국무회의</span>
       </div>
+      <div class="cover-foot"><span>출처 천지일보</span><span class="cover-next">아래로 이어집니다 ↓</span></div>
     </div></a>
   </section>
 
@@ -656,60 +729,48 @@
        사진: Chosunbiz + 부산일보 + 파이낸셜뉴스 + 부산일보 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-split">
+    <div class="ig-head"><span class="ig-avatar" aria-hidden="true">재</span><span class="ig-name">재부키 부동산 분석</span><span class="ig-right"><span class="ig-count">핵심 이슈 4건</span></span></div>
     <h2 class="hand-title">오늘의 주요 시장 이슈</h2>
-
-    <!-- 첫 번째 행: 사진 왼쪽, 글 오른쪽 -->
-    <div class="split-row">
+    <article class="issue-card">
       <a class="card-link" href="https://news.google.com/rss/articles/CBMigAFBVV95cUxNMUo0Q1FyanRmcnd0UXZsUDVMVGlYOEUzS3RFY1llRWFpcFpFQk1EZEt6eHJVRGUzbXEyQlNvZTNTdFhmNEt1RjJZYVpJYmVEZ280X2twRzNkNnFJclpRUzFpVEdXZVBDb0U1alBQZzFocER0T1g5ZXdGSnl0QXlTdNIBlAFBVV95cUxNYTV2dUdZakgtZ2dneW41QmF0VDVMdnIzNDZORVUxa1NOUlg3RXJhT1BldDBzWUVLOTEzeDNoczkzMHdXOVV3cWhqczVEd2pocG1jbEUzTU1vTHoyeU9NenZZYUFYZ2hVd3hwb05UUmVVWjVCbloxd2NJejRIU2ZpWnpNamprVUhZcHpwNEdwRWtPeXJw?oc=5" target="_blank" rel="noopener"><div class="split-img">
         <img src="https://biz.chosun.com/resizer/v2/ME2DIMRQMNRTMNLBGU3DSOJQGI.jpg?auth=1cc4089271987412b50c92b7f0b95477255cbb30867c431c9d7b21101b40208a&amp;width=1200&amp;height=630&amp;smart=true" alt="토스뱅크 주택담보대출 관련 사진">
-        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div></a>
       <a class="card-link" href="https://news.google.com/rss/articles/CBMigAFBVV95cUxNMUo0Q1FyanRmcnd0UXZsUDVMVGlYOEUzS3RFY1llRWFpcFpFQk1EZEt6eHJVRGUzbXEyQlNvZTNTdFhmNEt1RjJZYVpJYmVEZ280X2twRzNkNnFJclpRUzFpVEdXZVBDb0U1alBQZzFocER0T1g5ZXdGSnl0QXlTdNIBlAFBVV95cUxNYTV2dUdZakgtZ2dneW41QmF0VDVMdnIzNDZORVUxa1NOUlg3RXJhT1BldDBzWUVLOTEzeDNoczkzMHdXOVV3cWhqczVEd2pocG1jbEUzTU1vTHoyeU9NenZZYUFYZ2hVd3hwb05UUmVVWjVCbloxd2NJejRIU2ZpWnpNamprVUhZcHpwNEdwRWtPeXJw?oc=5" target="_blank" rel="noopener"><div class="split-content">
-        <span class="check-tag">✔ Issue 01</span>
-        <p class="split-title">토스뱅크 주담대 출시<br>연 4.44~9.19%, 연립·다세대도</p>
+        <span class="check-tag">이슈 1</span>
+        <p class="split-title">토스뱅크 주담대 출시<br><mark class="ig-mark">연 4.44~9.19%, 연립·다세대도</mark></p>
         <p class="split-text">토스뱅크가 아파트와 연립·다세대주택 대상 주택담보대출을 출시했습니다. 금리는 연 4.44~9.19%, 한도는 최대 10억원이고 만기는 최장 40년입니다. 수도권과 규제지역은 주택 구입자금 최대 6억원, 생활안정자금 최대 1억원입니다.</p>
       </div></a>
-    </div>
-
-    <!-- 두 번째 행: 글 왼쪽, 사진 오른쪽 -->
-    <div class="split-row reverse">
-      <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTFBNTjMxRzNncER5b1ZhbVRXeS0tcnlmQjBwV2J3a25vd3p1b1JqODBnWk1BZ09TY1p1eFdST0ZJOUYzTUEyRUJBSkVqdHNjR250VGVaR2hRMmJlekVQdFNna3pjQ1ZBWkxIa2Nwd3NIQ2tEbEg4?oc=5" target="_blank" rel="noopener"><div class="split-content">
-        <span class="check-tag">✔ Issue 02</span>
-        <p class="split-title">악성 미분양은 줄었는데<br>입주 잔금 못 구해 발 동동</p>
-        <p class="split-text">부산일보는 악성 미분양이 줄어 괜찮아 보이지만, 입주 잔금을 마련하지 못한 수요자들이 어려움을 겪고 있다고 전했습니다. 미분양 지표가 개선돼도 입주 단계의 자금 부담이 지역 부동산 시장의 부담으로 남아 있다는 지적입니다.</p>
-      </div></a>
+    </article>
+    <article class="issue-card">
       <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTFBNTjMxRzNncER5b1ZhbVRXeS0tcnlmQjBwV2J3a25vd3p1b1JqODBnWk1BZ09TY1p1eFdST0ZJOUYzTUEyRUJBSkVqdHNjR250VGVaR2hRMmJlekVQdFNna3pjQ1ZBWkxIa2Nwd3NIQ2tEbEg4?oc=5" target="_blank" rel="noopener"><div class="split-img">
         <img src="https://www.busan.com/nas/wcms/wcms_data/photos/2026/10/27/2026102718144331470_l.jpg" alt="부산 아파트 단지 사진">
-        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div></a>
-    </div>
-
-    <!-- 세 번째 행: 사진 왼쪽, 글 오른쪽 -->
-    <div class="split-row">
+      <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTFBNTjMxRzNncER5b1ZhbVRXeS0tcnlmQjBwV2J3a25vd3p1b1JqODBnWk1BZ09TY1p1eFdST0ZJOUYzTUEyRUJBSkVqdHNjR250VGVaR2hRMmJlekVQdFNna3pjQ1ZBWkxIa2Nwd3NIQ2tEbEg4?oc=5" target="_blank" rel="noopener"><div class="split-content">
+        <span class="check-tag">이슈 2</span>
+        <p class="split-title">악성 미분양은 줄었는데<br><mark class="ig-mark">입주 잔금 못 구해 발 동동</mark></p>
+        <p class="split-text">부산일보는 악성 미분양이 줄어 괜찮아 보이지만, 입주 잔금을 마련하지 못한 수요자들이 어려움을 겪고 있다고 전했습니다. 미분양 지표가 개선돼도 입주 단계의 자금 부담이 지역 부동산 시장의 부담으로 남아 있다는 지적입니다.</p>
+      </div></a>
+    </article>
+    <article class="issue-card">
       <a class="card-link" href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBPbWIycWhEWHJMaUJ3akM3RHhOaHljSHZZQ2tPVjNlaDdFSGc3VXc0XzBvc3FoUlc0UWlsTEttWlFxQ3hLUGZlZ0g5bzdwUnN4OGp6V0htVlBOQQ?oc=5" target="_blank" rel="noopener"><div class="split-img">
         <img src="https://image.fnnews.com/resource/media/image/2026/10/27/202610271832579141_e.jpg" alt="군부대 이전부지 개발 관련 사진">
-        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div></a>
       <a class="card-link" href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBPbWIycWhEWHJMaUJ3akM3RHhOaHljSHZZQ2tPVjNlaDdFSGc3VXc0XzBvc3FoUlc0UWlsTEttWlFxQ3hLUGZlZ0g5bzdwUnN4OGp6V0htVlBOQQ?oc=5" target="_blank" rel="noopener"><div class="split-content">
-        <span class="check-tag">✔ Issue 03</span>
-        <p class="split-title">그린벨트에 묶인 군부대 부지<br>2만 가구 '닥공' 흔들</p>
+        <span class="check-tag">이슈 3</span>
+        <p class="split-title">그린벨트에 묶인 군부대 부지<br><mark class="ig-mark">2만 가구 '닥공' 흔들</mark></p>
         <p class="split-text">정부의 '닥공' 카드인 군부대 이전부지 개발사업이 수도권 곳곳에서 중단되거나 지연되고 있습니다. 업계에서는 빠른 공급이 가능하고 공공기관이 주도하는 군부대 이전부지만이라도 그린벨트 해제 지침 완화를 검토할 필요가 있다고 설명합니다.</p>
       </div></a>
-    </div>
-
-    <!-- 네 번째 행: 글 왼쪽, 사진 오른쪽 -->
-    <div class="split-row reverse">
-      <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTE5lcmNKaERVbHk3Nm9KVHdqaDRBSEVKRTNOa2ZVTTRpT1AtTG9wRWlWY3RPYU5Tb2FqVlV5X001aVo3NHN6emV3LXQ1TFpmWllod193OWZfcVhkWEpVdm1KNkZCQ2dFNUZYTWhXX1QwNTVGeTNG?oc=5" target="_blank" rel="noopener"><div class="split-content">
-        <span class="check-tag">✔ Issue 04</span>
-        <p class="split-title">얼어붙은 부산 부동산<br>6년 새 등기신청 20% 감소</p>
-        <p class="split-text">부산일보에 따르면 부산 부동산 시장이 얼어붙으면서 6년 새 등기신청이 20% 줄었습니다. 거래가 위축된 지역 시장의 분위기를 보여 주는 지표로, 수도권 중심의 가격 흐름과는 다른 모습입니다.</p>
-      </div></a>
+    </article>
+    <article class="issue-card">
       <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTE5lcmNKaERVbHk3Nm9KVHdqaDRBSEVKRTNOa2ZVTTRpT1AtTG9wRWlWY3RPYU5Tb2FqVlV5X001aVo3NHN6emV3LXQ1TFpmWllod193OWZfcVhkWEpVdm1KNkZCQ2dFNUZYTWhXX1QwNTVGeTNG?oc=5" target="_blank" rel="noopener"><div class="split-img">
         <img src="https://www.busan.com/nas/wcms/wcms_data/photos/2026/10/27/2026102718134729150_l.jpg" alt="부산 부동산 시장 관련 사진">
-        <div class="source-watermark" style="bottom:6px; right:6px; font-size:9.5px; padding:2px 5px;">기사 사진</div>
       </div></a>
-    </div>
-
+      <a class="card-link" href="https://news.google.com/rss/articles/CBMidEFVX3lxTE5lcmNKaERVbHk3Nm9KVHdqaDRBSEVKRTNOa2ZVTTRpT1AtTG9wRWlWY3RPYU5Tb2FqVlV5X001aVo3NHN6emV3LXQ1TFpmWllod193OWZfcVhkWEpVdm1KNkZCQ2dFNUZYTWhXX1QwNTVGeTNG?oc=5" target="_blank" rel="noopener"><div class="split-content">
+        <span class="check-tag">이슈 4</span>
+        <p class="split-title">얼어붙은 부산 부동산<br><mark class="ig-mark">6년 새 등기신청 20% 감소</mark></p>
+        <p class="split-text">부산일보에 따르면 부산 부동산 시장이 얼어붙으면서 6년 새 등기신청이 20% 줄었습니다. 거래가 위축된 지역 시장의 분위기를 보여 주는 지표로, 수도권 중심의 가격 흐름과는 다른 모습입니다.</p>
+      </div></a>
+    </article>
     <div class="slide-footer-label">
       <span>출처: 천지일보 / Chosunbiz / 부산일보 / 파이낸셜뉴스 / 뉴스핌</span>
     </div>
@@ -721,6 +782,7 @@
        사진: 뉴스핌 보도 사진 (Playwright로 실제 추출)
        ======================================================== -->
   <section class="card-slide slide-overlay">
+    <div class="ig-head"><span class="ig-avatar" aria-hidden="true">재</span><span class="ig-name">재부키 부동산 분석</span><span class="ig-right"><span class="ig-count">재부키 한 줄 정리</span></span></div>
     <a class="card-link" href="https://news.google.com/rss/articles/CBMiXEFVX3lxTE1IT2xhdDRyTENWTWkwR1N1cDBIdDNMRUgwRklaUmJ3ZldtQTlEc3NvZGY3aEdkU2RONmRTckx2VlY3RmdUaEFVN1Y3bmtWa3ZFQ040QVVJdjFySUtx?oc=5" target="_blank" rel="noopener"><img class="overlay-photo" src="https://img.newspim.com/news/2026/10/27/2610271351508030_t1.jpg" alt="3분기 지가변동률 관련 기사 사진">
     <div class="overlay-content">
       <div class="overlay-script">서울 땅값 2배 상승</div>
@@ -733,11 +795,11 @@
       </p>
 
       <div class="overlay-quote">
-        💡 <b>재부키 인사이트</b><br>
+        <b>재부키 인사이트</b>
         2025년 10·15 대책으로 서울 전역과 경기 12곳이 규제지역(투기과열지구·토지거래허가구역)이 됐고, 규제지역 주택 구입 주담대는 시가 15억원 이하 최대 6억원, 15억원 초과~25억원 이하 최대 4억원, 25억원 초과 최대 2억원입니다. 이 지정은 주택이 대상이라 토지 거래와는 적용 규정이 다르니, 매수 전에 물건별 허가·대출 규정을 따로 확인하세요.
       </div>
 
-      <div class="slide-footer-label" style="color:rgba(255,255,255,0.6); width:100%;">
+      <div class="slide-footer-label">
         <span>출처: 뉴스핌</span>
       </div>
     </div></a>
@@ -748,8 +810,9 @@
        SLIDE 4: 실거래가 랭킹 (고유 단지 전체)
        ======================================================== -->
   <section class="card-slide slide-ranking">
+    <div class="ig-head"><span class="ig-avatar" aria-hidden="true">재</span><span class="ig-name">재부키 부동산 분석</span><span class="ig-right"><span class="ig-count">검단신도시 실거래</span></span></div>
     <div class="bold-sub">MARKET RANKING TOP 33</div>
-    <h2 class="bold-title">검단신도시 실거래<br>평당 순위</h2>
+    <h2 class="bold-title">검단신도시 실거래<br><mark class="ig-mark">평당 순위</mark></h2>
     <p class="full-list-sub" style="margin: -8px 0 12px;">같은 단지 내 최고가만 남기고, 단지별 최고 평당가 기준으로 정리했습니다. 최근 4개월간 집계된 고유 단지가 33곳입니다.</p>
 
     <div class="ranking-box">
@@ -1260,11 +1323,10 @@
   <ul>
     <li class="article" data-pub="2026-10-27" data-src="20"><a href="https://news.google.com/rss/articles/CBMigAFBVV95cUxNMUo0Q1FyanRmcnd0UXZsUDVMVGlYOEUzS3RFY1llRWFpcFpFQk1EZEt6eHJVRGUzbXEyQlNvZTNTdFhmNEt1RjJZYVpJYmVEZ280X2twRzNkNnFJclpRUzFpVEdXZVBDb0U1alBQZzFocER0T1g5ZXdGSnl0QXlTdNIBlAFBVV95cUxNYTV2dUdZakgtZ2dneW41QmF0VDVMdnIzNDZORVUxa1NOUlg3RXJhT1BldDBzWUVLOTEzeDNoczkzMHdXOVV3cWhqczVEd2pocG1jbEUzTU1vTHoyeU9NenZZYUFYZ2hVd3hwb05UUmVVWjVCbloxd2NJejRIU2ZpWnpNamprVUhZcHpwNEdwRWtPeXJw?oc=5" target="_blank" rel="noopener">토스뱅크, ‘최저 연 4.44% 금리’ 주택담보대출 출시… 연립·다세대도 취급 - Chosunbiz</a></li>
     <li class="article" data-pub="2026-10-27" data-src="7"><a href="https://news.google.com/rss/articles/CBMibkFVX3lxTFA0YzR6Ti1aMFF1eWRwbUgxYms0Ui1zRVZyWUlxLS1kVWt2REJucDlsTklGYmdabWxxYXJVa1NyVWdQZzNIMHpDdjBzU1dlN2JOZm5hS0FRYkVPNzktRHJMckxiQVJRNDdQVG92RHNB?oc=5" target="_blank" rel="noopener">하나증권, 코리니와 업무협약…고액자산가 대상 미국 부동산 투자 서비스 확대 - 폴리뉴스 Polinews</a></li>
+    <li class="article" data-pub="2026-10-27" data-src="6"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE1Iel9IRmtXOW5NN0R0WlRZSklIakdoYTh1dDlrNWUyNkZKb3pjWGdSX2V1dURPWDFVd1dCVEUtb3Vua2VtV3hUSUlya25yWnlidVRpeVRGYmJfQQ?oc=5" target="_blank" rel="noopener">토스뱅크•광주은행, 기업 공동대출 개발 ‘맞손’…&quot;비대면 기업금융 확대&quot; - 브릿지경제</a></li>
     <li class="article" data-pub="2026-10-27" data-src="5"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBIaThmZlVlc1c5MXFSRkdlOHp5SFhUXzVhamJaWi0wSlJpaUNwemtkU2NId1hReENGVXlmRm1HV1BIbERidUFQeWl2Xzk0MG9XcE9iZUxlb1hiZw?oc=5" target="_blank" rel="noopener">iM금융그룹, 3분기 누적 순이익 4163억…대출 성장·건전성 개선 ‘두 마리 토끼’ - 경북매일</a></li>
-    <li class="article" data-pub="2026-10-27" data-src="5"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE1Iel9IRmtXOW5NN0R0WlRZSklIakdoYTh1dDlrNWUyNkZKb3pjWGdSX2V1dURPWDFVd1dCVEUtb3Vua2VtV3hUSUlya25yWnlidVRpeVRGYmJfQQ?oc=5" target="_blank" rel="noopener">토스뱅크•광주은행, 기업 공동대출 개발 ‘맞손’…&quot;비대면 기업금융 확대&quot; - 브릿지경제</a></li>
     <li class="article" data-pub="2026-10-27" data-src="3"><a href="https://news.google.com/rss/articles/CBMiakFVX3lxTE43T0dpUVVsZjJESWpSaGljdGFWZGROLU9vaEppdVppN0NkdUxpb3FkbDBqb0FKSWZOMmFtWjVxbmZHUXVDc3VBOTBYaTI1MnExTERHcEoyQXRGallQLS11VHNkZl9xTEhEQ0E?oc=5" target="_blank" rel="noopener">이재명 대통령 “주택 착공 실적 최대한 높여야… 재정 지원도 고려” - 천지일보</a></li>
     <li class="article" data-pub="2026-10-27" data-src="2"><a href="https://news.google.com/rss/articles/CBMiS0FVX3lxTFBoUUZPdWl2d01qYi16enR1TDVkSjdiTW1qOXZ4dGpyQ3VabkhLRFB4RHBxdlh4bFdZN3dJZWFmWkJ0WUN1UWFSSWo3dw?oc=5" target="_blank" rel="noopener">JB금융, 4분기 고수익 대출 확대…NIM 반등·건전성 관리 병행 [종합] - 아이뉴스24</a></li>
-    <li class="article" data-pub="2026-10-27" data-src="2"><a href="https://news.google.com/rss/articles/CBMickFVX3lxTE9LOVhtRXZlSTRacm5NZGhndHRxUDlmZ3Y2YzFuVFNjZkZqWG9zcThrNGZSb1dFOFJVMWh4dTFnWHo1Wm1OTGU3T2dfT0FibnpBT3psZ05KaUhudGVFckEzdmZmenFFWV92M1AtR1JaazRSd9IBdkFVX3lxTE9pQTRtRkc4elRHd2ZJTm9kUzVPYjQ1RERVeGlsNlZmSVlwUXRrSnlIZGxrbWktQ25SbWVBS0NiY2Y4OXVFODVWazF0dklvLXVQeTZ6QTNQd2xra0NSdGJSaGtCMXlqQzUwV0UyMktxdlhxWFpsa3c?oc=5" target="_blank" rel="noopener">경기도, '극저신용대출 2.0' 내년 폐지…재정난·정부 사업 중복 이유 - LG헬로비전</a></li>
     <li class="article" data-pub="2026-10-27" data-src="2"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTE9TRHpmSXItWHptN0JIT2MzaVdWM1VuRWswWTZ6eENyRkV2dnczeVB2MENFN3lxSG14YkdaMkptX0FLdWRiQ3UtbExPQld0RTA4WFhNaGFQU3dPOWs0NHUzZkw4UHJvRUtQX1h2V2RYRUU?oc=5" target="_blank" rel="noopener">李대통령 “유럽 시위 반면교사, 내수 개선 총력…주택착공 실적도 높여야” - 산경일보</a></li>
     <li class="article" data-pub="2026-10-27" data-src="2"><a href="https://news.google.com/rss/articles/CBMiVEFVX3lxTE5BRy1GM3NZUVhnUUZUOFctcnJuR25vZHFrOWNHVGlVX0U5Vmg1bTJjaDNIQkRFNzB1c0tGemllb2FDM3N5NGMwMnVxaFN2N01LZjM4U9IBWEFVX3lxTE5KeC1ERmRObHY0LUw4NVhlTm1XWGcwa1VSejVtSm1OaGdNc2N2TTJfZThzeG9EejNiWHM3aWprSmlmeVNLZlFORXEtYVlLWjkyM2lfX3RlUjg?oc=5" target="_blank" rel="noopener">하림산업, 부동산-식품사업 분리…‘하림식품’ 별도 법인 설립 - 전북일보 인터넷신문</a></li>
     <li class="article" data-pub="2026-10-27" data-src="2"><a href="https://news.google.com/rss/articles/CBMib0FVX3lxTFA4c2Mzc2tGbmIxX0FreDVRNG4taXpHT3YwZGFyMXpib29UaUNZQTlRRFFuYi10MUFFckJUWnRfX2wwYzFVR3NDZmNfM0JNX3p3VEZxUnNrcEE5S1FRZE5SV3U4cndTWFp1bG5NejJacw?oc=5" target="_blank" rel="noopener">이천시, 청년 신혼부부 전월세 대출 이자 최대 200만 원 지원 - 기호일보</a></li>
@@ -1278,12 +1340,13 @@
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFAxX1hmOFdHSmUzdENFczU3T1RCd25YVXJ0V1hUcWZlckV4blU0TXJJS05hQW0zcHN4a3pPNkJiUV9kM3dVUVBPYnAxYzNmRnZ5OHZranZZbDF3UGlNNHVmVC01NV9XR2N0MnlHc0c3QXo?oc=5" target="_blank" rel="noopener">JB금융 &quot;NIM 4분기 반등…자담대·외국인 대출 연말 4.5조 목표&quot; - 연합인포맥스</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiY0FVX3lxTFBlUWdFR29hQTRxTzlJT0pWNXVqdC1URHJBS0ZxS0VuY3JFNHFoSFRQSzFXeU9wN3ZFRk5CTGh0clRMbEpZTWdKbjZoOTdBd2hKak1SejFPdlZISzlfTW1Sc1JBWQ?oc=5" target="_blank" rel="noopener">[3Q 실적] JB금융, 대출 늘고 순익도 최고치…누적 5957억원 - 조세금융신문</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiggFBVV95cUxNSmszVmllbXBGN3RhMFR5a0dsMHFSS3FJUWhWcFVPa0s4VmpQc2VNSWRRTXRWaDZtSC1reWgwVVh6R3B2azhGOElsbFZPNlJGR0d5NEZTQUx1U3pGWnZCNVhadkdQS1pzdUc5RTMwUWNwbHM0ck1YM25jejZpLWtvZ2d3?oc=5" target="_blank" rel="noopener">대출 상환이 막막한 사장님, 혼자 고민하지 마세요! - 대한민국 정책브리핑</a></li>
+    <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFBwTm5lUHJWVWZpaW5NazhKUVNWNENqMXpnaTVpb25XbDU4dVVQMTNjS1pzTjNvMmFzbE03bTRPS2FpdEQydEZUZHB1Nlc5Vk5TS3BiUTZoRnN5UdIBWEFVX3lxTE8yNS1CdmVVYVZPRXAzcEdXTEEwdUQtWjFUU1REOS00U0NvcUhfQnJnOGUwNVdqVUdNbU5oSVBXQ21rVFhwR3Fub2FqZU1NU2h2aTlZSXFzV2Q?oc=5" target="_blank" rel="noopener">[아주부동산 PICK] 지방 미분양 5000가구 산다더니…목표치 65.7% 그쳐 外 - 아주경제</a></li>
   </ul>
 
   <h2>🏙️ 검단신도시 뉴스</h2>
   <ul>
-    <li class="article" data-pub="2026-10-27" data-src="16"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBVWVlsLWR4cTY2elpsLW1xUHBNTXlQTXp6M0ZUaFVPYmxweEJvOG9iem5veTNxcXJZQWFrVk1ZYlZLYWd5MjRlRnNtVjBpSWxXZ3c1Zzk0aEVFZjMtMkhyb2hCNFdQSkFBaEFzRHBfaWQ?oc=5" target="_blank" rel="noopener">인천 검단 상가에서 폭발 추정 사고…4명 부상 [현장영상] / 채널A - 채널A</a></li>
-    <li class="article" data-pub="2026-10-27" data-src="9"><a href="https://news.google.com/rss/articles/CBMibEFVX3lxTE42aWRYYktGa2xDMGN4SlRJQlBMNk9BVWFSS0NEa1drVjFuR25GQ0pJOU0wQmJvMXlialZ3NzRqSW9URV93SDQ3bGZhOXk5NmpIbzlFbXVuNzhLUGh0RXprb0FSMm1JSm9vV3RVYQ?oc=5" target="_blank" rel="noopener">&quot;11월 행정 마비 벼랑 끝&quot;…인천 서해구, 검단구 상대 648억 정산 분쟁조정 신청 - 중도일보</a></li>
+    <li class="article" data-pub="2026-10-27" data-src="13"><a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBVWVlsLWR4cTY2elpsLW1xUHBNTXlQTXp6M0ZUaFVPYmxweEJvOG9iem5veTNxcXJZQWFrVk1ZYlZLYWd5MjRlRnNtVjBpSWxXZ3c1Zzk0aEVFZjMtMkhyb2hCNFdQSkFBaEFzRHBfaWQ?oc=5" target="_blank" rel="noopener">인천 검단 상가에서 폭발 추정 사고…4명 부상 [현장영상] / 채널A - 채널A</a></li>
+    <li class="article" data-pub="2026-10-27" data-src="9"><a href="https://news.google.com/rss/articles/CBMiZEFVX3lxTE1MYWFkdzVpcFBqbEFubUVnYjdEbWNZVEN5NngyWmdfeGl0M011aks2ZHZYdFBfMUtpc0VsRkpJNHZuQTVsWnV0LUgtYnV1ZnF1ZTdNWjFSWEYtSVVMTjVCdUJNRDU?oc=5" target="_blank" rel="noopener">&quot;11월 행정 마비 벼랑 끝&quot;…인천 서해구, 검단구 상대 648억 정산 분쟁조정 신청 - 중도일보</a></li>
     <li class="article" data-pub="2026-10-27" data-src="7"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE4xVWs5MUh6VUJ3SVI4TWxkc0gwRHhSU1BxZjA3Tk5ncEpEdTNlazRYZzBmeDVUM3RLWnoxbHNQd2RUaHJ0blF3Q29SWFd2THVqRzJmX19LMEZ2Zw?oc=5" target="_blank" rel="noopener">인천 검단구 오류5통 사업추진위원회, 취약계층에 양곡 50포·라면 100상자 기탁 - 여성종합뉴스</a></li>
     <li class="article" data-pub="2026-10-27" data-src="4"><a href="https://news.google.com/rss/articles/CBMiaEFVX3lxTE54NzdlZHpiZVI4c2pvR2dPZEdTTHVsRWp5dm16TUVBNlBYYnVKS18tZ1NwNk01b3ExOElrYUs3TVNGSDQ3SnhOQXdVb0ZSdVFUSEtXN1ZBLXJKelVKcmxTdjAxRVJqNVM3?oc=5" target="_blank" rel="noopener">서해구, 인천시에 '648억 정산' 분쟁조정 신청…&quot;검단구 요구는 명분 없어&quot; - 한국NGO신문</a></li>
     <li class="article" data-pub="2026-10-27" data-src="3"><a href="https://news.google.com/rss/articles/CBMid0FVX3lxTE9DNTdPY1F5VEZkYmxrSVJBeW44QXJwMnZCVXMtdlQ5aVRuTjZLTDdpUWFrUzRTSDRYS3JpV2xOQVZ3bDVBak5FWUxZLVdNb1lhUVgxWXNVNFBsNE9nZUtNdzFSa3ZZY21zekVoel9tLUZ2STZNbVdV0gF3QVVfeXFMT0M1N09jUXlURmRibGtJUkF5bjhBcnAydkJVcy12VDlpVG5ONktMN2lRYWtTNFNINFhLcmlXbE5BVndsNUFqTkVZTFktV01vWWFRWDFZc1U0UGw0T2dlS013MVJrdlljbXN6RWh6X20tRnZJNk1tV1U?oc=5" target="_blank" rel="noopener">재정 지원 함께 요구하려다 내홍…인천 서해구·검단구 공동 TF 개점휴업 - 핀포인트뉴스</a></li>
@@ -1299,9 +1362,9 @@
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiY0FVX3lxTE83UHlCbkRMS25OYldfUGhnSFpBX3J1TmxXTzdKNE52X2ltZG1YaHNwcTVxTXNmQTV4d0c0VUlLeER6NXRTY3RYS1FGLUlrejRheHFPck55aEFpQUpXYTN5RlFFYw?oc=5" target="_blank" rel="noopener">인천 서해구-검단구 행정개편 ‘정산금 갈등’, 시 분쟁조정위로 - 한겨레</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMibkFVX3lxTE11eEJzdWNBLS1PNFBST1RZa3FEU2hpN3NvMl9LWjVOSFZHdUZ0enVlU0hudTNtQ0xFZVAydEpaZENhR2N3ZWFQN2NoemVoT1VYQzBEMkRybW9ucEFhRnlYNnQtWHRVXzZSOUVweWZB?oc=5" target="_blank" rel="noopener">서해구, 검단구 기자회견 주장 반박…쟁점별 사실관계 설명 - 세정포커스</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiakFVX3lxTE15LU1IVkcxSFJzY2pkcXZpV2hTaWtLNDZ4dlJBNWcxT3JPcXVqc1ZPX0c0NmprdVViSVY2RC1sa042Mko3bGNMMFpkNHZXQzlGSDJFZm9mc0V0Z0RrV1daSU9Ua2gxQmkwUUE?oc=5" target="_blank" rel="noopener">인천 검단노인복지관, 색종이 접기 수업으로 장애인과 소통 확대 - 경기도민일보 미디어</a></li>
-    <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiaEFVX3lxTFBDa3luMUNRQnJKTDdybTA0Q01jUkUtZ0N3OEw5WHJlTFF3bmtlZ09JeFJpZEJiM3FEUXF1bXRNZVdXMGluTmRiZ3gxdHZvbG5Oc0taYnNWNGdqZlpEMmJGcXFIUkxrS0xO?oc=5" target="_blank" rel="noopener"><span class="tag-nearby">🔗 인접지역</span>치솟는 서울 전셋값...계양신도시 '대방 엘리움' 11월 분양 예정 - 한경매거진</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE5UT2VuZkxFWmNPQklidUlhRlpueEVfdmplX0pKdzNJWnNiRXh3RDc2OFlaanNlVXVFUGhQZC1KeUs3d1E0anVMLTlJbDFKdGY3eUlhdGs1ZFN0UQ?oc=5" target="_blank" rel="noopener">인천 서해구 “11월 중순 자금 고갈 위기”…검단구 정산 분쟁 조정 신청 - 브릿지경제</a></li>
     <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMic0FVX3lxTE54NnZ0d2NldlB6MmlJUzYyM0V2VjgzbkxvVmduN3E1VmRnQ3BWMkhwRk85MU0weE05UmtRcmZ2eWtHdkxWbnR1OWozbURUcHludFZjZWpmQlRybW9JQl93Z2xMbHk4YUh3cGZBTG1XVDNwV1U?oc=5" target="_blank" rel="noopener">인천 검단구 상가건물 음식점서 가스 폭발…작업자 4명 화상 - 스페셜타임스</a></li>
+    <li class="article" data-pub="2026-10-27" data-src="1"><a href="https://news.google.com/rss/articles/CBMibkFVX3lxTFB1N1FYOUhsY2IyX0R3NnFvWXQ4UXljRWVZX0FsWkxHSHVSVzNPUHBIVzk0a3pqWVVJUnZpTERYZHAzakcxTFBIRkpXQnlMSXBQS3hjM01rajlZQy1HTjNoaGpMRFJYeHFQMFZVcjRn?oc=5" target="_blank" rel="noopener">검단구 오류5통, 양곡·라면 기부…취약계층 겨울나기 지원 - 국제뉴스</a></li>
   </ul>
 
   <div class="txn-list-hidden" hidden>
