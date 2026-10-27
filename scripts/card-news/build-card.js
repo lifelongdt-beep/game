@@ -369,28 +369,21 @@ function renderRentChip(r) {
   return `<i class="cy cy-ratio">전세가율 ${Math.round(r.ratioNow)}%${arrow}</i>`;
 }
 
-// 단지의 전세 상세: 매매·전세 평당가 추세 차트 + 전세가율·갭 등 풀이.
-function renderRentDetail(r, months) {
-  if (!r) return '';
-  const chart = cycleLib.rentTrendChart(months, r, { height: 250 });
-  const facts = cycleLib.rentFacts(r, months).map(([k, v]) => `<p><b>${k}</b>${v}</p>`).join('');
-  return `<div class="rd-rent"><p class="rd-head">매매·전세 평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend"><span><i class="lsale"></i>매매</span> <span><i class="ljeon"></i>전세</span> <span><i class="lgap"></i>갭</span> <span>막대 = 신규 전세 거래량</span></p>${facts}</div>`;
-}
-
-// 펼친 상세 맨 위: 3년 평당가 추세 차트 + 지표 풀이.
-function renderCycleDetail(c, months) {
-  if (!c) return '';
+// 펼친 상세 맨 위: 매매·전세·고점을 한 그래프에 그린 3년 평당가 차트 + 매매·전세 지표 풀이.
+function renderCycleDetail(c, months, r) {
+  if (!c && !r) return '';
   const facts = [];
-  if (c.ma) facts.push(`<p><b>추세</b>${cycleLib.maNote(c.ma)}</p>`);
-  if (c.peak) facts.push(`<p><b>고점 대비</b>${ymText(months[c.peak.idx])} 고점 평당 ${num(Math.round(c.peak.value))}만 대비 ${signed((c.peak.ratio - 1) * 100)}%</p>`);
-  if (c.quad) {
+  if (c && c.ma) facts.push(`<p><b>추세</b>${cycleLib.maNote(c.ma)}</p>`);
+  if (c && c.peak) facts.push(`<p><b>고점 대비</b>${ymText(months[c.peak.idx])} 고점 평당 ${num(Math.round(c.peak.value))}만 대비 ${signed((c.peak.ratio - 1) * 100)}%</p>`);
+  if (c && c.quad) {
     const q = cycleLib.QUADRANTS[c.quad.q];
     facts.push(`<p><b>국면</b>${q.label}(${q.desc}) · 거래 ${c.quad.volPrev}→${c.quad.volRecent}건, 3개월선 ${signed(c.quad.y)}%</p>`);
   }
-  if (c.rs) facts.push(`<p><b>상대강도</b>검단 전체=100 기준 ${c.rs.value.toFixed(1)}${c.rs.delta != null ? ` (6개월 전보다 ${signed(c.rs.delta)})` : ''}</p>`);
-  if (c.recentNH.length) facts.push(`<p><b>신고가</b>최근 3개월 ${c.recentNH.length}건 (차트의 ▲)</p>`);
-  const chart = cycleLib.trendChart(months, c, { height: 250, newHighs: c.newHighs });
-  return `<div class="rd-cycle"><p class="rd-head">평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend"><span><i class="l3"></i>3개월선</span> <span><i class="l12"></i>12개월선</span> <span><i class="lpk"></i>고점</span> <span><b>▲</b>신고가</span> <span>막대 = 거래량</span></p>${facts.join('')}</div>`;
+  if (c && c.rs) facts.push(`<p><b>상대강도</b>검단 전체=100 기준 ${c.rs.value.toFixed(1)}${c.rs.delta != null ? ` (6개월 전보다 ${signed(c.rs.delta)})` : ''}</p>`);
+  if (c && c.recentNH.length) facts.push(`<p><b>신고가</b>최근 3개월 ${c.recentNH.length}건 (차트의 빨간 ▲)</p>`);
+  if (r) for (const [k, v] of cycleLib.rentFacts(r, months)) facts.push(`<p><b>${k}</b>${v}</p>`);
+  const chart = cycleLib.combinedChart(months, c, r, { height: 290 });
+  return `<div class="rd-cycle"><p class="rd-head">평당가 흐름 ${ymText(months[0])}~${ymText(months[months.length - 1])} (만원/평)</p><div class="cy-chart">${chart}</div><p class="cy-legend">${cycleLib.combinedLegendItems(c, r).join(' ')}</p>${facts.join('')}</div>`;
 }
 
 // 랭킹 맨 아래: 검단신도시 전체 흐름(3년 평당가 추세)과 단지별 거래량·가격 4분면.
@@ -416,8 +409,8 @@ function renderCycleRegion(cycle) {
       <h3 class="cr-title">검단신도시 전체 흐름</h3>
       <p class="cr-lead">검단신도시 전체 거래의 평당가 중위값을 ${ymText(months[0])}~${ymText(last)} 3년치로 이었습니다.</p>
       <div class="cr-stats">${stats}</div>
-      <div class="cy-chart">${cycleLib.trendChart(months, region, { height: 260 })}</div>
-      <p class="cy-legend"><span><i class="l3"></i>3개월선</span> <span><i class="l12"></i>12개월선</span> <span><i class="lpk"></i>고점</span> <span>점 = 달별 중위</span> <span>막대 = 거래량</span></p>
+      <div class="cy-chart">${cycleLib.combinedChart(months, region, cycle.rent && cycle.rent.region, { height: 290 })}</div>
+      <p class="cy-legend">${cycleLib.combinedLegendItems(region, cycle.rent && cycle.rent.region).join(' ')} <span><i class="ldot"></i>달별 매매 중위</span></p>
       <h3 class="cr-title">거래량·가격 4분면</h3>
       <p class="cr-lead">최근 3개월(${ymText(months[months.length - 3])}~${ymText(last)})을 그 전 3개월과 비교했습니다. 오른쪽일수록 거래가 늘었고 위쪽일수록 평당가가 올랐으며, 원이 클수록 최근 거래가 많은 단지입니다.</p>
       ${points.length ? `<div class="cy-chart cr-quad">${cycleLib.quadrantChart(points)}</div>` : '<p class="cr-lead">비교할 거래가 아직 모자랍니다.</p>'}
@@ -451,10 +444,8 @@ function renderRentRegion(cycle) {
     .join('');
   return `
       <h3 class="cr-title cr-rent-title">검단신도시 전세 흐름</h3>
-      <p class="cr-lead">전월세 실거래 중 순수 전세의 신규 계약(갱신계약 제외) 보증금을 매매와 같은 방식으로 평당가로 바꿔 ${ymText(months[0])}~${ymText(last)} 3년치를 이었습니다. 전세가율은 전세 평당가 ÷ 매매 평당가입니다.</p>
+      <p class="cr-lead">전월세 실거래 중 순수 전세의 신규 계약(갱신계약 제외) 보증금을 매매와 같은 방식으로 평당가로 바꿔 ${ymText(months[0])}~${ymText(last)} 3년치를 이었습니다. 전세가율은 전세 평당가 ÷ 매매 평당가입니다. 매매·전세 추세는 위 "검단신도시 전체 흐름" 그래프에 같이 그려져 있습니다.</p>
       <div class="cr-stats">${tiles}</div>
-      <div class="cy-chart">${cycleLib.rentTrendChart(months, { ...R }, { height: 260 })}</div>
-      <p class="cy-legend"><span><i class="lsale"></i>매매</span> <span><i class="ljeon"></i>전세</span> <span><i class="lgap"></i>갭</span> <span>막대 = 신규 전세 거래량</span></p>
       <h3 class="cr-title">전세가율 흐름</h3>
       <div class="cy-chart">${cycleLib.ratioChart(months, R.ratio, { height: 190 })}</div>
       <h3 class="cr-title">전세 거래량·가격 4분면</h3>
@@ -509,7 +500,7 @@ function renderRankDetail(t, txns, cycle) {
     })
     .join('');
   return `
-        <div class="rank-detail" hidden>${cycle ? renderCycleDetail(cycleOf(t, cycle), cycle.months) + renderRentDetail(rentOf(t, cycle), cycle.months) : ''}<p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
+        <div class="rank-detail" hidden>${cycle ? renderCycleDetail(cycleOf(t, cycle), cycle.months, rentOf(t, cycle)) : ''}<p class="rd-stats">${stats.join(' <span>·</span> ')}</p><p class="rd-head">전체 거래 ${rows.length}건 (계약일 순)</p><ul>${lis}</ul></div>`;
 }
 
 // 단지의 조회 기간 거래 중 신고가 건수(markNewHighs가 표시해 둔 것).
@@ -627,13 +618,17 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .cy-chart .ln-ratio { fill: none; stroke: #2563c9; stroke-width: 2.6; stroke-linejoin: round; }
   .cy-chart .ratio-dot { fill: #2563c9; opacity: .5; }
   .cy-chart .ln-ratio-end { fill: #2563c9; stroke: #fff; stroke-width: 2; }
+  .cy-chart .ma12j { fill: none; stroke: #0f9d84; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .85; }
+  .cy-chart .peakj { stroke: #0f9d84; stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .cy-chart .peakj-label { fill: #0f9d84; font-size: 16px; font-weight: 700; }
+  .cy-chart .nh-markj { fill: #0f9d84; }
+  .cy-chart .volj { fill: #0f9d84; opacity: .4; }
+  .cy-legend i.l12j { border-top: 2px dashed #0f9d84; }
+  .cy-legend i.ldot { height: 7px; width: 7px; border: 0; border-radius: 50%; background: #8a8f9c; opacity: .6; }
+  .cy-legend b.nhm { color: #d63a2f; margin-right: 0; }
   .cy-legend i.lsale { border-top: 3px solid #2b2b31; }
   .cy-legend i.ljeon { border-top: 3px solid #0f9d84; }
   .cy-legend i.lgap { height: 8px; border: 0; background: rgba(15,157,132,.25); }
-  .rd-rent { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid #e6e8ef; }
-  .rd-rent > p { text-align: left; }
-  .rd-rent > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 96px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
-  .rd-rent > p:not(.rd-head):not(.cy-legend) b { color: var(--text-light); font-weight: 700; }
   .rank-cycle .cy-ratio { color: #12806c; background: #dff3ee; }
   .cycle-region .cr-rent-title { margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--text-black); }
   .cy-legend { margin: 4px 0 6px; font-size: 10.5px; color: var(--text-light); }
@@ -674,7 +669,7 @@ const RANK_DETAIL_CSS = `  .rank-item { cursor: pointer; }
   .cycle-region .cr-qsum small { font-size: 10.5px; color: #5b6070; }
   .cycle-region .cr-qsum .q-up { background: #fde9e6; color: #d63a2f; } .cycle-region .cr-qsum .q-late { background: #fdf0d9; color: #b06a00; }
   .cycle-region .cr-qsum .q-down { background: #e5eefc; color: #2563c9; } .cycle-region .cr-qsum .q-bottom { background: #dff3ee; color: #12806c; }
-  .rd-cycle > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 54px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
+  .rd-cycle > p:not(.rd-head):not(.cy-legend) { display: grid; grid-template-columns: 96px 1fr; gap: 6px; margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-dark); }
   .rd-cycle > p:not(.rd-head):not(.cy-legend) b { color: var(--text-light); font-weight: 700; }
 `;
 const RANK_DETAIL_JS = `<script id="rank-detail-js">
@@ -702,6 +697,8 @@ const RANK_DETAIL_JS = `<script id="rank-detail-js">
 // 랭킹 항목 펼침용 CSS·스크립트(없을 때만 한 번 넣는다).
 function addRankDetailUi(html) {
   html = html.replace(/  \.rank-item \{ cursor: pointer; \}[\s\S]*?\.rank-detail \.rd-amt em \{[^}]*\}\n(?:  \.(?:cycle-link|rank-new|rank-cycle|rd-cycle|rd-rent|cy-chart|cy-legend|cycle-region|rank-detail \.r[a-z-]+ (?:i|b)\.nh)[^\n]*\n)*/, '');
+  // 예전 빌드가 남긴 낱개 줄(순서가 바뀌어 위 정규식에 안 걸린 것)도 지워 중복을 막는다.
+  html = html.replace(/^  \.(?:cycle-link|rank-new|rank-cycle|rd-cycle|rd-rent|cy-chart|cy-legend|cycle-region)[^\n]*\n/gm, '');
   html = html.replace('</style>', () => RANK_DETAIL_CSS + '</style>');
   html = html.replace(/<script id="rank-detail-js">[\s\S]*?<\/script>\n?/, '');
   return html.replace('</body>', () => RANK_DETAIL_JS + '</body>');
