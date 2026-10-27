@@ -4,6 +4,7 @@
 //   node scripts/card-news/candidates.js 3 7 21 [--index ...]        → 고른 번호의 구글 뉴스 링크(줄바꿈 구분, resolve_image_urls 입력용)
 //   (목록에는 최근 카드에 이미 쓴 기사가 [최근사용 N회전전]으로 표시된다 — --no-history로 끈다. 고를 때는 건너뛴다)
 //   node scripts/card-news/candidates.js --prev [--card <html>]      → 직전 카드의 표지·이슈·오버레이 제목(반복 선정 방지용)
+//   node scripts/card-news/candidates.js --geomdan [--index ...]     → 검단 실거래가 요약(검단 부동산 기사가 없는 날 이슈 한 칸을 채울 자료)
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const path = require('path');
@@ -136,8 +137,36 @@ function tierMark(title) {
   return '[-] ';
 }
 
+// 검단신도시 부동산 정보 — 카드에 무조건 담는다. 제목에 "검단"이 있고 부동산 키워드(분양·청약·입주·실거래·교통·개발 등)가
+// 있으면 필수 후보로 본다. 행사·홍보·인사 같은 [제외] 소식이나 부동산과 무관한 행정·재정 공방은 키워드가 없어 걸러진다.
+const GEOMDAN_RE = /검단/;
+const GEOMDAN_REALESTATE_RE = /분양|청약|입주|아파트|단지|실거래|시세|집값|매매|전세|월세|재건축|재개발|정비|개통|도로|노선|철도|GTX|지하철|역세권|택지|개발|호재|공급|미분양|임대|부동산|상가|오피스텔|학교 ?신설|병원|대형 ?마트/;
+const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|페스티벌|축제|기부제|공연|봉사|위촉|개최|출범|소식지|시상|협약|기념|체험|전시|공모전|반려/;
+const isGeomdanRealEstate = (title) => {
+  const head = title.lastIndexOf(' - ') > 0 ? title.slice(0, title.lastIndexOf(' - ')) : title;
+  return GEOMDAN_RE.test(head) && GEOMDAN_REALESTATE_RE.test(head) && !TIER_EXCLUDE.test(head) && !GEOMDAN_NOISE_RE.test(head);
+};
+
+// 검단 실거래가 요약: 검단 부동산 기사가 하나도 없는 날, 이슈 한 칸을 이 숫자로 채운다(숫자는 모두 index.html 데이터).
+function geomdanStats() {
+  const html = fs.readFileSync(INDEX_PATH, 'utf8');
+  const m = html.match(/<script type="application\/json" id="geomdan-complex-ranking">([\s\S]*?)<\/script>/);
+  if (!m) {
+    console.error('오류: index.html에 단지 순위 데이터(geomdan-complex-ranking)가 없습니다.');
+    process.exit(1);
+  }
+  const list = JSON.parse(m[1]).sort((a, b) => b.ppy - a.ppy);
+  const months = (html.match(/최근 (\d+)개월 이내 계약/) || [])[1];
+  const trades = (html.match(/<li class="txn">/g) || []).length;
+  console.log(`[검단 실거래가 요약] 최근 ${months || '?'}개월 · 거래 ${trades}건 · 고유 단지 ${list.length}곳`);
+  list.slice(0, 3).forEach((r, i) => console.log(`평당가 ${i + 1}위: ${r.apt}(${r.dong}) 평당 ${r.ppy.toLocaleString('en-US')}만 · ${r.amountText} · 전용 ${Math.round(r.area)}㎡ ${r.floor}층`));
+  const mid = list[Math.floor(list.length / 2)];
+  if (mid) console.log(`중간 순위 단지: ${mid.apt} 평당 ${mid.ppy.toLocaleString('en-US')}만`);
+}
+
 function main() {
   if (argv.includes('--prev')) return prev();
+  if (argv.includes('--geomdan')) return geomdanStats();
   const html = fs.readFileSync(INDEX_PATH, 'utf8');
   const general = parseSection(html, '<h2>📰 부동산 뉴스</h2>');
   const geomdan = parseSection(html, '<h2>🏙️ 검단신도시 뉴스</h2>');
@@ -173,6 +202,12 @@ function main() {
   print('검단신도시 뉴스', geomdan);
   const goods = all.map((a, i) => [i + 1, a]).filter(([, a]) => tierMark(a.title).startsWith('[A') && !usedMark(a.title, cards));
   console.log(`\n[A·A정책 미사용 번호] ${goods.map(([i]) => i).join(' ') || '(없음)'}  ← 표지·이슈·오버레이는 여기서 먼저 고른다`);
+  const gd = all.map((a, i) => [i + 1, a]).filter(([, a]) => isGeomdanRealEstate(a.title) && !usedMark(a.title, cards));
+  if (gd.length) {
+    console.log(`[검단 부동산 필수 번호] ${gd.map(([i]) => i).join(' ')}  ← 검단신도시 부동산 정보는 무조건 카드에 담는다(표지·이슈·오버레이 6칸에 먼저 배치, 칸이 모자라면 중요한 순)`);
+  } else {
+    console.log('[검단 부동산 필수 번호] (없음)  ← 새 검단 부동산 기사가 없는 날도 검단 정보를 뺄 수 없다: `candidates.js --geomdan --index <임시>/index.html`의 실거래가 요약으로 이슈 한 칸을 채운다');
+  }
 }
 
 main();
