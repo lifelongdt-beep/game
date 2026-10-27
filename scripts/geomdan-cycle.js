@@ -856,12 +856,26 @@ function combinedChart(months, c, r, { height = 330 } = {}) {
   if (!saleAreas.length && !jeonAll.length) return combinedChartConverted(months, c, r, { height });
   const main = saleAreas[0] || null;
   const jeonMain = main ? jeonAll.find((a) => a.key === main.key) || null : jeonAll[0] || null;
+  // 전세도 전용면적별로: 매매와 같은 평형은 같은 순번(색 농도 0·1·2), 매매에 없는 평형은 남는 순번에 붙인다.
+  const jeonLines = [];
+  const usedJ = new Set();
+  saleAreas.forEach((a, k) => {
+    const j = jeonAll.find((x) => x.key === a.key);
+    if (j) {
+      jeonLines.push({ k, ...j });
+      usedJ.add(j.key);
+    }
+  });
+  const freeK = [0, 1, 2].filter((k) => !jeonLines.some((l) => l.k === k));
+  for (const j of jeonAll) if (!usedJ.has(j.key) && freeK.length) jeonLines.push({ k: freeK.shift(), ...j });
+  const jeonMainLine = jeonLines.find((l) => jeonMain && l.key === jeonMain.key) || null;
+  // 라벨 블록(평형 태그·가격·평당가)이 겹치지 않게, 선이 많으면 차트를 더 길게 그린다.
   const W = 560;
-  const H = height;
+  const H = height + Math.max(0, saleAreas.length + jeonLines.length - 4) * 40;
   const pad = { l: 64, r: 124, t: 34, b: 26 };
   const volH = 46;
   const priceBottom = H - pad.b - volH - 10;
-  const vals = [...saleAreas.map((a) => a.roll3), ...(jeonMain ? [jeonMain.roll3] : [])].flat().filter((v) => v != null);
+  const vals = [...saleAreas.map((a) => a.roll3), ...jeonLines.map((l) => l.roll3)].flat().filter((v) => v != null);
   if (!vals.length) return combinedChartConverted(months, c, r, { height });
   let lo = Math.min(...vals);
   let hi = Math.max(...vals);
@@ -926,7 +940,9 @@ function combinedChart(months, c, r, { height = 330 } = {}) {
   saleAreas.forEach((a, k) => {
     svg += `<path class="ln-sale ln-a${k}" d="${path(a.roll3)}"/>`;
   });
-  if (jeonMain) svg += `<path class="ln-jeon" d="${path(jeonMain.roll3)}"/>`;
+  jeonLines.forEach((l) => {
+    svg += `<path class="ln-jeon ln-j${l.k}" d="${path(l.roll3)}"/>`;
+  });
   const mark = (list, cls, label) => {
     let out = '';
     for (const h of list || []) {
@@ -943,10 +959,10 @@ function combinedChart(months, c, r, { height = 330 } = {}) {
     const e = lastNonNull(a.roll3, n - 1, 2);
     if (e) ends.push({ cls: `ln-a${k}`, tag: `매매 ${a.area}㎡`, price: e.v, sub: pyOf(e.v, a.area), x: x(e.i), y: y(e.v) });
   });
-  if (jeonMain) {
-    const e = lastNonNull(jeonMain.roll3, n - 1, 2);
-    if (e) ends.push({ cls: 'ln-jeon', tag: `전세 ${jeonMain.area}㎡`, price: e.v, sub: pyOf(e.v, jeonMain.area), x: x(e.i), y: y(e.v) });
-  }
+  jeonLines.forEach((l) => {
+    const e = lastNonNull(l.roll3, n - 1, 2);
+    if (e) ends.push({ cls: l.k === 0 ? 'ln-jeon' : `ln-j${l.k}`, tag: `전세 ${l.area}㎡`, price: e.v, sub: pyOf(e.v, l.area), x: x(e.i), y: y(e.v) });
+  });
   ends.sort((a, b) => a.y - b.y);
   const GAP = 46;
   let prev = -Infinity;
@@ -971,11 +987,20 @@ function combinedLegendItems(c, r) {
   const ja = (r && r.areaSeries) || [];
   if (sa.length || ja.length) {
     const out = sa.map((a, k) => `<span><i class="la${k}"></i>매매 전용 ${a.area}㎡</span>`);
-    const mainKey = sa[0] ? sa[0].key : null;
-    const jm = mainKey != null ? ja.find((a) => a.key === mainKey) : ja[0];
-    if (jm) out.push(`<span><i class="ljeon"></i>전세 전용 ${jm.area}㎡</span>`);
+    const used = new Set();
+    const jl = [];
+    sa.forEach((a, k) => {
+      const j = ja.find((x) => x.key === a.key);
+      if (j) {
+        jl.push({ k, ...j });
+        used.add(j.key);
+      }
+    });
+    const free = [0, 1, 2].filter((k) => !jl.some((l) => l.k === k));
+    for (const j of ja) if (!used.has(j.key) && free.length) jl.push({ k: free.shift(), ...j });
+    jl.forEach((l) => out.push(`<span><i class="lj${l.k}"></i>전세 전용 ${l.area}㎡</span>`));
     out.push('<span><i class="lpk"></i>고점(매매 빨강·전세 초록)</span>');
-    if (sa.length && jm) out.push('<span><i class="lgap"></i>갭(가장 많이 거래된 평형)</span>');
+    if (sa.length && jl.some((l) => l.key === sa[0].key)) out.push('<span><i class="lgap"></i>갭(가장 많이 거래된 평형)</span>');
     out.push('<span><b class="nhm">▲</b>신고가</span>', `<span>막대 = 거래량${c && r ? '(왼쪽 매매·오른쪽 전세)' : ''}</span>`);
     return out;
   }
@@ -1382,6 +1407,10 @@ section .lead { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch
 .ln-a1 { stroke: #e09016; } .ln-a2 { stroke: #7b5cd6; }
 .ln-a1-end { fill: #e09016; stroke: var(--surface); stroke-width: 2; } .ln-a2-end { fill: #7b5cd6; stroke: var(--surface); stroke-width: 2; }
 .ln-a1-txt { fill: #c27a05; } .ln-a2-txt { fill: #7b5cd6; }
+.ln-j1 { stroke: #5ac4b1; } .ln-j2 { stroke: #a4e0d5; }
+.ln-j1-end { fill: #5ac4b1; stroke: var(--surface); stroke-width: 2; } .ln-j2-end { fill: #a4e0d5; stroke: var(--surface); stroke-width: 2; }
+.ln-j1-txt { fill: #35a08d; } .ln-j2-txt { fill: #4aa898; }
+.legend i.lj0 { border-top: 3px solid var(--accent); } .legend i.lj1 { border-top: 3px solid #5ac4b1; } .legend i.lj2 { border-top: 3px solid #a4e0d5; }
 .legend i.la0 { border-top: 3px solid var(--ink); } .legend i.la1 { border-top: 3px solid #e09016; } .legend i.la2 { border-top: 3px solid #7b5cd6; }
 .peak-sub, .peakj-sub { font-size: 10px; font-weight: 600; }
 .peak-sub { fill: var(--up); } .peakj-sub { fill: var(--accent); }
