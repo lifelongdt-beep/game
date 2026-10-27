@@ -677,6 +677,9 @@ function main() {
     }
     html = applyContent(html, content);
     customPill = content.rankPill;
+    // 검단신도시 부동산 정보는 매 카드에 무조건 담는다 — 표지·이슈·오버레이 글에 "검단"이 한 번도 안 나오면 알린다.
+    const slideText = JSON.stringify([content.cover, content.issues, content.overlay]);
+    if (!/검단/.test(slideText)) warnings.push('카드 슬라이드 1~3에 검단신도시 부동산 정보가 없습니다. 검단 기사(candidates.js의 [검단 부동산 필수 번호]) 또는 검단 실거래가 요약(--geomdan)으로 한 칸을 채우세요.');
   }
 
   // 제외 목록(scripts/geomdan-excluded-apartments.txt)은 데이터를 만들 때 이미 걸러지지만, 목록에 새로 넣은 단지가
