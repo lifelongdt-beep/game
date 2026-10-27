@@ -300,6 +300,35 @@ const QUADRANTS = {
   bottom: { label: '바닥 다지기', desc: '값은 내렸지만 거래가 늘어남' },
 };
 
+// 전용면적을 평형대로 묶는다(84.5와 84.9처럼 거의 같은 평형이 갈라지지 않게). 키는 대표 평형 이름.
+const AREA_GROUPS = [{ key: 49, max: 55 }, { key: 59, max: 67 }, { key: 74, max: 80 }, { key: 84, max: 92 }, { key: 99, max: 105 }, { key: 114, max: 125 }, { key: 135, max: Infinity }];
+const areaGroup = (ar) => AREA_GROUPS.find((g) => ar < g.max).key;
+function addToAreaMap(am, months, mi, ar, value) {
+  const k = areaGroup(ar);
+  if (!am.has(k)) am.set(k, { by: months.map(() => []), areas: [] });
+  const v = am.get(k);
+  v.by[mi].push(value);
+  v.areas.push(ar);
+}
+// 평형대별 3개월 이동 중위 가격(만원) 계열. 최근 12개월에 많이 거래된 평형대 순으로 maxGroups개까지.
+function buildAreaSeries(am, minRoll, minTotal, maxGroups) {
+  const out = [];
+  for (const [key, v] of am) {
+    const count = v.by.map((x) => x.length);
+    const total = count.reduce((a, b) => a + b, 0);
+    if (total < minTotal) continue;
+    const roll3 = rolling(v.by, 3, minRoll);
+    if (roll3.filter((x) => x != null).length < 2) continue;
+    let peak = null;
+    roll3.forEach((val, i) => {
+      if (val != null && (!peak || val > peak.value)) peak = { value: val, idx: i };
+    });
+    out.push({ key, area: Math.round(median(v.areas)), roll3, count, total, recent: count.slice(-12).reduce((a, b) => a + b, 0), peak });
+  }
+  out.sort((a, b) => b.recent - a.recent || b.total - a.total);
+  return out.slice(0, maxGroups);
+}
+
 // 차트에 보여 줄 가격의 기준 전용면적(㎡): 최근 12개월에 가장 많이 거래된 평형. 없으면 fallback, 그것도 없으면 85.
 function modeArea(areas, fallback) {
   const pick = (m) => (m && m.size ? [...m.entries()].sort((a, b) => b[1] - a[1])[0][0] : null);
@@ -382,6 +411,7 @@ function analyze(cache, refIdx) {
   const isNewHigh = makeRecordChecker(Object.values(cache.months).flatMap((m) => m.items));
   const regionNewHighs = [];
   const regionAreas = new Map();
+  const regionAm = new Map();
 
   months.forEach((ym, mi) => {
     const entry = cache.months[ym];
@@ -393,7 +423,7 @@ function analyze(cache, refIdx) {
       const ppy = pricePerPyeong(t.p, t.ar);
       if (!ppy) continue;
       regionByMonth[mi].push(ppy);
-      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []), newHighs: [], areas: new Map() });
+      if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), byMonth: months.map(() => []), newHighs: [], areas: new Map(), am: new Map() });
       const g = groups.get(key);
       if (mi >= months.length - 12) {
         const ab = Math.round(Number(t.ar));
@@ -408,6 +438,8 @@ function analyze(cache, refIdx) {
       g.names.set(t.a, (g.names.get(t.a) || 0) + 1);
       g.dongs.set(t.d, (g.dongs.get(t.d) || 0) + 1);
       g.byMonth[mi].push(ppy);
+      addToAreaMap(g.am, months, mi, Number(t.ar), t.p);
+      addToAreaMap(regionAm, months, mi, Number(t.ar), t.p);
     }
   });
 
@@ -418,7 +450,7 @@ function analyze(cache, refIdx) {
   for (const g of groups.values()) {
     const a = analyzeSeries(g.byMonth, 2, 4, region);
     const recentNH = g.newHighs.filter((h) => h.mi >= months.length - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
-    const item = { name: top(g.names), dong: top(g.dongs), ...a, newHighs: g.newHighs, recentNH, refArea: modeArea(g.areas, regionAreas) };
+    const item = { name: top(g.names), dong: top(g.dongs), ...a, newHighs: g.newHighs, recentNH, refArea: modeArea(g.areas, regionAreas), areaSeries: buildAreaSeries(g.am, 2, 3, 3) };
     // 기록 전체 8건 이상, 최근 3개월 안에 3개월 이동 중위값이 있어야 지표를 낸다.
     if (a.total >= 8 && a.current != null) complexes.push(item);
     else thin.push(item);
@@ -426,6 +458,7 @@ function analyze(cache, refIdx) {
   complexes.sort((a, b) => b.current - a.current);
   thin.sort((a, b) => b.total - a.total);
   region.refArea = modeArea(regionAreas);
+  region.areaSeries = buildAreaSeries(regionAm, 5, 30, 3);
   region.recentNH = regionNewHighs.filter((h) => h.mi >= months.length - 3).length;
   region.recentTrades = region.count.slice(-3).reduce((x, y) => x + y, 0);
   return { months, region, complexes, thin, coveredMonths };
@@ -446,7 +479,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   const zeros = () => months.map(() => 0);
   const groups = new Map();
   const grp = (key, t) => {
-    if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros(), deals: [], items: [], areas: new Map(), jareas: new Map() });
+    if (!groups.has(key)) groups.set(key, { names: new Map(), dongs: new Map(), sale: months.map(() => []), jeon: months.map(() => []), all: zeros(), renew: zeros(), wolse: zeros(), deals: [], items: [], areas: new Map(), jareas: new Map(), jam: new Map() });
     const g = groups.get(key);
     g.names.set(t.a, (g.names.get(t.a) || 0) + 1);
     g.dongs.set(t.d, (g.dongs.get(t.d) || 0) + 1);
@@ -456,6 +489,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   const jeonItems = [];
   const regAreas = new Map();
   const regJAreas = new Map();
+  const regJam = new Map();
   let covered = 0;
 
   months.forEach((ym, mi) => {
@@ -495,6 +529,8 @@ function analyzeRent(saleCache, rentCache, refIdx) {
         if (!ppy) continue;
         g.jeon[mi].push(ppy);
         reg.jeon[mi].push(ppy);
+        addToAreaMap(g.jam, months, mi, Number(t.ar), t.dep);
+        addToAreaMap(regJam, months, mi, Number(t.ar), t.dep);
         if (mi >= n - 12) {
           const ab = Math.round(Number(t.ar));
           g.jareas.set(ab, (g.jareas.get(ab) || 0) + 1);
@@ -549,6 +585,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
   const regionJ = analyzeSeries(reg.jeon, 5, 20, null);
   const region = { ...regionJ, ...summarize(regionJ, regionSale3, reg), renewSeries: reg.renew.map((v, i) => (reg.all[i] ? (v / reg.all[i]) * 100 : null)) };
   region.refArea = modeArea(regAreas, regJAreas);
+  region.areaSeries = buildAreaSeries(regJam, 5, 20, 3);
   region.recentNH = jeonItems.filter((r) => r.mi >= n - 3 && isNewHigh(r.a, r.ar, r.p, r.dt)).length;
   region.recentTrades = regionJ.count.slice(-3).reduce((x, y) => x + y, 0);
 
@@ -581,7 +618,7 @@ function analyzeRent(saleCache, rentCache, refIdx) {
     const j = analyzeSeries(g.jeon, 2, 4, regionJ);
     if (j.total < 8 || j.current == null) continue;
     const sale3 = rolling(g.sale, 3, 2);
-    const item = { key, name: top(g.names), dong: top(g.dongs), ...j, ...summarize(j, sale3, g), refArea: modeArea(g.areas.size ? g.areas : g.jareas, regAreas) };
+    const item = { key, name: top(g.names), dong: top(g.dongs), ...j, ...summarize(j, sale3, g), refArea: modeArea(g.areas.size ? g.areas : g.jareas, regAreas), areaSeries: buildAreaSeries(g.jam, 2, 3, 3) };
     item.newHighs = g.items.filter((r) => isNewHigh(r.a, r.ar, r.p, r.dt)).map((r) => ({ mi: r.mi, ppy: r.ppy, amount: r.p, area: r.ar, floor: r.f, dt: r.dt }));
     item.recentNH = item.newHighs.filter((h) => h.mi >= n - 3).sort((x, y) => (x.dt < y.dt ? 1 : -1));
     item.conv = convOf(g.deals);
@@ -701,7 +738,7 @@ function trendChart(months, s, { height = 280, showPeak = true, newHighs = [] } 
 //  매매·전세 고점선, 신고가 ▲(매매 빨강·전세 초록), 아래쪽 거래량 막대(왼쪽 매매·오른쪽 전세).
 // 평당가 × (기준 전용면적의 공급 평수)로 가격을 환산해 보여 준다(기준 면적 = 최근 12개월에 가장 많이 거래된 평형).
 // c = 매매 분석(없을 수 있음), r = 전세 분석(없을 수 있음). 검단 전체도 같은 방식으로 그린다.
-function combinedChart(months, c, r, { height = 310, refArea } = {}) {
+function combinedChartConverted(months, c, r, { height = 310, refArea } = {}) {
   const area = refArea || (c && c.refArea) || (r && r.refArea) || 85;
   const K = estimateSupplyArea(area) / SQM_PER_PYEONG; // 기준 평형의 공급 평수
   const P = (v) => (v == null ? null : v * K);
@@ -809,8 +846,139 @@ function combinedChart(months, c, r, { height = 310, refArea } = {}) {
   return svg;
 }
 
+// 통합 추세 차트(매매가는 전용면적별): 평형대마다 3개월 이동 중위 매매가를 따로 그리고(평형별 색),
+// 전세는 가장 많이 거래된 같은 평형의 신규 전세 보증금 3개월선을 초록으로, 두 선 사이 갭을 색칠한다.
+// 고점선·신고가 ▲·거래량 막대(왼쪽 매매·오른쪽 전세)는 그대로. 오른쪽 여백에 평형별 현재 가격을 큰 글씨로,
+// 평당가를 작은 글씨로 적는다. 평형대별 계열이 없으면(거래가 너무 적으면) 환산 가격 차트로 대신한다.
+function combinedChart(months, c, r, { height = 330 } = {}) {
+  const saleAreas = (c && c.areaSeries) || [];
+  const jeonAll = (r && r.areaSeries) || [];
+  if (!saleAreas.length && !jeonAll.length) return combinedChartConverted(months, c, r, { height });
+  const main = saleAreas[0] || null;
+  const jeonMain = main ? jeonAll.find((a) => a.key === main.key) || null : jeonAll[0] || null;
+  const W = 560;
+  const H = height;
+  const pad = { l: 64, r: 124, t: 34, b: 26 };
+  const volH = 46;
+  const priceBottom = H - pad.b - volH - 10;
+  const vals = [...saleAreas.map((a) => a.roll3), ...(jeonMain ? [jeonMain.roll3] : [])].flat().filter((v) => v != null);
+  if (!vals.length) return combinedChartConverted(months, c, r, { height });
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const padV = (hi - lo) * 0.08 || hi * 0.05;
+  lo -= padV;
+  hi += padV;
+  const n = months.length;
+  const slot = (W - pad.l - pad.r) / n;
+  const x = (i) => pad.l + slot * (i + 0.5);
+  const y = (v) => pad.t + ((hi - v) / (hi - lo)) * (priceBottom - pad.t);
+  const saleCount = c ? c.count : null;
+  const jeonCount = r ? r.count : null;
+  const maxVol = Math.max(1, ...(saleCount || [0]), ...(jeonCount || [0]));
+  const bw = Math.max(1.4, slot * 0.34);
+  const volBase = H - pad.b;
+  const pyOf = (price, area) => Math.round(price / (estimateSupplyArea(area) / SQM_PER_PYEONG));
+  let svg = `<svg class="chart combochart" viewBox="0 0 ${W} ${H}" role="img" aria-label="전용면적별 매매가·전세가 추세 차트">`;
+  for (const t of niceTicks(lo, hi, 4)) {
+    svg += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>`;
+    svg += `<text class="axis" x="${pad.l - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${axisEok(t)}</text>`;
+  }
+  months.forEach((ym, i) => {
+    const sc = saleCount ? saleCount[i] : 0;
+    const jc = jeonCount ? jeonCount[i] : 0;
+    if (sc) svg += `<rect class="vol" x="${(x(i) - bw - 0.3).toFixed(1)}" y="${(volBase - (sc / maxVol) * volH).toFixed(1)}" width="${bw.toFixed(1)}" height="${((sc / maxVol) * volH).toFixed(1)}"><title>${ymKorean(ym)} 매매 ${sc}건</title></rect>`;
+    if (jc) svg += `<rect class="volj" x="${(x(i) + 0.3).toFixed(1)}" y="${(volBase - (jc / maxVol) * volH).toFixed(1)}" width="${bw.toFixed(1)}" height="${((jc / maxVol) * volH).toFixed(1)}"><title>${ymKorean(ym)} 신규 전세 ${jc}건</title></rect>`;
+    if ((n - 1 - i) % 6 === 0) svg += `<text class="axis" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${ymLabel(ym)}</text>`;
+  });
+  svg += `<text class="axis" x="${pad.l - 6}" y="${volBase - volH + 8}" text-anchor="end">거래</text>`;
+  if (main && jeonMain) {
+    let run = [];
+    const flush = () => {
+      if (run.length >= 2) {
+        const top = run.map((i) => `${x(i).toFixed(1)},${y(main.roll3[i]).toFixed(1)}`);
+        const bot = [...run].reverse().map((i) => `${x(i).toFixed(1)},${y(jeonMain.roll3[i]).toFixed(1)}`);
+        svg += `<polygon class="gap-fill" points="${top.concat(bot).join(' ')}"/>`;
+      }
+      run = [];
+    };
+    for (let i = 0; i < n; i++) (main.roll3[i] != null && jeonMain.roll3[i] != null ? run.push(i) : flush());
+    flush();
+  }
+  const peakLine = (a, cls, name) => {
+    if (!a || !a.peak) return '';
+    const py = y(a.peak.value);
+    return `<line class="${cls}" x1="${pad.l}" x2="${W - pad.r}" y1="${py.toFixed(1)}" y2="${py.toFixed(1)}"/><text class="${cls}-label" x="${pad.l + 6}" y="${(py - 16).toFixed(1)}">${name} 고점 ${fmtEok(a.peak.value)}</text><text class="${cls}-sub" x="${pad.l + 6}" y="${(py - 4).toFixed(1)}">전용 ${a.area}㎡ · 평당 ${won(pyOf(a.peak.value, a.area))}만</text>`;
+  };
+  svg += peakLine(main, 'peak', '매매') + peakLine(jeonMain, 'peakj', '전세');
+  const path = (arr) => {
+    let d = '';
+    let pen = false;
+    arr.forEach((v, i) => {
+      if (v == null) {
+        pen = false;
+        return;
+      }
+      d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+      pen = true;
+    });
+    return d;
+  };
+  saleAreas.forEach((a, k) => {
+    svg += `<path class="ln-sale ln-a${k}" d="${path(a.roll3)}"/>`;
+  });
+  if (jeonMain) svg += `<path class="ln-jeon" d="${path(jeonMain.roll3)}"/>`;
+  const mark = (list, cls, label) => {
+    let out = '';
+    for (const h of list || []) {
+      const cx = x(h.mi);
+      const cy = Math.max(pad.t + 4, y(h.amount));
+      out += `<path class="${cls}" d="M${cx.toFixed(1)},${(cy - 6).toFixed(1)}l5,8.5h-10z"><title>${label} 신고가 ${h.dt.replace(/-/g, '.')} 전용 ${Math.round(h.area)}㎡ ${h.floor}층 ${fmtWon(h.amount)} (평당 ${won(h.ppy)}만원)</title></path>`;
+    }
+    return out;
+  };
+  svg += mark(c && c.newHighs, 'nh-mark', '매매') + mark(r && r.newHighs, 'nh-markj', '전세');
+  // 오른쪽 여백 라벨: 평형 태그 + 가격(큰 글씨) + 평당가(작은 글씨). 서로 겹치지 않게 세로로 밀어 낸다.
+  const ends = [];
+  saleAreas.forEach((a, k) => {
+    const e = lastNonNull(a.roll3, n - 1, 2);
+    if (e) ends.push({ cls: `ln-a${k}`, tag: `매매 ${a.area}㎡`, price: e.v, sub: pyOf(e.v, a.area), x: x(e.i), y: y(e.v) });
+  });
+  if (jeonMain) {
+    const e = lastNonNull(jeonMain.roll3, n - 1, 2);
+    if (e) ends.push({ cls: 'ln-jeon', tag: `전세 ${jeonMain.area}㎡`, price: e.v, sub: pyOf(e.v, jeonMain.area), x: x(e.i), y: y(e.v) });
+  }
+  ends.sort((a, b) => a.y - b.y);
+  const GAP = 46;
+  let prev = -Infinity;
+  for (const e of ends) {
+    e.ly = Math.max(e.y, prev + GAP);
+    prev = e.ly;
+  }
+  const over = prev - (priceBottom + 8);
+  if (over > 0) ends.forEach((e) => (e.ly -= over));
+  for (const e of ends) {
+    const tx = W - pad.r + 10;
+    svg += `<circle class="${e.cls}-end" cx="${e.x.toFixed(1)}" cy="${e.y.toFixed(1)}" r="3.6"/><line class="rlead" x1="${e.x.toFixed(1)}" y1="${e.y.toFixed(1)}" x2="${(tx - 3).toFixed(1)}" y2="${(e.ly - 12).toFixed(1)}"/>`;
+    svg += `<text class="rtag ${e.cls}-txt" x="${tx}" y="${(e.ly - 22).toFixed(1)}">${e.tag}</text><text class="rlabel ${e.cls}-txt" x="${tx}" y="${(e.ly - 7).toFixed(1)}">${fmtEok(e.price)}</text><text class="rsub ${e.cls}-txt" x="${tx}" y="${(e.ly + 7).toFixed(1)}">평당 ${won(e.sub)}만</text>`;
+  }
+  svg += '</svg>';
+  return svg;
+}
+
 // 통합 차트 범례 항목(표지·사이클 페이지 공통). 있는 선만 보여 준다.
 function combinedLegendItems(c, r) {
+  const sa = (c && c.areaSeries) || [];
+  const ja = (r && r.areaSeries) || [];
+  if (sa.length || ja.length) {
+    const out = sa.map((a, k) => `<span><i class="la${k}"></i>매매 전용 ${a.area}㎡</span>`);
+    const mainKey = sa[0] ? sa[0].key : null;
+    const jm = mainKey != null ? ja.find((a) => a.key === mainKey) : ja[0];
+    if (jm) out.push(`<span><i class="ljeon"></i>전세 전용 ${jm.area}㎡</span>`);
+    out.push('<span><i class="lpk"></i>고점(매매 빨강·전세 초록)</span>');
+    if (sa.length && jm) out.push('<span><i class="lgap"></i>갭(가장 많이 거래된 평형)</span>');
+    out.push('<span><b class="nhm">▲</b>신고가</span>', `<span>막대 = 거래량${c && r ? '(왼쪽 매매·오른쪽 전세)' : ''}</span>`);
+    return out;
+  }
   const out = [];
   if (c || r) out.push('<span><i class="lsale"></i>매매 3개월선</span>');
   if (c) out.push('<span><i class="l12"></i>매매 12개월선</span>');
@@ -1209,6 +1377,12 @@ section .lead { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch
 .ln-jeon-end { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .rlabel { font-size: 12.5px; font-weight: 800; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
 .rsub { font-size: 10.5px; font-weight: 600; }
+.rtag { font-size: 10px; font-weight: 700; }
+.rlead { stroke: var(--ink-3); stroke-width: 1; opacity: .6; }
+.ln-a1 { stroke: #e09016; } .ln-a2 { stroke: #7b5cd6; }
+.ln-a1-end { fill: #e09016; stroke: var(--surface); stroke-width: 2; } .ln-a2-end { fill: #7b5cd6; stroke: var(--surface); stroke-width: 2; }
+.ln-a1-txt { fill: #c27a05; } .ln-a2-txt { fill: #7b5cd6; }
+.legend i.la0 { border-top: 3px solid var(--ink); } .legend i.la1 { border-top: 3px solid #e09016; } .legend i.la2 { border-top: 3px solid #7b5cd6; }
 .peak-sub, .peakj-sub { font-size: 10px; font-weight: 600; }
 .peak-sub { fill: var(--up); } .peakj-sub { fill: var(--accent); }
 .ln-sale-txt { fill: var(--ink); } .ln-jeon-txt { fill: var(--accent); } .ln-ratio-txt { fill: var(--down); }
@@ -1294,7 +1468,8 @@ footer a { color: var(--accent); }
   .rsum .c-name { grid-area: name; } .rsum .c-price { grid-area: price; text-align: left; } .rsum .r-ratio { grid-area: ratio; } .rsum .r-gap { grid-area: gap; }
   .rsum .c-ma { grid-area: ma; text-align: right; } .rsum .c-quad { grid-area: quad; text-align: left; }
   .rlabel { font-size: 17px; }
-  .rsub { font-size: 14px; }
+  .rsub { font-size: 13px; }
+  .rtag { font-size: 12px; }
   .peak-sub, .peakj-sub { font-size: 13px; }
   .c-name { grid-area: name; } .c-price { grid-area: price; text-align: right; }
   .c-ma { grid-area: ma; } .c-quad { grid-area: quad; text-align: right; }
@@ -1331,7 +1506,7 @@ footer a { color: var(--accent); }
     <div class="stat"><small>4분면</small><b>${quadChip(region.quad)}</b><small>${region.quad ? `거래 ${pct(region.quad.x, 0)} · 평당가 ${pct(region.quad.y)}` : ''}</small></div>
   </div>
   ${combinedChart(months, region, rent && rent.region)}
-  <div class="legend">${combinedLegendItems(region, rent && rent.region).join('')}<span><i class="ldot"></i>달별 매매 중위</span></div>
+  <div class="legend">${combinedLegendItems(region, rent && rent.region).join('')}</div>
 </section>
 
 <section>
@@ -1441,4 +1616,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { analyze, analyzeRent, fmtEok, combinedChart, combinedLegendItems, ratioChart, rentFacts, loadRentCache, fmtWon, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH, RENT_CACHE_PATH };
+module.exports = { analyze, analyzeRent, fmtEok, combinedChart, combinedChartConverted, combinedLegendItems, ratioChart, rentFacts, loadRentCache, fmtWon, renderPage, indexYm, ymIndex, kstNow, trendChart, quadrantChart, maNote, QUADRANTS, CACHE_PATH, RENT_CACHE_PATH };
