@@ -104,4 +104,4 @@ function loadHistoryItems(cachePath) {
   }
 }
 
-module.exports = { normalizeAptName, loadExcludedApartments, pricePerPyeong, makeRecordChecker, loadHistoryItems };
+module.exports = { normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
