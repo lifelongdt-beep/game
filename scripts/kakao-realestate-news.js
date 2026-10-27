@@ -302,7 +302,8 @@ function clusterArticles(candidates, limit) {
     sourceCount: c.sourceCount,
   }));
   result.sort((a, b) => b.sourceCount - a.sourceCount || (b.pubDate?.getTime() || 0) - (a.pubDate?.getTime() || 0));
-  return result.slice(0, limit).map(({ title, link, nearby }) => (nearby ? { title, link, nearby } : { title, link }));
+  // pubDate(발행일)·sourceCount(같은 기사를 다룬 매체 수)는 카드뉴스 후보 고르기(card-news/candidates.js)에서 쓴다.
+  return result.slice(0, limit).map(({ title, link, nearby, pubDate, sourceCount }) => ({ title, link, pubDate, sourceCount, ...(nearby ? { nearby } : {}) }));
 }
 
 async function fetchNews(query, limit, requireKeyword) {
@@ -338,6 +339,8 @@ function isWithinLastDay(date) {
 // ②인접지역(GEOMDAN_NEARBY_QUERY, "검단" 언급 불필요) 두 검색을 합친다.
 // 한쪽이 실패해도(예: 일시적 API 오류) 다른 쪽 결과는 그대로 살리도록 각각
 // 독립적으로 실패를 처리한다.
+// 부동산과 상관없는 지역 동정(행사·캠페인·교육·소식지·위촉·구의회 현장 점검 등)은 검단 뉴스 목록에서 뺀다.
+const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|페스티벌|축제|기부제|공연|봉사|위촉|개최|출범|소식지|시상|기념|체험|전시|공모전|반려|심폐소생|응급처치|구의회|의장|현장 ?점검|간담회|감사패|특강|설명회/;
 async function fetchGeomdanArticles(limit) {
   const [directCandidates, nearbyCandidates] = await Promise.all([
     fetchNewsCandidates(GEOMDAN_QUERY, GEOMDAN_KEYWORD).catch((err) => {
@@ -353,7 +356,7 @@ async function fetchGeomdanArticles(limit) {
     ),
   ]);
 
-  const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate));
+  const freshCandidates = [...directCandidates, ...nearbyCandidates].filter((c) => isWithinLastDay(c.pubDate) && !GEOMDAN_NOISE_RE.test(c.title));
   return clusterArticles(freshCandidates, limit);
 }
 
@@ -703,7 +706,8 @@ function renderArticlesHtml(articles) {
           const badge = a.nearby ? '<span class="tag-nearby">🔗 인접지역</span>' : '';
           // 발행일(한국 날짜)을 data-pub에 남겨 두면 card-news/candidates.js가 오래된 기사를 골라내지 않도록 확인할 수 있다.
           const pub = a.pubDate && !Number.isNaN(a.pubDate.getTime()) ? ` data-pub="${new Date(a.pubDate.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10)}"` : '';
-          return `    <li class="article"${pub}><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
+          const src = a.sourceCount > 0 ? ` data-src="${a.sourceCount}"` : '';
+          return `    <li class="article"${pub}${src}><a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${badge}${escapeHtml(a.title)}</a></li>`;
         })
         .join('\n')
     : '    <li class="empty">오늘은 새로 조회된 소식이 없어요.</li>';
