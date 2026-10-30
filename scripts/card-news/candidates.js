@@ -8,7 +8,7 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { isRealEstateNews } = require('../geomdan-common');
+const { isRealEstateNews, GEOMDAN_MUST_RE } = require('../geomdan-common');
 
 const argv = process.argv.slice(2);
 const getOpt = (name) => {
@@ -204,6 +204,9 @@ function main() {
   print('검단신도시 뉴스', geomdan);
   const goods = all.map((a, i) => [i + 1, a]).filter(([, a]) => tierMark(a.title).startsWith('[A') && !usedMark(a.title, cards));
   console.log(`\n[A·A정책 미사용 번호] ${goods.map(([i]) => i).join(' ') || '(없음)'}  ← 표지·이슈·오버레이는 여기서 먼저 고른다`);
+  // 검단 AA17블록(중흥S클래스) 기사는 무조건 카드에 넣는다(2026-10-31 사용자 요청). 이미 쓴 같은 기사는 다시 넣지 않는다.
+  const must = all.map((a, i) => [i + 1, a]).filter(([, a]) => GEOMDAN_MUST_RE.test(a.title) && !usedMark(a.title, cards));
+  console.log(`[검단 AA17 필수 번호] ${must.map(([i]) => i).join(' ') || '(없음)'}  ← 있으면 반드시 카드(표지 또는 이슈)에 넣는다`);
   const gd = all.map((a, i) => [i + 1, a]).filter(([, a]) => isGeomdanRealEstate(a.title) && !usedMark(a.title, cards));
   if (gd.length) {
     console.log(`[검단 부동산 우선 후보 번호] ${gd.map(([i]) => i).join(' ')}  ← 같은 가치의 다른 후보보다 먼저 고른다(쓸 만한 기사일 때만)`);
