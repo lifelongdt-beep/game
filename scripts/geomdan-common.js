@@ -110,17 +110,21 @@ const GEOMDAN_REALESTATE_RE = /분양|청약|입주|아파트|단지|실거래|�
 const GEOMDAN_NOISE_RE = /행사|캠페인|산책|교육|수업|페스티벌|축제|기부|기탁|나눔|복지관|공연|봉사|위촉|개최|출범|소식지|시상|협약|기념|체험|전시|공모전|반려|심폐소생|응급처치|구의회|의장|현장 ?점검|간담회|감사패|특강|설명회/;
 // 부동산 기사가 아니어도 구 전체에 영향을 주는 주요 사건(대형 사고, 분구 정산금 갈등·재정 위기 등)은 검단 뉴스로 다룬다(2026-10-27 사용자 피드백).
 const GEOMDAN_MAJOR_RE = /폭발|화재|붕괴|침수|사고|사망|부상|정산|분쟁|갈등|재정|예산|분구|행정 ?(?:마비|개편|통합)|자금 ?고갈|청사/;
+// 검단 AA17블록(중흥S클래스)은 검단에서 가장 관심이 큰 단지라, 관련 기사는 동정 단어 필터와 상관없이 항상 남기고
+// 카드뉴스에도 반드시 넣는다(2026-10-31 사용자 요청).
+// 다른 지역 AA17블록·중흥S클래스와 섞이지 않게 제목에 "검단"도 있어야 한다.
+const GEOMDAN_MUST_RE = /^(?=.*검단)(?=.*(?:AA ?-?17|중흥 ?S ?-?클래스))/i;
 // 제목 끝의 " - 매체명"은 빼고 본다(매체명에 "부동산" 등이 들어가 잘못 통과하지 않게).
 function isRealEstateNews(title) {
   const t = String(title);
   const head = t.lastIndexOf(' - ') > 0 ? t.slice(0, t.lastIndexOf(' - ')) : t;
-  return GEOMDAN_REALESTATE_RE.test(head) && !GEOMDAN_NOISE_RE.test(head);
+  return GEOMDAN_MUST_RE.test(head) || (GEOMDAN_REALESTATE_RE.test(head) && !GEOMDAN_NOISE_RE.test(head));
 }
 // 검단 뉴스 목록 기준: 동정(기부·수업·행사 등)은 빼고, 부동산 기사 또는 구 전체 주요 사건만 남긴다.
 function isGeomdanNews(title) {
   const t = String(title);
   const head = t.lastIndexOf(' - ') > 0 ? t.slice(0, t.lastIndexOf(' - ')) : t;
-  return !GEOMDAN_NOISE_RE.test(head) && (GEOMDAN_REALESTATE_RE.test(head) || GEOMDAN_MAJOR_RE.test(head));
+  return GEOMDAN_MUST_RE.test(head) || (!GEOMDAN_NOISE_RE.test(head) && (GEOMDAN_REALESTATE_RE.test(head) || GEOMDAN_MAJOR_RE.test(head)));
 }
 
-module.exports = { isRealEstateNews, isGeomdanNews, GEOMDAN_MAJOR_RE, GEOMDAN_REALESTATE_RE, GEOMDAN_NOISE_RE, normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
+module.exports = { GEOMDAN_MUST_RE, isRealEstateNews, isGeomdanNews, GEOMDAN_MAJOR_RE, GEOMDAN_REALESTATE_RE, GEOMDAN_NOISE_RE, normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
