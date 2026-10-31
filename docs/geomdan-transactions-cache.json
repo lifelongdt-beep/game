@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 10월 31일 PM 7:07",
+  "generatedAt": "2026년 11월 1일 AM 12:13",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -3488,27 +3488,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "신검단중앙역디에트르더에듀",
-      "dong": "불로동",
-      "area": "59.8554",
-      "amount": "50355",
-      "floor": "12",
-      "year": "2026",
-      "month": "07",
-      "day": "01",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.07.01",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "4308동",
-      "jibun": "965-2",
-      "leasehold": "N"
-    },
-    {
       "apt": "우미린파크뷰1단지",
       "dong": "당하동",
       "area": "59.938",
@@ -5231,27 +5210,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
-      "dong": "당하동",
-      "area": "84.1588",
-      "amount": "63200",
-      "floor": "3",
-      "year": "2026",
-      "month": "07",
-      "day": "01",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.30",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "1108동",
-      "jibun": "1254-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": "76.1198",
@@ -6071,27 +6029,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "롯데캐슬넥스티엘",
-      "dong": "원당동",
-      "area": "84.8168",
-      "amount": "61400",
-      "floor": "26",
-      "year": "2026",
-      "month": "07",
-      "day": "01",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.07.07",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "9103동",
-      "jibun": "1061-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": "84.9861",
@@ -6299,27 +6236,6 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "롯데캐슬넥스티엘",
-      "dong": "원당동",
-      "area": "84.9956",
-      "amount": "61000",
-      "floor": "19",
-      "year": "2026",
-      "month": "07",
-      "day": "01",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.07.03",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "9101동",
-      "jibun": "1061-1",
       "leasehold": "N"
     },
     {
@@ -14164,24 +14080,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "신검단중앙역디에트르더에듀",
-      "dong": "불로동",
-      "area": 59.8554,
-      "amount": 50355,
-      "floor": "12",
-      "date": "2026.07.01",
-      "ppy": 2086,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.07.01",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "4308동",
-      "jibun": "965-2",
-      "leasehold": "N"
-    },
-    {
       "apt": "우미린파크뷰1단지",
       "dong": "당하동",
       "area": 59.938,
@@ -15548,24 +15446,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
-      "dong": "당하동",
-      "area": 84.1588,
-      "amount": 63200,
-      "floor": "3",
-      "date": "2026.07.01",
-      "ppy": 1907,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.30",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "1108동",
-      "jibun": "1254-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": 76.1198,
@@ -16218,24 +16098,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "롯데캐슬넥스티엘",
-      "dong": "원당동",
-      "area": 84.8168,
-      "amount": 61400,
-      "floor": "26",
-      "date": "2026.07.01",
-      "ppy": 1838,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.07.07",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "9103동",
-      "jibun": "1061-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": 84.9861,
@@ -16401,24 +16263,6 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "1305-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "롯데캐슬넥스티엘",
-      "dong": "원당동",
-      "area": 84.9956,
-      "amount": 61000,
-      "floor": "19",
-      "date": "2026.07.01",
-      "ppy": 1822,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.07.03",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "9101동",
-      "jibun": "1061-1",
       "leasehold": "N"
     },
     {
