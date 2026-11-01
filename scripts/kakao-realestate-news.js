@@ -863,20 +863,32 @@ function publishCombinedPage(filename, articles, geomdanArticles, transactionsRe
 }
 
 async function main() {
-  const tokenData = await refreshAccessToken();
-  const accessToken = tokenData.access_token;
-  maskSecret(accessToken);
-  maskSecret(tokenData.refresh_token);
-
-  if (tokenData.refresh_token && tokenData.refresh_token !== REFRESH_TOKEN) {
-    console.log('카카오 refresh_token이 새로 발급되었습니다.');
-    writeOutput('new_refresh_token', tokenData.refresh_token);
+  // 카카오 토큰이 만료돼도(약 60일마다 재발급 필요) 뉴스·실거래가 데이터 갱신은 멈추지 않게 한다.
+  // 발송을 건너뛰는 실행(SKIP_KAKAO_SEND)이면 경고만 남기고 데이터 수집을 계속한다 — 이 경우 access_token이
+  // 없으므로 뒤의 카드 이미지 발송 단계는 실패해 토큰 문제를 계속 드러낸다.
+  let tokenData;
+  try {
+    tokenData = await refreshAccessToken();
+  } catch (err) {
+    if (!SKIP_KAKAO_SEND || NOTIFY_MESSAGE) throw err;
+    console.log(`::warning::${err.message} — KAKAO_REFRESH_TOKEN을 새로 발급해 저장소 Secret에 넣어야 카카오톡 발송이 됩니다. 데이터 갱신은 계속합니다.`);
   }
-  // 카드뉴스 캡처 이미지를 보내는 별도 단계(scripts/send-kakao-images.js)가
-  // 이 access_token을 그대로 재사용한다 — 각자 refresh_token으로 새로
-  // 토큰을 받으면, 그 사이 카카오가 refresh_token을 회전시켰을 때 나중 호출이
-  // 이미 무효화된 옛 토큰을 쓰게 될 위험이 있어 이를 피하려는 의도다.
-  writeOutput('access_token', accessToken);
+  if (tokenData) {
+    const accessToken = tokenData.access_token;
+    maskSecret(accessToken);
+    maskSecret(tokenData.refresh_token);
+
+    if (tokenData.refresh_token && tokenData.refresh_token !== REFRESH_TOKEN) {
+      console.log('카카오 refresh_token이 새로 발급되었습니다.');
+      writeOutput('new_refresh_token', tokenData.refresh_token);
+    }
+    // 카드뉴스 캡처 이미지를 보내는 별도 단계(scripts/send-kakao-images.js)가
+    // 이 access_token을 그대로 재사용한다 — 각자 refresh_token으로 새로
+    // 토큰을 받으면, 그 사이 카카오가 refresh_token을 회전시켰을 때 나중 호출이
+    // 이미 무효화된 옛 토큰을 쓰게 될 위험이 있어 이를 피하려는 의도다.
+    writeOutput('access_token', accessToken);
+  }
+  const accessToken = tokenData && tokenData.access_token;
 
   if (NOTIFY_MESSAGE) {
     await sendKakaoText(accessToken, NOTIFY_MESSAGE, DIGEST_PAGE_URL);
