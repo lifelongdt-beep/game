@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 11월 4일 AM 10:14",
+  "generatedAt": "2026년 11월 5일 AM 1:59",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -2963,27 +2963,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": "84.93",
-      "amount": "72500",
-      "floor": "13",
-      "year": "2026",
-      "month": "07",
-      "day": "05",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.08.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3208동",
-      "jibun": "1018",
-      "leasehold": "N"
-    },
-    {
       "apt": "호반써밋1차",
       "dong": "원당동",
       "area": "84.8917",
@@ -3278,27 +3257,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": "75.84",
-      "amount": "63400",
-      "floor": "12",
-      "year": "2026",
-      "month": "07",
-      "day": "05",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "",
-      "jibun": "1018",
-      "leasehold": "N"
-    },
-    {
       "apt": "신검단중앙역디에트르더에듀",
       "dong": "불로동",
       "area": "59.8554",
@@ -3359,27 +3317,6 @@
       "buyer": "개인",
       "aptDong": "4304동",
       "jibun": "965-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": "84.93",
-      "amount": "70500",
-      "floor": "19",
-      "year": "2026",
-      "month": "07",
-      "day": "05",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.01",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3207동",
-      "jibun": "1018",
       "leasehold": "N"
     },
     {
@@ -13738,24 +13675,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": 84.93,
-      "amount": 72500,
-      "floor": "13",
-      "date": "2026.07.05",
-      "ppy": 2167,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.08.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3208동",
-      "jibun": "1018",
-      "leasehold": "N"
-    },
-    {
       "apt": "호반써밋1차",
       "dong": "원당동",
       "area": 84.8917,
@@ -13990,22 +13909,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": 75.84,
-      "amount": 63400,
-      "floor": "12",
-      "date": "2026.07.05",
-      "ppy": 2114,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "seller": "개인",
-      "buyer": "개인",
-      "jibun": "1018",
-      "leasehold": "N"
-    },
-    {
       "apt": "신검단중앙역디에트르더에듀",
       "dong": "불로동",
       "area": 59.8554,
@@ -14057,24 +13960,6 @@
       "buyer": "개인",
       "aptDong": "4304동",
       "jibun": "965-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시푸르지오더베뉴",
-      "dong": "원당동",
-      "area": 84.93,
-      "amount": 70500,
-      "floor": "19",
-      "date": "2026.07.05",
-      "ppy": 2107,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.01",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3207동",
-      "jibun": "1018",
       "leasehold": "N"
     },
     {
