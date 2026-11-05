@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 11월 5일 AM 10:25",
+  "generatedAt": "2026년 11월 6일 AM 2:15",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -734,27 +734,6 @@
       "buyer": "개인",
       "aptDong": "3006동",
       "jibun": "1022-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시모아엘가그랑데",
-      "dong": "원당동",
-      "area": "59.5224",
-      "amount": "58700",
-      "floor": "6",
-      "year": "2026",
-      "month": "07",
-      "day": "06",
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.21",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2305동",
-      "jibun": "1063",
       "leasehold": "N"
     },
     {
@@ -10334,27 +10313,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시대성베르힐라프리미어",
-      "dong": "당하동",
-      "area": "84.4003",
-      "amount": "50000",
-      "floor": "3",
-      "year": "2026",
-      "month": "07",
-      "day": "06",
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.18",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "702동",
-      "jibun": "1316-2",
-      "leasehold": "N"
-    },
-    {
       "apt": "예미지더시그너스",
       "dong": "당하동",
       "area": "102.7097",
@@ -12009,24 +11967,6 @@
       "buyer": "개인",
       "aptDong": "3006동",
       "jibun": "1022-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시모아엘가그랑데",
-      "dong": "원당동",
-      "area": 59.5224,
-      "amount": 58700,
-      "floor": "6",
-      "date": "2026.07.06",
-      "ppy": 2445,
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.21",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2305동",
-      "jibun": "1063",
       "leasehold": "N"
     },
     {
@@ -19636,24 +19576,6 @@
       "buyer": "개인",
       "aptDong": "801동",
       "jibun": "1318-8",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시대성베르힐라프리미어",
-      "dong": "당하동",
-      "area": 84.4003,
-      "amount": 50000,
-      "floor": "3",
-      "date": "2026.07.06",
-      "ppy": 1504,
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.18",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "702동",
-      "jibun": "1316-2",
       "leasehold": "N"
     },
     {
