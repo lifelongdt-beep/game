@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 11월 7일 AM 9:51",
+  "generatedAt": "2026년 11월 8일 AM 12:35",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -52,27 +52,6 @@
       "year": "2026",
       "month": "07",
       "day": "15",
-      "buildYear": "2025",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "",
-      "jibun": "1001",
-      "leasehold": "N"
-    },
-    {
-      "apt": "힐스테이트신검단센트럴",
-      "dong": "불로동",
-      "area": "84.8216",
-      "amount": "88000",
-      "floor": "13",
-      "year": "2026",
-      "month": "07",
-      "day": "08",
       "buildYear": "2025",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
@@ -5588,27 +5567,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시예미지트리플에듀",
-      "dong": "원당동",
-      "area": "84.5075",
-      "amount": "62500",
-      "floor": "16",
-      "year": "2026",
-      "month": "07",
-      "day": "08",
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.09.18",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2704동",
-      "jibun": "1014",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": "76.1198",
@@ -9515,27 +9473,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단호수공원역호반써밋",
-      "dong": "불로동",
-      "area": "84.6243",
-      "amount": "52700",
-      "floor": "13",
-      "year": "2026",
-      "month": "07",
-      "day": "08",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.07.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "5405동",
-      "jibun": "가-",
-      "leasehold": "N"
-    },
-    {
       "apt": "e편한세상검단에코비스타",
       "dong": "마전동",
       "area": "84.9746",
@@ -11571,12 +11508,12 @@
     {
       "apt": "검단호수공원역호반써밋",
       "dong": "불로동",
-      "amountText": "5억 2,700만원",
-      "amount": 52700,
+      "amountText": "5억 2,059만원",
+      "amount": 52059,
       "area": 84.6243,
       "floor": "13",
-      "date": "2026.07.08",
-      "ppy": 1581
+      "date": "2026.09.12",
+      "ppy": 1562
     }
   ],
   "details": [
@@ -11620,22 +11557,6 @@
       "floor": "12",
       "date": "2026.07.15",
       "ppy": 2649,
-      "buildYear": "2025",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "seller": "개인",
-      "buyer": "개인",
-      "jibun": "1001",
-      "leasehold": "N"
-    },
-    {
-      "apt": "힐스테이트신검단센트럴",
-      "dong": "불로동",
-      "area": 84.8216,
-      "amount": 88000,
-      "floor": "13",
-      "date": "2026.07.08",
-      "ppy": 2634,
       "buildYear": "2025",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
@@ -16008,24 +15929,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시예미지트리플에듀",
-      "dong": "원당동",
-      "area": 84.5075,
-      "amount": 62500,
-      "floor": "16",
-      "date": "2026.07.08",
-      "ppy": 1878,
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.09.18",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2704동",
-      "jibun": "1014",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시디에트르더힐",
       "dong": "원당동",
       "area": 76.1198,
@@ -19147,24 +19050,6 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "1318-8",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단호수공원역호반써밋",
-      "dong": "불로동",
-      "area": 84.6243,
-      "amount": 52700,
-      "floor": "13",
-      "date": "2026.07.08",
-      "ppy": 1581,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.07.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "5405동",
-      "jibun": "가-",
       "leasehold": "N"
     },
     {
