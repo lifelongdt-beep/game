@@ -5,7 +5,7 @@
 // 필요한 환경 변수는 docs/kakao-realestate-news-setup.md 참고.
 
 const fs = require('fs');
-const { normalizeAptName, loadExcludedApartments, pricePerPyeong, isGeomdanNews } = require('./geomdan-common');
+const { normalizeAptName, loadExcludedApartments, pricePerPyeong, isGeomdanNews, TRANSPORT_PLAN_RE } = require('./geomdan-common');
 
 const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 // "부동산" 같은 일반 언급뿐 아니라, 그 단어 없이 지표명만으로 쓰이는 기사도
@@ -13,6 +13,13 @@ const ARTICLE_COUNT = Number(process.env.ARTICLE_COUNT || 10);
 const NEWS_QUERY =
   process.env.NEWS_QUERY ||
   '(부동산 OR 매매가격지수 OR 전세가격지수 OR 전세가율 OR 매매수급지수 OR 거래량 OR 미분양 OR "준공 후 미분양" OR "인허가 실적" OR "착공 실적" OR "분양 실적" OR "입주 물량" OR 기준금리 OR 대출금리 OR "스트레스 DSR" OR 대출한도 OR "다주택자 양도세 중과" OR 취득세 OR 종합부동산세 OR "공시가격 현실화" OR 공정시장가액비율 OR 토지거래허가구역 OR 소비자심리지수 OR 매수우위지수 OR 급매물 OR 전세난 OR 갭투자 OR 역전세 OR "임대차 2법" OR 계약갱신청구권 OR PIR OR 청약경쟁률 OR 분양가상한제 OR 재건축 OR 재개발 OR "규제지역 해제" OR "지방 미분양" OR "서울 신축 공급" OR 한국부동산원 OR "주간 아파트값" OR "아파트값 상승률" OR "매매 거래량" OR "KB부동산" OR "주택 공급대책" OR 가계대출 OR 전월세) -기업대출 -대부업 -온투업 -코인 -견본주택 -"부동산 AD" when:1d';
+// 국가 교통 인프라 계획(국가철도망 구축계획·광역교통계획·국가도로망 등) 기사는 제목에 "부동산" 같은
+// NEWS_QUERY 단어가 없어 일반 검색에 안 걸린다(예: "향후 30년 철도 대전환…국토부, 철도망 계획 국민 의견 듣는다").
+// 그래서 따로 검색해 부동산 뉴스 목록 끝에 몇 건 덧붙인다(매체 수 정렬·개수 제한에 밀려 빠지지 않게). 2026-11-08 사용자 요청.
+const TRANSPORT_POLICY_COUNT = Number(process.env.TRANSPORT_POLICY_COUNT || 3);
+const TRANSPORT_POLICY_QUERY =
+  process.env.TRANSPORT_POLICY_QUERY ||
+  '("국가철도망 구축계획" OR "철도망 구축계획" OR "철도망 계획" OR "철도 대전환" OR "광역교통 기본계획" OR "광역교통 시행계획" OR 광역교통개선대책 OR "대도시권 광역교통" OR 국가도로망 OR "도로건설계획") when:1d';
 const DIGEST_PAGE_URL = process.env.DIGEST_PAGE_URL || 'https://lifelongdt-beep.github.io/game/';
 // 설정돼 있으면 평소 뉴스/실거래가 수집·발송을 건너뛰고 이 문구만 카카오톡으로
 // 보낸다(점검 결과 등을 즉석에서 알릴 때 workflow_dispatch 입력으로 채운다).
@@ -354,6 +361,24 @@ function geomdanEventKeys(title) {
   const keys = GEOMDAN_EVENT_GROUPS.filter(([, re]) => re.test(title)).map(([k]) => k);
   for (const m of title.matchAll(/(\d{3,})\s*억/g)) keys.push(`${m[1]}억`);
   return keys;
+}
+
+// 국가 교통정책 기사를 따로 모아, 이미 부동산 뉴스 목록에 있는 같은 사건은 빼고 붙인다.
+async function appendTransportPolicyArticles(articles) {
+  let candidates = [];
+  try {
+    candidates = await fetchNewsCandidates(TRANSPORT_POLICY_QUERY);
+  } catch (err) {
+    console.error(`국가 교통정책 뉴스 조회 실패: ${err.message}`);
+    return articles;
+  }
+  const fresh = candidates.filter((c) => isWithinLastDay(c.pubDate) && TRANSPORT_PLAN_RE.test(newsDedupKey(c.title)));
+  const existing = articles.map((a) => charBigrams(newsDedupKey(a.title)));
+  const extra = clusterArticles(fresh, TRANSPORT_POLICY_COUNT * 3)
+    .filter((a) => !existing.some((g) => isSimilarHeadline(charBigrams(newsDedupKey(a.title)), g)))
+    .slice(0, TRANSPORT_POLICY_COUNT);
+  if (extra.length) console.log(`국가 교통정책 기사 ${extra.length}건을 부동산 뉴스에 덧붙입니다.`);
+  return [...articles, ...extra];
 }
 
 async function fetchGeomdanArticles(limit) {
@@ -896,7 +921,7 @@ async function main() {
     return;
   }
 
-  const articles = await fetchNewsSafe(NEWS_QUERY, ARTICLE_COUNT);
+  const articles = await appendTransportPolicyArticles(await fetchNewsSafe(NEWS_QUERY, ARTICLE_COUNT));
   const geomdanArticles = await fetchGeomdanArticles(GEOMDAN_ARTICLE_COUNT);
   const geomdanResult = await fetchGeomdanTransactions();
   const geomdanTransactions = geomdanResult.transactions;

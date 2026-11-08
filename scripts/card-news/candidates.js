@@ -8,7 +8,7 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const path = require('path');
-const { isRealEstateNews, GEOMDAN_MUST_RE } = require('../geomdan-common');
+const { isRealEstateNews, GEOMDAN_MUST_RE, TRANSPORT_PLAN_RE } = require('../geomdan-common');
 
 const argv = process.argv.slice(2);
 const getOpt = (name) => {
@@ -134,6 +134,8 @@ const TIER_POLICY = /LH|매입확약|정부|국토부|국토교통부|금융위|
 const TIER_B = /검단|인천|서구|계양|청라|김포|루원|GTX|광역급행|인천2호선/;
 function tierMark(title) {
   const head = title.lastIndexOf(' - ') > 0 ? title.slice(0, title.lastIndexOf(' - ')) : title;
+  // 국가 교통 인프라 계획(국가철도망 구축계획 등)은 의견수렴 행사 기사여도 정책 뉴스로 본다(2026-11-08 사용자 요청).
+  if (TRANSPORT_PLAN_RE.test(head)) return '[A정책] ';
   if (TIER_EXCLUDE.test(head)) return '[제외] ';
   if (TIER_A.test(head) && TIER_POLICY.test(head)) return '[A정책] ';
   if (TIER_A.test(head)) return '[A] ';
@@ -207,6 +209,9 @@ function main() {
   // 검단 AA17블록(중흥S클래스) 기사는 무조건 카드에 넣는다(2026-10-31 사용자 요청). 이미 쓴 같은 기사는 다시 넣지 않는다.
   const must = all.map((a, i) => [i + 1, a]).filter(([, a]) => GEOMDAN_MUST_RE.test(a.title) && !usedMark(a.title, cards));
   console.log(`[검단 AA17 필수 번호] ${must.map(([i]) => i).join(' ') || '(없음)'}  ← 있으면 반드시 카드(표지 또는 이슈)에 넣는다`);
+  // 국토부 국가 교통 인프라 계획(국가철도망 구축계획·광역교통계획·국가도로망 등) 기사도 무조건 카드에 넣는다(2026-11-08 사용자 요청).
+  const transport = all.map((a, i) => [i + 1, a]).filter(([, a]) => TRANSPORT_PLAN_RE.test(a.title) && !usedMark(a.title, cards));
+  console.log(`[국가 교통정책 필수 번호] ${transport.map(([i]) => i).join(' ') || '(없음)'}  ← 있으면 반드시 카드(표지 또는 이슈)에 넣는다`);
   const gd = all.map((a, i) => [i + 1, a]).filter(([, a]) => isGeomdanRealEstate(a.title) && !usedMark(a.title, cards));
   if (gd.length) {
     console.log(`[검단 부동산 우선 후보 번호] ${gd.map(([i]) => i).join(' ')}  ← 같은 가치의 다른 후보보다 먼저 고른다(쓸 만한 기사일 때만)`);

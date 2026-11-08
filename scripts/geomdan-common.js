@@ -114,6 +114,10 @@ const GEOMDAN_MAJOR_RE = /폭발|화재|붕괴|침수|사고|사망|부상|정�
 // 카드뉴스에도 반드시 넣는다(2026-10-31 사용자 요청).
 // 다른 지역 AA17블록·중흥S클래스와 섞이지 않게 제목에 "검단"도 있어야 한다.
 const GEOMDAN_MUST_RE = /^(?=.*검단)(?=.*(?:AA ?-?17|중흥 ?S ?-?클래스))/i;
+// 국토부 등 정부의 국가 교통 인프라 계획(국가철도망 구축계획·광역교통 기본/시행계획·광역교통개선대책·국가도로망 등)은
+// 집값·개발 흐름을 장기간 좌우하는 핵심 정책이라, 관련 기사는 카드뉴스에 반드시 넣는다(2026-11-08 사용자 요청).
+// 7호선 청라 연장·GTX 개별 노선 소식처럼 한 노선만 다루는 기사는 여기에 걸리지 않는다(필요하면 일반 후보로 판단).
+const TRANSPORT_PLAN_RE = /국가철도망|철도망 ?(?:구축)? ?계획|철도 ?대전환|광역교통 ?(?:기본|시행)? ?계획|광역교통 ?개선 ?대책|대도시권 ?광역교통|국가도로망|국가간선도로망|(?:고속)?도로 ?건설 ?(?:기본)? ?계획/;
 // 제목 끝의 " - 매체명"은 빼고 본다(매체명에 "부동산" 등이 들어가 잘못 통과하지 않게).
 function isRealEstateNews(title) {
   const t = String(title);
@@ -127,4 +131,4 @@ function isGeomdanNews(title) {
   return GEOMDAN_MUST_RE.test(head) || (!GEOMDAN_NOISE_RE.test(head) && (GEOMDAN_REALESTATE_RE.test(head) || GEOMDAN_MAJOR_RE.test(head)));
 }
 
-module.exports = { GEOMDAN_MUST_RE, isRealEstateNews, isGeomdanNews, GEOMDAN_MAJOR_RE, GEOMDAN_REALESTATE_RE, GEOMDAN_NOISE_RE, normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
+module.exports = { TRANSPORT_PLAN_RE, GEOMDAN_MUST_RE, isRealEstateNews, isGeomdanNews, GEOMDAN_MAJOR_RE, GEOMDAN_REALESTATE_RE, GEOMDAN_NOISE_RE, normalizeAptName, loadExcludedApartments, pricePerPyeong, estimateSupplyArea, SQM_PER_PYEONG, makeRecordChecker, loadHistoryItems };
