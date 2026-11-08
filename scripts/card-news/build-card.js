@@ -139,11 +139,12 @@ ${cards}
 function renderOverlay(o) {
   return `<section class="card-slide slide-overlay">
     ${igHead('<span class="ig-count">재부키 한 줄 정리</span>')}
-    ${link(o.url, `${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n    ` : ''}<div class="overlay-content">
+    ${link(o.url, `<div class="overlay-content">
       <div class="overlay-script">${esc(o.script)}</div>
       <h2 class="overlay-lead">
         ${o.lead.map(esc).join('<br>\n        ')}
       </h2>
+      ${o.img ? `<img class="overlay-photo" src="${escAttr(o.img)}" alt="${escAttr(o.alt)}">\n      ` : ''}
       <p class="overlay-body">
         ${esc(stripBoiler(o.body))}
       </p>
@@ -789,7 +790,7 @@ const IG_CSS = `  /* ig-style:start */
   .slide-overlay { display: flex; flex-direction: column; padding: 30px 36px 34px; background: var(--ig-yellow); color: var(--ig-ink); }
   .slide-overlay .ig-avatar { background: var(--ig-ink); color: var(--ig-yellow); box-shadow: 0 0 0 2px var(--ig-yellow), 0 0 0 3.5px var(--ig-ink); }
   .slide-overlay .ig-count { color: #4a4c50; }
-  .overlay-photo { width: 100%; height: auto; border-radius: 14px; margin-bottom: 22px; }
+  .overlay-photo { width: 100%; height: auto; border-radius: 14px; margin: 2px 0 18px; }
   .overlay-content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 0; background: none; }
   .overlay-script { font-family: var(--font-display); font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; background: var(--ig-ink); padding: 6px 12px; border-radius: 5px; margin-bottom: 14px; }
   .overlay-lead { font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 1.22; letter-spacing: -0.045em; color: var(--ig-ink); margin-bottom: 14px; }
