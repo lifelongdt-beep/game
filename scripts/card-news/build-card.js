@@ -764,8 +764,8 @@ const IG_CSS = `  /* ig-style:start */
   .ig-dark .ig-avatar { text-shadow: none; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 0 3.5px var(--ig-yellow); }
   .ig-mark { background: linear-gradient(transparent 58%, var(--ig-yellow) 58%); color: inherit; padding: 0 2px; }
   .cover-content { padding: 24px 32px 26px; justify-content: flex-end; background: linear-gradient(180deg, rgba(10,10,12,.45) 0%, rgba(10,10,12,.1) 18%, rgba(10,10,12,.82) 40%, rgba(10,10,12,.94) 58%, rgba(10,10,12,.96) 100%); }
-  /* 사진에 글자가 많아도 제목·요약이 읽히도록 아래쪽은 거의 불투명하게 덮고 그림자를 준다(2026-11-08 사용자 피드백). */
-  .cover-headline, .cover-summary { text-shadow: 0 2px 8px rgba(0,0,0,.85); }
+  /* 사진에 글자가 많아도 제목·요약이 읽히도록 아래쪽은 거의 불투명하게 덮는다. 글자 그림자는 쓰지 않는다(2026-11-08 사용자 피드백). */
+  .cover-headline, .cover-summary, .cover-headline .highlight { text-shadow: none; }
   .slide-cover .ig-head { margin-bottom: auto; padding-bottom: 56px; }
   .cover-date { background: rgba(0,0,0,.55); color: #ffffff; font-size: 13px; font-weight: 700; padding: 6px 13px; box-shadow: none; text-shadow: none; }
   .cover-category { margin-bottom: 14px; }
