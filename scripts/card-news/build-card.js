@@ -114,10 +114,13 @@ function renderSplit(c) {
       const img = !it.img ? '' : link(it.url, `<div class="split-img">
         <img src="${escAttr(it.img)}" alt="${escAttr(it.alt)}">
       </div>`) + '\n      ';
+      // 순서: 이슈 번호·제목 → 사진 → 기사 요약(2026-11-08 사용자 요청: 제목 밑에 사진, 그다음 기사).
       return `    <article class="issue-card">
-      ${img}${link(it.url, `<div class="split-content">
+      ${link(it.url, `<div class="split-content">
         <span class="check-tag">이슈 ${i + 1}</span>
         <p class="split-title">${markedTitle(it.title)}</p>
+      </div>`)}
+      ${img}${link(it.url, `<div class="split-content">
         <p class="split-text">${esc(stripBoiler(it.text))}</p>
       </div>`)}
     </article>`;
