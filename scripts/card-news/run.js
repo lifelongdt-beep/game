@@ -68,7 +68,7 @@ function prepare(dir) {
 function images(dir, args) {
   const li = args.indexOf('--limit');
   const limit = li >= 0 ? Number(args[li + 1]) : 600;
-  const nums = args.filter((a, i) => /^\d+$/.test(a) && i !== li + 1);
+  const nums = args.filter((a, i) => /^\d+$/.test(a) && (li < 0 || i !== li + 1));
   if (nums.length !== 6) die('번호 6개(표지 1 → 이슈 4 → 오버레이 1)가 필요합니다.');
   const c = node('candidates.js', ['--index', path.join(dir, 'index.html'), ...nums]);
   if (c.code !== 0) die(c.err);
