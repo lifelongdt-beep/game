@@ -3,6 +3,7 @@
 //   node scripts/card-news/candidates.js [--index docs/index.html]   → 후보 목록(번호, 제목 - 매체)
 //   node scripts/card-news/candidates.js 3 7 21 [--index ...]        → 고른 번호의 구글 뉴스 링크(줄바꿈 구분, resolve_image_urls 입력용)
 //   (목록에는 최근 카드에 이미 쓴 기사가 [최근사용 N회전전]으로 표시된다 — --no-history로 끈다. 고를 때는 건너뛴다)
+//   (--compact: 쓸 가능성이 낮은 줄을 숨겨 짧게 출력. 번호는 그대로)
 //   node scripts/card-news/candidates.js --prev [--card <html>]      → 직전 카드의 표지·이슈·오버레이 제목(반복 선정 방지용)
 //   node scripts/card-news/candidates.js --geomdan [--index ...]     → 검단 실거래가 요약(검단 부동산 기사가 없는 날 이슈 한 칸을 채울 자료)
 const fs = require('fs');
@@ -198,12 +199,28 @@ function main() {
   }
   const cards = argv.includes('--no-history') ? [] : recentCards();
   let n = 0;
+  // --compact: 쓸 가능성이 낮은 줄(제외·최근사용·오래됨·매체 1곳짜리 [-])을 숨겨 출력(토큰 절약). 번호는 그대로라 고르는 방법은 같다.
+  const compact = argv.includes('--compact');
+  let hidden = 0;
   const print = (label, list) => {
     console.log(`[${label}]`);
-    list.forEach((a) => console.log(`${++n}. ${srcTag(a)}${pubTag(a)}${tierMark(a.title)}${usedMark(a.title, cards)}${a.nearby ? '(인접) ' : ''}${a.title}`));
+    list.forEach((a) => {
+      const tier = tierMark(a.title);
+      const used = usedMark(a.title, cards);
+      const old = pubTag(a).startsWith('[오래됨');
+      n++;
+      const must = !used && (TRANSPORT_PLAN_RE.test(a.title) || GEOMDAN_MUST_RE.test(a.title));
+      if (compact && !must && (tier.startsWith('[제외') || used || old || (tier.startsWith('[-') && !(a.src >= 2)))) {
+        hidden++;
+        return;
+      }
+      const title = compact && a.title.length > 80 ? a.title.slice(0, 80) + '…' : a.title;
+      console.log(`${n}. ${srcTag(a)}${pubTag(a)}${tier}${used}${a.nearby ? '(인접) ' : ''}${title}`);
+    });
   };
   print('부동산 뉴스', general);
   print('검단신도시 뉴스', geomdan);
+  if (compact) console.log(`(숨김 ${hidden}건: 제외·최근사용·오래됨·매체1곳 [-] — 전체는 --compact 없이)`);
   const goods = all.map((a, i) => [i + 1, a]).filter(([, a]) => tierMark(a.title).startsWith('[A') && !usedMark(a.title, cards));
   console.log(`\n[A·A정책 미사용 번호] ${goods.map(([i]) => i).join(' ') || '(없음)'}  ← 표지·이슈·오버레이는 여기서 먼저 고른다`);
   // 검단 AA17블록(중흥S클래스) 기사는 무조건 카드에 넣는다(2026-10-31 사용자 요청). 이미 쓴 같은 기사는 다시 넣지 않는다.

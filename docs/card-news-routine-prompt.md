@@ -1,44 +1,42 @@
-# 카드뉴스 루틴 프롬프트 (매번 새 세션)
+# 카드뉴스 루틴 프롬프트 (매번 새 세션 · 묶음 도구)
 
-오전 7시·오후 7시 카드뉴스 루틴이 쓰는 프롬프트입니다. 루틴이 한 세션에 계속 이어 붙으면 대화가 쌓여 매 실행의 비용이 점점 커지므로, **실행마다 새 세션**으로 돌리고 이 프롬프트만 넘깁니다. 절차·도구 사용법은 [`kakao-realestate-news-setup.md`](kakao-realestate-news-setup.md) 9~12번 문단과 `scripts/card-news/`에 있습니다.
+오전 7시·오후 7시 카드뉴스 루틴이 쓰는 프롬프트입니다. 토큰을 줄이려고 두 가지로 바꿨습니다.
 
-루틴을 만들 때(claude.ai의 Routines 화면)는 저장소 `lifelongdt-beep/game`을 선택하고, 일정은 한국시간 매일 06:53·18:53(사진 한 통이 7시 전후에 도착하도록), 아래 구분선 사이 내용을 프롬프트로 붙여 넣습니다.
+1. **실행마다 새 세션**: 한 세션에 계속 이어 붙이면 대화가 쌓여 호출마다 읽는 양이 커집니다. 예약 작업은 "실행마다 새 세션"으로 돌립니다(프롬프트만 넘기며, 이전 대화 기억에 의존하지 않습니다).
+2. **묶음 스크립트 `scripts/card-news/run.js`**: 고정 절차(수집·후보·이미지·조립·검증·커밋·PR·배포·재동기화)를 `prepare`/`images`/`finalize` 세 번의 호출로 줄였습니다. 모델은 후보 고르기와 `content.json` 쓰기만 합니다. 후보 목록은 쓸 가능성이 낮은 줄을 숨기고(`--compact`), 본문 발췌는 600자로 자르며, 인사이트는 `docs/insight-facts.md`의 검증된 자료를 먼저 씁니다.
+
+일정은 한국시간 매일 06:53·18:53(크론 `53 21,9 * * *`, 사진이 7시 전후에 도착하도록). 아래 구분선 사이 내용이 프롬프트입니다. 세부 도구 설명은 [`kakao-realestate-news-setup.md`](kakao-realestate-news-setup.md) 9~12번 문단과 `scripts/card-news/` 파일 상단 주석에 있습니다.
 
 --- 프롬프트 시작 ---
 
-[자동 실행 · 오전 7시/오후 7시 큐레이션 카드뉴스 — 매번 새 세션]
-저장소 lifelongdt-beep/game에서 "재부키 부동산 분석" 카드뉴스(docs/briefing-infographic.html)를 오늘 날짜 기준으로 새로 갱신해 GitHub Pages에 배포해줘(카카오톡 발송은 하지 않는다). 절차·도구 사용법은 docs/kakao-realestate-news-setup.md의 9~12번 문단("skip_kakao_send로 자동 발송만 건너뛰기", "사람이 직접 고르는 큐레이션 카드뉴스", "카드뉴스를 이미지 파일로도 카카오톡에 전송하기", "조립·검증 스크립트")을 그대로 따라.
+[자동 실행 · 재부키 부동산 분석 카드뉴스 — 웹 배포만, 카카오톡 발송 안 함]
+저장소 lifelongdt-beep/game에서 "재부키 부동산 분석" 카드뉴스(docs/briefing-infographic.html)를 오늘 날짜 기준으로 새로 갱신해 GitHub Pages에 배포해줘. 카카오톡 발송은 하지 않는다(2026-11-04 사용자 요청: "카톡은 이제 보내지마, 링크로 최신버전 잘 보고 있어"). 사용자는 https://lifelongdt-beep.github.io/game/briefing-infographic.html 링크로 최신 카드를 본다. 이 세션은 매번 새로 시작하니 이전 대화 기억 없이 이 프롬프트와 저장소 문서·도구만 따라.
 
-준비 (이 세션은 매번 새로 시작하므로 이전 대화 기억이 없다):
-- 저장소가 세션에 없으면 add_repo(owner: lifelongdt-beep, repo: game, access: push)로 추가하고 안내대로 클론한 뒤 register_repo_root를 호출해. 저장소 루트에서 `git fetch origin`부터 해.
-- 작업 브랜치는 claude/morning-realestate-news-kakao-q55sf2 하나만 쓴다(이 브랜치에 푸시하는 것을 허락한다). 매 실행마다 origin/main 기준으로 새로 맞춘다.
-- GitHub 작업은 MCP 도구 대신 `node scripts/card-news/actions.js`(gh api 사용)로 한다. 오래 걸리는 명령은 Bash timeout을 600000으로 줘.
-- 토큰을 아끼려고 docs/index.html·docs/briefing-infographic.html·워크플로 로그를 통째로 읽지 마. 후보는 candidates.js로, 이미지 추출 결과는 actions.js resolved로, 발송 결과는 actions.js steps로 확인해. 임시 파일(index.html 사본, links.txt, content.json, PR 본문)은 저장소 밖(scratchpad나 /tmp)에 둬. 서브에이전트는 쓰지 마.
+준비:
+- 저장소가 세션에 없으면 add_repo(owner: lifelongdt-beep, repo: game, access: push)로 추가하고 안내대로 클론한 뒤 register_repo_root를 호출해. 저장소 루트에서 `git fetch origin && git checkout -B claude/morning-realestate-news-kakao-q55sf2 origin/main`부터 해(이 브랜치만 쓰고 푸시 허락함).
+- 아래 명령은 모두 Bash timeout 600000으로 실행해. 임시 폴더 <T>는 저장소 밖(scratchpad나 /tmp 아래 새 폴더)에 둬. docs/index.html·docs/briefing-infographic.html·워크플로 로그를 통째로 읽지 마. 서브에이전트는 쓰지 마.
 
-순서:
-1. TZ=Asia/Seoul 기준 오늘 날짜·시각을 확인해(자정을 막 넘긴 시점일 수도 있으니 반드시).
-2. 최신 뉴스 후보·검단신도시 실거래가(최근 4개월, 기존 단지 제외, 평당가 높은 순 최대 800건)를 새로 받아: `node scripts/card-news/actions.js dispatch claude/morning-realestate-news-kakao-q55sf2 skip_kakao_send=true`. 끝나면 그 브랜치에 올라온 데이터를 임시 파일로 받아 둬: `git fetch origin claude/morning-realestate-news-kakao-q55sf2 && git show origin/claude/morning-realestate-news-kakao-q55sf2:docs/index.html > <임시>/index.html`. docs/index.html·docs/geomdan.html·docs/geomdan-transactions-cache.json은 커밋하지 않는다(origin/main 버전을 유지, 되돌리지 않기).
-3. `node scripts/card-news/candidates.js --index <임시>/index.html`로 후보를 보고, `node scripts/card-news/candidates.js --prev`로 직전 카드에 쓴 이슈를 확인한 뒤, 사람처럼 직접 판단해서 고른다:
-   - 표지(슬라이드1)에 쓸 오늘의 헤드라인 이슈 1건
-   - 좌우분할(슬라이드2)에 쓸 핵심 이슈 4건 (처음엔 2건이었는데 "이슈가 2개뿐이니 4개로 늘려달라"는 요청으로 4건으로 늘었음 — 절대 2건으로 되돌리지 말 것)
-   - 오버레이(슬라이드3)에 쓸 시장 경고·트렌드 1건
-   발행일: 후보 목록 앞의 [MM.DD]가 기사 발행일이다. [오래됨 MM.DD]가 붙은 기사(발행 3일 이상 전)는 카드에 쓰지 않는다. 번호로 링크를 뽑을 때 오래된 기사는 candidates.js가 막으니 다른 후보로 바꾼다(--allow-old로 우회하지 말 것). 카드 날짜(표지)와 맞는 당일·최근 기사만 쓴다.
-   기사 선정 기준(사람들이 보고 싶은 건 "부동산 흐름을 판단하게 해 주는 뉴스"다): candidates.js가 제목마다 [A]/[B]/[제외]/[-]를 붙이고 맨 아래에 "[A·A정책 미사용 번호]"를 보여준다. 정부·금융당국의 부동산 정책(대책·규제·세제·공급·대출·금리, 대통령·국토부·금융위·한은 발표)은 가장 중요한 뉴스라 [A정책]으로 표시되며 표지·이슈 1순위로 다룬다(정치 공방·지지율·의혹 공세는 정책 내용이 아니므로 제외). 그다음 [A](가격·거래량·미분양·입주 물량 지표)에서 고른다. [B](검단·인천·인접 개발·교통)는 시장·정책과 이어질 때만 이슈로 쓰고, 순수 행정·행사·홍보 소식은 이슈로 올리지 않는다(하단 목록에는 자동으로 남는다). [제외](지자체 행사·설명회, 분양 광고, 개인 사례, 코인, 기업대출·금융상품, 정치 공방·지지율)와 [-](판단 불가라 제목을 읽고 판단)는 A가 모자랄 때도 표지·오버레이에는 쓰지 않는다.  광고성·얕은 재탕 기사는 빼고, 검단신도시 부동산 기사(분양·청약·입주·실거래·교통·개발·정비 등)는 카드 선정에서 우선순위로 올린다(2026-10-27 정정: "무조건"이 아니라 우선순위): candidates.js 맨 아래 "[검단 부동산 우선 후보 번호]"에 나온 기사가 있으면 같은 가치의 다른 후보보다 먼저 고른다. 다만 쓸 만한 기사가 없는 날은 억지로 넣지 않는다 — 행사·캠페인·교육·소식지·홍보·구의원 동정 같은 쓸모없는 기사는 절대 쓰지 않는다(이런 기사는 수집 단계에서 검단 뉴스 목록에서도 빠진다). 단, 검단 AA17블록(중흥S클래스) 관련 기사는 검단에서 가장 관심이 큰 소식이라 "무조건" 카드에 넣는다(2026-10-31 사용자 요청): candidates.js 맨 아래 "[검단 AA17 필수 번호]"에 번호가 있으면 반드시 표지나 이슈 중 한 칸에 쓴다(이미 카드에 쓴 같은 기사는 [최근사용]으로 빠지니 새 기사만 해당). 국토부 등 정부의 국가 교통 인프라 계획(국가철도망 구축계획·광역교통 기본/시행계획·광역교통개선대책·국가도로망 등) 기사도 "무조건" 카드에 넣는다(2026-11-08 사용자 요청): candidates.js 맨 아래 "[국가 교통정책 필수 번호]"에 번호가 있으면 반드시 표지나 이슈 중 한 칸에 쓴다(이 기사들은 제목에 "부동산"이 없어도 별도 검색으로 부동산 뉴스 끝에 덧붙고 [A정책]으로 표시된다. 7호선 연장·GTX 개별 노선 소식은 해당하지 않으며, 원문에 없는 노선을 계획에 포함됐다고 쓰지 말 것). 카드는 하루 두 번(오전 7시·오후 7시) 만드니 그 시점에 가장 핫한 뉴스를 고른다: 후보 목록은 같은 사건을 다룬 매체 수가 많은 순이고 앞에 [매체 N]이 붙으니, 매체 수가 많고 방금 나온(오늘 발행) 기사를 우선하고 매체 수가 적은 단신·지역 소식은 뒤로 미룬다.
-4. 고른 6건의 번호(표지 1 → 좌우분할 4 → 오버레이 1 순서)로 `node scripts/card-news/candidates.js --index <임시>/index.html <번호들> > <임시>/links.txt`를 실행해 구글 뉴스 링크 파일을 만들고, `node scripts/card-news/actions.js dispatch claude/morning-realestate-news-kakao-q55sf2 skip_kakao_send=true --links <임시>/links.txt`로 각 기사의 실제 대표 이미지를 가져와(이 도구가 skip_kakao_send=true 누락을 막아 준다 — 빠지면 옛 방식 자동 텍스트 다이제스트가 그대로 발송된다). 끝나면 `node scripts/card-news/actions.js resolved <run_id>`로 image와 hotlinkOk를 확인하고, `node scripts/card-news/actions.js resolved <run_id> --text`로 기사별 본문 발췌(최대 1300자)도 읽어 5단계에 쓴다. hotlinkOk가 false이거나 image가 없으면 그 이슈는 다른 후보로 바꾸는 걸 우선 시도하고(카드뉴스는 사진이 있는 게 기본, 바꾼 후보만 다시 추출), 정 안 되면 content.json에서 그 항목의 img를 비워 사진 없이 텍스트로 구성해. actions.js resolved의 note(주소 보정/로고로 보임/작은 썸네일/용량 작음)가 경고면 다른 후보로 바꾸고, 주소 보정만이면 그 보정된 image를 쓴다. hotlinkOk가 true여도 이미지 경로가 사이트 공용 로고/아이콘으로 보이거나(예: images/common/사이트명.png), 150px 안팎의 작은 썸네일(예: ..._v150.jpg)이면 다른 후보로 교체해. image가 http 주소면 https여야 하므로 같은 주소를 https로 바꿔 쓰되 확신이 없으면 교체해.
-5. 고른 이슈는 원문 그대로 베끼지 말고 카드뉴스 톤(짧고 임팩트 있는 헤드라인 + 본문 발췌에서 확인되는 핵심 사실(숫자·주체·결과)을 담은 150~250자 안팎의 요약. 표지 요약은 200~250자)으로 직접 써서 <임시>/content.json에 작성해(형식은 문서 12번 문단). 본문 발췌·제목에 없는 숫자나 사실은 지어내지 말고 거기서 확인되는 내용만 쓴다(본문이 안 읽힌 기사는 제목 수준으로만). "자세한 내용은 기사 원문에서 확인해 보세요" 같은 안내 문장은 쓰지 않는다(카드의 사진·글을 누르면 build-card.js --links가 붙인 기사 링크로 바로 이동한다). 슬라이드 구조·CSS는 build-card.js가 맡으니 건드리지 마(사진은 원본 비율 그대로 폭 100%·높이 auto 구조이며 cover/contain·고정 높이 박스로 되돌리지 말 것. 휴대폰 폭에서 이슈 사진이 항상 글 위에 오는 CSS 순서도 되돌리지 말 것. 카드 페이지 <head>의 og:image(링크 미리보기 사진 = 표지 사진)는 build-card.js가 매번 맞춰 주니 지우지 말 것. 예전에 있던 "검단 핵심 호재" 고정 소개 슬라이드는 되살리지 말 것).
-   - 재부키 인사이트(insight)는 추상적인 조언("~하는 습관이 필요합니다")만 쓰지 말고, WebSearch로 그 기사 주제의 **현재 시행 중인 최신 제도·규제·기준 수치**(예: 대출 한도·LTV/DSR, 세율·공제, 보증 가입 기준, 신청 기한)를 확인해 실제로 도움이 되는 정보 1~3개를 구체적 숫자와 함께 넣는다. 지난 연도 기준이나 폐지·개정 전 내용은 쓰지 말고, 출처 2곳 이상에서 같게 확인된 것만 쓰며(법 개정은 통과·시행 시점을 구분), 확인이 안 되면 그 항목은 빼고 확인된 것만 쓴다. 전체 길이는 3~4문장.
-   - 오버레이(슬라이드3) 밑 "💡 재부키 인사이트"(insight)는 검단신도시와 실제로 관련 없는 기사를 다룰 때 특히 주의: 억지로 검단과 엮는 서술을 절대 쓰지 마(예: "7호선 청라국제도시 연장"은 검단신도시와 계획 단계로도 이어지지 않는 완전히 무관한 별개 노선인데 연관성을 지어내는 실수를 세 번 반복한 적 있음). 실제 연관이 없으면 그 기사 자체가 주는 보편적 시사점으로 채워(예: "지하철 7호선 공사 일시 중단 뉴스를 통해 지하철 공사는 여러 가지 이유로 연기될 수 있다는 점을 항상 인지하고 있어야 합니다" — 검단을 언급하지 않고 일반 교훈만). 검단신도시 자체와 실제로 관련된 기사를 다룰 때만 서부권 광역급행철도·GTX-D처럼 진짜 관련 사업을 근거로 인사이트를 써.
-6. `git checkout -B claude/morning-realestate-news-kakao-q55sf2 origin/main`으로 작업 브랜치를 origin/main 기준으로 맞춘 뒤 `node scripts/card-news/build-card.js --content <임시>/content.json --index <임시>/index.html --links <임시>/links.txt`를 실행해. 슬라이드 1~3, 슬라이드 4(실거래 랭킹: 상한 없이 고유 단지 전체 — index.html에 함께 실린 전체 거래 기준 "단지별 최고 거래"로 만들어 하단 목록이 건수 상한으로 잘려도 단지가 빠지지 않음, 각 줄 오른쪽에 평당가(위)·실거래가(아래), 1위 단지 이름 옆 왕관 아이콘(SVG, build-card.js가 자동으로 넣음 — 지우거나 이모지로 바꾸지 말 것), "MARKET RANKING TOP N"의 N은 그날 나온 고유 단지 수, 요약 문구는 데이터로 자동 생성), 하단 "전체 뉴스·실거래가 목록"이 오늘자 데이터로 한 번에 갱신된다. 랭킹을 TOP4·TOP20·TOP30 같은 고정 상한으로 되돌리거나 직접 다시 계산하지 말고, 전체 목록의 "🔗 인접지역" 딱지 문구("호재"를 뺀 상태)도 그대로 둬.
-7. `node scripts/card-news/validate-card.js`로 데스크톱(~700px)·모바일(~390px)에서 가로 스크롤·텍스트 겹침·잘림·카드 이음매를 확인해(문제가 있으면 content.json을 고쳐 6단계부터 다시). 이미지는 샌드박스 네트워크 제약으로 로컬에서 안 뜨는 게 정상이고, 4단계의 hotlinkOk 확인으로 대신한다.
-8. git은 항상 하던 대로: docs/briefing-infographic.html만 커밋(임시 파일·데이터 파일 제외) → `git push --force-with-lease origin claude/morning-realestate-news-kakao-q55sf2`(원격 브랜치에 워크플로 자동 커밋이 쌓여 있으므로 먼저 `git fetch origin` 해 둘 것) → `node scripts/card-news/actions.js pr-merge --head claude/morning-realestate-news-kakao-q55sf2 --title "<제목>" --body-file <임시>/pr-body.md --commit-file <임시>/commit-msg.txt`(PR 생성·draft 해제·squash 머지) → `node scripts/card-news/actions.js pages <머지 sha>`로 GitHub Pages 배포 완료까지 기다려. PR 본문·커밋 메시지는 한국어로 짧게 쓰고 마지막에 이 세션이 안내하는 서명 줄을 넣어. 머지 충돌이 나면(직전 워크플로가 main에 자동 커밋한 경우 등) 최신 main 위에 다시 적용(rebase)하고 docs/index.html 등 자동 생성 파일은 main 버전을 유지해. 머지 후에는 로컬·원격 작업 브랜치를 새 main으로 다시 동기화해(`git fetch origin && git checkout -B claude/morning-realestate-news-kakao-q55sf2 origin/main && git push --force-with-lease origin claude/morning-realestate-news-kakao-q55sf2`) — 그대로 두면 브랜치가 뒤처져 다음 실행 때 불필요한 충돌이 남는다.
-9. 카카오톡 발송은 하지 않는다(2026-11-04 사용자 요청: "카톡은 이제 보내지마, 링크로 최신버전 잘 보고 있어"). send_briefing_images·notify_message가 들어간 워크플로 실행은 절대 하지 말고, 8단계의 Pages 배포 확인으로 끝낸다. 사용자는 https://lifelongdt-beep.github.io/game/briefing-infographic.html 링크로 최신 카드를 본다.
+순서 (도구 세 번이 핵심):
+1. `node scripts/card-news/run.js prepare <T>` — 오늘 날짜·시각, 최신 후보(쓸 가능성이 낮은 줄은 숨김, 번호는 그대로), 직전 카드, 인사이트 자료 목록이 출력된다. 날짜가 자정을 막 넘긴 시점일 수 있으니 출력의 날짜를 확인해.
+2. 후보를 보고 사람처럼 판단해 6건을 고른다: 표지 1건 → 핵심 이슈 4건(절대 2건으로 되돌리지 말 것) → 오버레이(시장 경고·트렌드) 1건. 선정 기준:
+   - "부동산 흐름을 판단하게 해 주는 뉴스"를 고른다. [A정책](정부·금융당국 부동산 정책 — 대책·규제·세제·공급·대출·금리, 정치 공방·지지율은 제외) > [A](가격·거래량·미분양·입주 지표) > [B](검단·인천·교통은 시장·정책과 이어질 때만, 순수 행정·행사·홍보 제외). [-]·[제외]는 표지·오버레이에 쓰지 않는다(이슈가 모자랄 때만 [-] 중 쓸 만한 것 사용).
+   - 가장 핫한 뉴스: [매체 N]이 많고 오늘 발행한 기사 우선, 매체 수가 적은 단신·지역 소식은 뒤로. 행사·캠페인·교육·소식지·홍보·광고성·얕은 재탕은 제외.
+   - [오래됨 MM.DD](발행 3일 이상 전)와 [최근사용 N회전], 직전 사이클에 쓴 기사·같은 사건의 후속은 쓰지 않는다(--allow-old 금지).
+   - 검단신도시 부동산 기사는 우선순위("[검단 부동산 우선 후보 번호]"), 쓸 만한 게 없으면 억지로 넣지 않는다. 검단구 구청장·구의원 등 개인 비위·정치 스캔들성 기사는 쓰지 않는다.
+   - 검단 AA17블록(중흥S클래스) 기사는 무조건 카드에 넣는다(2026-10-31 사용자 요청): "[검단 AA17 필수 번호]"에 번호가 있으면 반드시 표지나 이슈 한 칸에 쓴다.
+   - 국가 교통 인프라 계획(국가철도망 구축계획·광역교통 기본/시행계획·광역교통개선대책·국가도로망 등) 기사도 무조건 카드에 넣는다(2026-11-08 사용자 요청): "[국가 교통정책 필수 번호]"에 번호가 있으면 반드시 표지나 이슈 한 칸에 쓴다. 같은 사건이 여러 번호면 매체 수가 가장 많은 한 건만. 원문에 없는 노선·사업을 계획에 포함됐다고 쓰지 말 것.
+3. `node scripts/card-news/run.js images <T> <번호 6개: 표지 1 → 이슈 4 → 오버레이 1>` — 이미지 추출 결과(항목별 한 줄)와 본문 발췌(600자)가 출력된다. ⚠가 붙거나(HOTLINK_NG·이미지없음·로고/작은 썸네일/용량 작음 note) 이미지가 사이트 공용 로고·작은 썸네일로 보이는 항목은 다른 후보로 바꿔 이 명령을 다시 실행한다(바꾼 번호까지 6개를 다시 넣으면 된다). 정 안 되면 content.json에서 그 항목의 img를 비워 텍스트로 구성한다(AA17 기사와 국가 교통정책 기사는 사진이 없어도 바꾸지 말고 텍스트로 넣는다). "주소 보정" note만 있으면 출력된 image를 그대로 쓴다. 6건 모두 이미지가 없으면 한 번 다시 실행해. 발췌가 모자라 더 읽어야 하면 `<T>/resolved.txt`의 TEXT 줄에 전체가 있다.
+4. <T>/content.json을 쓴다(형식: docs/kakao-realestate-news-setup.md 12번 문단 — cover{img,alt,headline[3],highlight,summary,tags[3]}, issues[4]{img,alt,title(\n 포함),text}, outlets, overlay{img,alt,script,lead[2],body,insight,source}, sources{cover,split,overlay}). 원문을 베끼지 말고 카드뉴스 톤으로: 짧은 헤드라인 + 발췌에서 확인되는 핵심 사실만 담은 150~250자 요약(표지 요약은 200~250자). 발췌·제목에 없는 숫자나 사실은 지어내지 말고(본문이 안 읽힌 기사는 제목 수준으로만), "자세한 내용은 기사 원문에서" 같은 문장은 쓰지 않는다. 슬라이드 구조·CSS는 build-card.js가 맡으니 건드리지 마.
+   - 재부키 인사이트(insight, 3~4문장): prepare가 보여 준 "인사이트 자료" 목록에서 오버레이 기사 주제와 맞는 항목이 있고 STALE이 아니면 docs/insight-facts.md의 그 항목을 읽어 쓰고 WebSearch는 하지 않는다. 맞는 게 없거나 STALE이면 WebSearch로 현재 시행 중인 제도·규제·기준 수치를 확인해(출처 2곳 이상에서 같게 확인된 것만, 법 개정은 발표·시행 구분) 1~3개를 숫자와 함께 쓰고, 그 내용을 docs/insight-facts.md에 `## 주제 (확인 YYYY-MM-DD)` 형식으로 추가·갱신한다(finalize가 함께 커밋한다).
+   - 검단신도시와 실제로 관련 없는 기사를 다룰 때 억지로 검단과 엮지 마(예: 7호선 청라국제도시 연장은 검단과 무관). 검단 자체 기사일 때만 서부권 광역급행철도·GTX-D 같은 실제 관련 사업을 근거로 쓴다.
+5. `node scripts/card-news/run.js finalize <T> --title "<한국어 PR 제목>"` — 조립·레이아웃 검증·커밋·푸시·PR 병합·Pages 배포 확인·브랜치 재동기화까지 한 번에 하고 결과를 몇 줄로 출력한다. 검증 실패면 content.json을 고쳐 다시 실행한다. 이 명령은 docs/briefing-infographic.html(과 docs/insight-facts.md 변경분)만 커밋한다.
+6. 여기서 끝낸다. 카카오톡 발송(send_briefing_images·notify_message가 들어간 워크플로 실행)은 절대 하지 마.
 
 지켜야 할 것:
-- 전부 한국어로만 작성해. 일본어 등 다른 언어는 절대 섞지 마(이전에 실수한 적 있어서 특히 조심할 것).
-- resolve_image_urls를 워크플로에 넣을 때는 반드시 skip_kakao_send=true도 같이 넣어(actions.js가 막아 주지만 직접 실행할 때도 마찬가지).
-- 애매하거나 크게 막히는 문제가 아니면 나(사용자)한테 확인받지 말고 알아서 끝까지 진행해.
-- 끝나면 오늘 고른 헤드라인·핵심 이슈가 무엇인지, 검단 이슈 반영 여부(AA17 기사 포함 여부), 이미지 추출 성공 여부, 웹 카드 배포 완료 여부만 짧게 한국어로 알려줘. 문제없이 잘 끝났으면 길게 쓸 필요 없어.
+- 전부 한국어로만 작성해. 일본어 등 다른 언어는 절대 섞지 마.
+- 애매하거나 크게 막히는 문제가 아니면 확인받지 말고 끝까지 진행해.
+- 끝나면 오늘 고른 헤드라인·핵심 이슈, 검단 이슈 반영 여부(AA17 기사 포함 여부), 국가 교통정책 기사 포함 여부, 이미지 추출 성공 여부, 웹 카드 배포 완료 여부만 짧게 한국어로 알려줘.
 
 --- 프롬프트 끝 ---
 
-참고: 카드 슬라이드 4의 단지 줄을 누르면 그 단지의 하단 목록 거래 전부(계약일·전용·층·금액·평당가)가 펼쳐진다. build-card.js가 자동으로 만들며 기본은 접혀 있어 캡처 이미지는 그대로다.
+참고: 카드 슬라이드 4의 단지 줄을 누르면 그 단지의 하단 목록 거래 전부가 펼쳐진다(build-card.js가 자동으로 만들며 기본은 접혀 있음).
