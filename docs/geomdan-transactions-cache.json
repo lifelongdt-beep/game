@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026년 11월 12일 AM 11:12",
+  "generatedAt": "2026년 11월 13일 AM 2:29",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -3800,27 +3800,6 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "우미린파크뷰1단지",
-      "dong": "당하동",
-      "area": "59.938",
-      "amount": "49000",
-      "floor": "22",
-      "year": "2026",
-      "month": "07",
-      "day": "13",
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "",
-      "jibun": "1305-1",
       "leasehold": "N"
     },
     {
@@ -10565,27 +10544,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단호수공원역호반써밋",
-      "dong": "불로동",
-      "area": "84.7184",
-      "amount": "49100",
-      "floor": "3",
-      "year": "2026",
-      "month": "07",
-      "day": "13",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "서울 영등포구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.07.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "5405동",
-      "jibun": "가-",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신안인스빌어반퍼스트",
       "dong": "당하동",
       "area": "84.7322",
@@ -14344,22 +14302,6 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "1311-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "우미린파크뷰1단지",
-      "dong": "당하동",
-      "area": 59.938,
-      "amount": 49000,
-      "floor": "22",
-      "date": "2026.07.13",
-      "ppy": 2027,
-      "buildYear": "2023",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "seller": "개인",
-      "buyer": "개인",
-      "jibun": "1305-1",
       "leasehold": "N"
     },
     {
@@ -19733,24 +19675,6 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "1314",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단호수공원역호반써밋",
-      "dong": "불로동",
-      "area": 84.7184,
-      "amount": 49100,
-      "floor": "3",
-      "date": "2026.07.13",
-      "ppy": 1471,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "서울 영등포구",
-      "regDate": "26.07.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "5405동",
-      "jibun": "가-",
       "leasehold": "N"
     },
     {
