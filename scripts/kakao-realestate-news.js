@@ -587,13 +587,41 @@ function loadCachedTransactions() {
   }
 }
 
+const kstToday = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+const txnKey = (t) => [t.apt, t.dong, t.area, t.floor, `${t.year}${t.month}${t.day}`, t.amount].join('|');
+
+// 거래마다 "우리가 처음 본 날(firstSeen)"을 기록한다. 국토부 자료에는 신고일이 없어, 하루 한 번 받을 때마다 이전 캐시와
+// 비교해 새로 나타난 거래를 "새로 신고된 거래"로 삼는다. 캐시가 이 항목을 갖기 전의 거래는 빈 문자열(날짜 모름)로 둔다.
+// 이전 캐시에는 있었는데 이번에 사라진 거래는 removed에 14일간 남겨 "거래 해제" 표시에 쓴다.
 function saveCachedTransactions(transactions, ranking, details) {
   if (transactions.length === 0) return;
+  const today = kstToday();
+  let prev = null;
+  try {
+    prev = JSON.parse(fs.readFileSync(TRANSACTIONS_CACHE_PATH, 'utf8'));
+  } catch {}
+  const prevSeen = (prev && prev.firstSeen) || null;
+  const firstSeen = {};
+  for (const t of transactions) {
+    const k = txnKey(t);
+    firstSeen[k] = prevSeen ? (k in prevSeen ? prevSeen[k] : today) : '';
+  }
+  const keep = (prev && Array.isArray(prev.removed) ? prev.removed : []).filter((r) => r.date >= new Date(Date.now() - 14 * 864e5).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }));
+  const nowKeys = new Set(Object.keys(firstSeen));
+  const removed = [...keep];
+  if (prev && Array.isArray(prev.transactions) && prevSeen) {
+    for (const t of prev.transactions) {
+      if (!nowKeys.has(txnKey(t)) && !removed.some((r) => r.key === txnKey(t))) removed.push({ key: txnKey(t), apt: t.apt, area: t.area, floor: t.floor, amount: t.amount, year: t.year, month: t.month, day: t.day, date: today });
+    }
+  }
   const data = {
     generatedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'long', timeStyle: 'short' }),
+    generatedDate: today,
     transactions,
     ranking,
     details,
+    firstSeen,
+    removed,
   };
   fs.mkdirSync('docs', { recursive: true });
   fs.writeFileSync(TRANSACTIONS_CACHE_PATH, JSON.stringify(data, null, 2));
@@ -613,11 +641,21 @@ async function fetchGeomdanTransactions() {
     return { transactions: [], stale: false };
   }
 
+  // 검단 실거래는 하루 한 번만 받는다(2026-11-16 사용자 요청). 오늘(KST) 이미 받은 캐시가 있으면 그대로 쓴다.
+  // 강제로 다시 받으려면 GEOMDAN_FORCE_REFRESH=true.
+  const todayCache = process.env.GEOMDAN_FORCE_REFRESH === 'true' ? null : loadCachedTransactions();
+  if (todayCache && todayCache.generatedDate === kstToday()) {
+    console.log(`실거래가: 오늘(${todayCache.generatedDate}) 이미 받은 데이터를 그대로 씁니다(하루 한 번 갱신).`);
+    writeOutput('txn_refreshed', 'false');
+    return { transactions: todayCache.transactions, ranking: todayCache.ranking, details: todayCache.details, stale: false };
+  }
+
   const budgetSec = Math.round(GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS / 1000);
   const deadline = Date.now() + GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS;
   try {
     const { transactions, ranking, details } = await fetchGeomdanTransactionsLive(deadline);
     saveCachedTransactions(transactions, ranking, details);
+    writeOutput('txn_refreshed', 'true');
     return { transactions, ranking, details, stale: false };
   } catch (err) {
     console.error(`실거래가 조회 실패: ${err.message}`);
