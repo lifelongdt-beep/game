@@ -680,6 +680,21 @@
   .rank-more > summary::-webkit-details-marker, .news-fold > summary::-webkit-details-marker, .cycle-fold > summary::-webkit-details-marker { display: none; }
   .rank-more[open] > summary, .news-fold[open] > summary, .cycle-fold[open] > summary { color: var(--ig-gray); }
   .full-list-header { display: none; }
+  .fresh-block, .schedule-block { margin: 0 0 18px; padding: 14px 16px; border: 1.5px solid var(--ig-ink); border-radius: 14px; background: #ffffff; }
+  .fresh-title { margin: 0 0 2px; font-family: var(--font-display); font-weight: 900; font-size: 17px; color: var(--ig-ink); }
+  .fresh-note { margin: 0 0 8px; font-size: 11.5px; line-height: 1.5; color: var(--ig-gray); }
+  .fresh-list, .sch-list { list-style: none; margin: 0; padding: 0; }
+  .fresh-item { padding: 9px 0; border-top: 1px solid #e6e8eb; }
+  .fr-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .fr-top b { font-size: 14.5px; color: var(--ig-ink); }
+  .fr-amt { font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--ig-ink); white-space: nowrap; }
+  .fr-meta { margin-top: 2px; font-size: 12px; color: var(--ig-gray); }
+  .fr-cmp { display: inline-block; margin-top: 3px; font-size: 12px; font-weight: 700; }
+  .fr-up { color: #d63a2f; } .fr-down { color: #2563c9; } .fr-flat, .fr-first { color: var(--ig-gray); }
+  .fr-removed { opacity: .85; }
+  .sch-item { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid #e6e8eb; font-size: 13.5px; line-height: 1.5; color: var(--ig-ink); }
+  .sch-item b { flex: none; width: 42px; font-family: var(--font-display); }
+  .sch-item em { font-style: normal; color: var(--ig-gray); font-size: 12px; }
   .rank-summary-pill { background: #fff6a8; border: 0; color: #3a3200; border-radius: 12px; }
   @media (max-width: 560px) {
     .card-slide { padding: 22px 18px 24px; }
@@ -825,6 +840,20 @@
     <div class="bold-sub">MARKET RANKING TOP 34</div>
     <h2 class="bold-title">검단신도시 실거래<br><mark class="ig-mark">평당 순위</mark></h2>
     <p class="full-list-sub" style="margin: -8px 0 12px;">같은 단지 내 최고가만 남기고, 단지별 최고 평당가 기준으로 정리했습니다. 최근 4개월간 집계된 고유 단지가 34곳입니다.</p>
+
+    <div class="fresh-block">
+    <p class="fresh-title">🆕 최근 계약 거래</p>
+    <p class="fresh-note">신고일이 없는 자료라 계약일이 가장 최근인 거래를 보여 드려요 · 신고는 계약 후 최대 30일 늦게 올라옵니다</p>
+    <ul class="fresh-list">
+      <li class="fresh-item"><div class="fr-top"><b>우미린더시그니처</b><span class="fr-amt">8억 200만원</span></div><div class="fr-meta">원당동 · 전용 85㎡ · 8층 · 11.10 계약</div><span class="fr-cmp fr-down">직전 8억 1,000만원 대비 -800만원</span></li>
+      <li class="fresh-item"><div class="fr-top"><b>호반써밋1차</b><span class="fr-amt">7억 3,500만원</span></div><div class="fr-meta">원당동 · 전용 85㎡ · 15층 · 11.10 계약</div><span class="fr-cmp fr-up">직전 7억 900만원 대비 +2,600만원</span></li>
+      <li class="fresh-item"><div class="fr-top"><b>검단신안인스빌어반퍼스트</b><span class="fr-amt">5억 3,000만원</span></div><div class="fr-meta">당하동 · 전용 95㎡ · 9층 · 11.10 계약</div><span class="fr-cmp fr-up">직전 5억 350만원 대비 +2,650만원</span></li>
+      <li class="fresh-item"><div class="fr-top"><b>검단신도시대성베르힐라프리미어</b><span class="fr-amt">5억 2,500만원</span></div><div class="fr-meta">당하동 · 전용 85㎡ · 7층 · 11.10 계약</div><span class="fr-cmp fr-down">직전 5억 3,000만원 대비 -500만원</span></li>
+      <li class="fresh-item"><div class="fr-top"><b>검단 금호어울림 센트럴</b><span class="fr-amt">8억원</span></div><div class="fr-meta">원당동 · 전용 85㎡ · 20층 · 11.9 계약</div><span class="fr-cmp fr-up">직전 7억 7,000만원 대비 +3,000만원</span></li>
+
+    </ul>
+  </div>
+  <!-- /fresh-block -->
 
     <div class="ranking-box">
       <div class="rank-item" tabindex="0" role="button" aria-expanded="false">

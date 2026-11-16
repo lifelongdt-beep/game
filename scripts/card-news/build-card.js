@@ -762,6 +762,99 @@ function applyList(html, indexHtml, keep) {
   return out;
 }
 
+// ---------- 새로 신고된 거래 · 이번 주 일정 ----------
+
+const kstDate = (offsetDays = 0) => new Date(Date.now() + offsetDays * 864e5).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+const dealDate = (t) => `${t.year}-${t.month}-${t.day}`;
+const areaKey = (t) => `${aptKey(t.apt)}|${Math.round(Number(t.area))}`;
+const manwon = (t) => Number(String(t.amount).replace(/,/g, ''));
+
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  } catch (_) {
+    return null;
+  }
+}
+
+// 하루 한 번 받는 실거래 캐시에서 "우리가 처음 본 날(firstSeen)"이 최근 3일 안인 거래를 보여 준다.
+// 국토부 자료에는 신고일이 없어 이렇게 근사한다. 아직 firstSeen이 쌓이기 전이면 계약일이 가장 최근인 거래를 "최근 계약"으로 보여 준다.
+function renderFreshBlock(cache, excludedKeep) {
+  if (!cache || !Array.isArray(cache.transactions)) return '';
+  const txs = cache.transactions.filter((t) => excludedKeep({ apt: esc(t.apt) }));
+  const seen = cache.firstSeen || {};
+  const keyOf = (t) => [t.apt, t.dong, t.area, t.floor, `${t.year}${t.month}${t.day}`, t.amount].join('|');
+  const since = kstDate(-3);
+  let rows = txs.filter((t) => seen[keyOf(t)] && seen[keyOf(t)] >= since);
+  let title = '새로 신고된 거래';
+  let note = `최근 3일 안에 새로 확인된 거래 · 국토부 신고는 계약 후 최대 30일 늦게 올라옵니다`;
+  if (!rows.length) {
+    const known = txs.some((t) => seen[keyOf(t)]);
+    rows = [...txs].sort((a, b) => dealDate(b).localeCompare(dealDate(a)) || manwon(b) - manwon(a));
+    title = '최근 계약 거래';
+    note = known ? '최근 3일 새로 신고된 거래는 없어, 계약일이 가장 최근인 거래를 보여 드려요' : '신고일이 없는 자료라 계약일이 가장 최근인 거래를 보여 드려요 · 신고는 계약 후 최대 30일 늦게 올라옵니다';
+  } else {
+    rows = rows.sort((a, b) => (seen[keyOf(b)] || '').localeCompare(seen[keyOf(a)] || '') || dealDate(b).localeCompare(dealDate(a)));
+  }
+  rows = rows.slice(0, 5);
+  if (!rows.length) return '';
+  const items = rows.map((t) => {
+    // 같은 단지·같은 평형(전용 반올림)의 직전 거래(계약일이 더 이른 것 중 가장 최근)와 비교한다.
+    const prev = txs
+      .filter((x) => areaKey(x) === areaKey(t) && dealDate(x) < dealDate(t))
+      .sort((a, b) => dealDate(b).localeCompare(dealDate(a)))[0];
+    let cmp = '<span class="fr-cmp fr-first">직전 비교 거래 없음</span>';
+    if (prev) {
+      const diff = manwon(t) - manwon(prev);
+      const cls = diff > 0 ? 'fr-up' : diff < 0 ? 'fr-down' : 'fr-flat';
+      cmp = `<span class="fr-cmp ${cls}">직전 ${formatWon(manwon(prev))} 대비 ${diff === 0 ? '보합' : `${diff > 0 ? '+' : '-'}${formatWon(Math.abs(diff))}`}</span>`;
+    }
+    const dateText = `${Number(t.month)}.${Number(t.day)} 계약`;
+    return `      <li class="fresh-item"><div class="fr-top"><b>${esc(t.apt)}</b><span class="fr-amt">${formatWon(manwon(t))}</span></div><div class="fr-meta">${esc(t.dong)} · 전용 ${Math.round(Number(t.area))}㎡ · ${t.floor}층 · ${dateText}</div>${cmp}</li>`;
+  });
+  // 사라진(=해제된) 거래: 최근 14일 안에 이전 캐시에는 있었는데 이번 자료에서 빠진 거래.
+  const removed = (Array.isArray(cache.removed) ? cache.removed : []).slice(-3).map(
+    (r) => `      <li class="fresh-item fr-removed"><div class="fr-top"><b>${esc(r.apt)}</b><span class="fr-amt">${formatWon(Number(r.amount))}</span></div><div class="fr-meta">${r.month}.${r.day} 계약 · 전용 ${Math.round(Number(r.area))}㎡ · ${r.floor}층</div><span class="fr-cmp fr-down">거래 해제 또는 정정으로 자료에서 빠짐(${shortDate(r.date)} 확인)</span></li>`
+  );
+  return `<div class="fresh-block">
+    <p class="fresh-title">🆕 ${title}</p>
+    <p class="fresh-note">${note}</p>
+    <ul class="fresh-list">
+${items.join('\n')}
+${removed.join('\n')}
+    </ul>
+  </div>
+  <!-- /fresh-block -->`;
+}
+
+// docs/schedule.json: [{ "date": "2026-11-26", "title": "...", "note": "...", "source": "..." }]. 오늘 이후 7일 안의 항목만 보여 주고, 지난 날짜는 저절로 빠진다.
+function renderScheduleBlock(schedule) {
+  if (!Array.isArray(schedule)) return '';
+  const from = kstDate(0);
+  const to = kstDate(7);
+  const items = schedule
+    .filter((e) => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && e.date >= from && e.date <= to && e.title)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((e) => `      <li class="sch-item"><b>${Number(e.date.slice(5, 7))}.${Number(e.date.slice(8, 10))}</b><span>${esc(e.title)}${e.note ? ` <em>${esc(e.note)}</em>` : ''}</span></li>`);
+  if (!items.length) return '';
+  return `<div class="schedule-block">
+    <p class="fresh-title">📅 이번 주 일정</p>
+    <ul class="sch-list">
+${items.join('\n')}
+    </ul>
+  </div>
+  <!-- /schedule-block -->`;
+}
+
+function applyFresh(html, keep) {
+  html = html.replace(/\n\s*<div class="fresh-block">[\s\S]*?<!-- \/fresh-block -->/, '').replace(/\n\s*<div class="schedule-block">[\s\S]*?<!-- \/schedule-block -->/, '');
+  const add = [renderFreshBlock(readJson('docs/geomdan-transactions-cache.json'), keep), renderScheduleBlock(readJson('docs/schedule.json'))].filter(Boolean).join('\n  ');
+  if (!add) return html;
+  const i = html.indexOf('<div class="ranking-box">');
+  if (i < 0) fail('ranking-box를 찾지 못해 신고 거래 블록을 넣을 수 없음');
+  return html.slice(0, i) + add + '\n\n    ' + html.slice(i);
+}
+
 // ---------- 실행 ----------
 
 // ---------- 인스타그램 스타일 ----------
@@ -826,6 +919,21 @@ const IG_CSS = `  /* ig-style:start */
   .rank-more > summary::-webkit-details-marker, .news-fold > summary::-webkit-details-marker, .cycle-fold > summary::-webkit-details-marker { display: none; }
   .rank-more[open] > summary, .news-fold[open] > summary, .cycle-fold[open] > summary { color: var(--ig-gray); }
   .full-list-header { display: none; }
+  .fresh-block, .schedule-block { margin: 0 0 18px; padding: 14px 16px; border: 1.5px solid var(--ig-ink); border-radius: 14px; background: #ffffff; }
+  .fresh-title { margin: 0 0 2px; font-family: var(--font-display); font-weight: 900; font-size: 17px; color: var(--ig-ink); }
+  .fresh-note { margin: 0 0 8px; font-size: 11.5px; line-height: 1.5; color: var(--ig-gray); }
+  .fresh-list, .sch-list { list-style: none; margin: 0; padding: 0; }
+  .fresh-item { padding: 9px 0; border-top: 1px solid #e6e8eb; }
+  .fr-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .fr-top b { font-size: 14.5px; color: var(--ig-ink); }
+  .fr-amt { font-family: var(--font-display); font-weight: 900; font-size: 15px; color: var(--ig-ink); white-space: nowrap; }
+  .fr-meta { margin-top: 2px; font-size: 12px; color: var(--ig-gray); }
+  .fr-cmp { display: inline-block; margin-top: 3px; font-size: 12px; font-weight: 700; }
+  .fr-up { color: #d63a2f; } .fr-down { color: #2563c9; } .fr-flat, .fr-first { color: var(--ig-gray); }
+  .fr-removed { opacity: .85; }
+  .sch-item { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid #e6e8eb; font-size: 13.5px; line-height: 1.5; color: var(--ig-ink); }
+  .sch-item b { flex: none; width: 42px; font-family: var(--font-display); }
+  .sch-item em { font-style: normal; color: var(--ig-gray); font-size: 12px; }
   .rank-summary-pill { background: #fff6a8; border: 0; color: #3a3200; border-radius: 12px; }
   @media (max-width: 560px) {
     .card-slide { padding: 22px 18px 24px; }
@@ -922,7 +1030,7 @@ function main() {
   }
   const rankTxns = markNewHighs((parseEmbeddedDetails(indexHtml) || txns).filter(keep), warnings);
   const result = applyRanking(html, ranked, customPill, period, rankTxns, loadCycle(warnings));
-  html = applyList(result.html, indexHtml, keep);
+  html = applyList(applyFresh(result.html, keep), indexHtml, keep);
 
   const count = (re) => (html.match(re) || []).length;
   if (count(/<section/g) !== 5 || count(/<\/section>/g) !== 5) fail('<section> 개수가 5개가 아닙니다(구조 깨짐).');
