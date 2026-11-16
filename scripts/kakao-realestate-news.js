@@ -59,6 +59,15 @@ const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
 const GEOMDAN_QUERY =
   process.env.GEOMDAN_QUERY || '(검단신도시 OR "인천 검단" OR "서구 검단" OR 검단구) when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
+// 2026-11-16 사용자 요청: 마곡·부천·일산·청라·서해구·계양구·김포 소식도 담는다. 지역 이름만으로는 범죄·행사 기사까지
+// 몰려오므로 구글에는 "지역 AND 부동산·교통 주제"로 묻고, 검색 뒤 제목도 같은 조건으로 다시 거른다(아래 matchesNearbyTitle).
+// 서해구는 2026-07-01 개편으로 서구에서 갈라진 구 이름이라 그대로 쓴다("서구"는 다른 도시와 겹쳐 쓰지 않는다).
+const NEARBY_REGION_QUERY = '(마곡 OR 부천 OR 일산 OR 청라 OR 서해구 OR 계양구 OR 김포) (분양 OR 청약 OR 입주 OR 재개발 OR 재건축 OR 착공 OR 개통 OR GTX OR 광역급행 OR 미분양 OR 아파트 OR 신도시 OR 전철 OR 지하철 OR 철도 OR 도로)';
+const NEARBY_REGION_RE = /마곡|부천|일산(?!화)|청라|서해구|계양구|김포(?!공항)/;
+const NEARBY_TOPIC_RE = /분양|청약|입주|재개발|재건축|착공|개통|GTX|광역급행|미분양|아파트|신도시|전철|지하철|철도|도로|부동산|집값|전세|매매|거래/;
+const NEARBY_PROMO_RE = /견본주택|모델하우스|부동산 AD|분양 홍보|오픈 이벤트|사은품/;
+const matchesNearbyTitle = (title, terms) =>
+  !NEARBY_PROMO_RE.test(title) && (terms.some((t) => title.includes(t)) || (NEARBY_REGION_RE.test(title) && NEARBY_TOPIC_RE.test(title)));
 const GEOMDAN_NEARBY_QUERY =
   process.env.GEOMDAN_NEARBY_QUERY ||
   '(계양신도시 OR "계산지구 도시개발사업" OR "김포 콤팩트시티" OR 청라국제도시 OR 루원시티 OR "왕길1구역 재개발" OR "검단3·5구역 재개발" OR 에코메타시티 OR "한들3구역" OR "인천국제공항고속도로 검단IC 개통" OR "서부권 광역급행철도" OR GTX-D OR "수도권 제2순환고속도로" OR "인천2호선 고양지선" OR 대장신도시 OR 마곡신도시) when:1d';
@@ -233,6 +242,7 @@ function isSimilarHeadline(gramsA, gramsB) {
 // 검증한다.
 function titleMatchesKeyword(title, requireKeyword) {
   if (!requireKeyword) return true;
+  if (typeof requireKeyword === 'function') return requireKeyword(title);
   const keywords = Array.isArray(requireKeyword) ? requireKeyword : [requireKeyword];
   return keywords.some((k) => title.includes(k));
 }
@@ -387,7 +397,7 @@ async function fetchGeomdanArticles(limit) {
       console.error(`검단신도시 뉴스(직접) 조회 실패: ${err.message}`);
       return [];
     }),
-    fetchNewsCandidates(GEOMDAN_NEARBY_QUERY, GEOMDAN_NEARBY_TERMS).then(
+    fetchNewsCandidates(`${GEOMDAN_NEARBY_QUERY.replace(/\s*when:1d\s*$/, '')} OR ${NEARBY_REGION_QUERY} when:1d`, (title) => matchesNearbyTitle(title, GEOMDAN_NEARBY_TERMS)).then(
       (candidates) => candidates.map((c) => ({ ...c, nearby: true })),
       (err) => {
         console.error(`검단신도시 뉴스(인접 지역) 조회 실패: ${err.message}`);
