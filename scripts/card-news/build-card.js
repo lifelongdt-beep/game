@@ -48,7 +48,7 @@ function checkContent(c) {
   need(c.cover && Array.isArray(c.cover.headline) && c.cover.headline.length >= 1, 'cover.headline[] 필요');
   need(typeof c.cover.summary === 'string' && c.cover.summary, 'cover.summary 필요');
   need(Array.isArray(c.cover.tags) && c.cover.tags.length === 3, 'cover.tags는 정확히 3개');
-  need(Array.isArray(c.issues) && c.issues.length === 4, 'issues는 정확히 4건(2건으로 되돌리지 말 것)');
+  need(Array.isArray(c.issues) && c.issues.length >= 1 && c.issues.length <= 4, 'issues는 1~4건(검단에 영향 주는 전국 이슈만, 억지로 채우지 말 것)');
   c.issues.forEach((it, i) => need(it.title && it.text && (!it.img || it.alt), `issues[${i}]에 title, text 필요(img가 있으면 alt도)`));
   need(typeof c.outlets === 'string' && c.outlets, 'outlets(출처 매체, 예: "문화일보 / 연합뉴스") 필요');
   const o = c.overlay;
@@ -511,10 +511,11 @@ function renderRankDetail(t, txns, cycle) {
 // 단지의 조회 기간 거래 중 신고가 건수(markNewHighs가 표시해 둔 것).
 const newHighCount = (t, txns) => txns.filter((x) => x.newHigh && aptKey(x.apt) === aptKey(t.apt)).length;
 
+const RANK_VISIBLE = 5;
+
 function renderRankItems(ranked, txns, cycle) {
-  return ranked
-    .map(
-      (t, i) => `      <div class="rank-item" tabindex="0" role="button" aria-expanded="false">
+  const items = ranked.map(
+    (t, i) => `      <div class="rank-item" tabindex="0" role="button" aria-expanded="false">
         <span class="rank-idx">${String(i + 1).padStart(2, '0')}</span>
         <div class="rank-meta">
           <b>${i === 0 ? withCrown(t.apt) : t.apt}</b>
@@ -525,8 +526,15 @@ function renderRankItems(ranked, txns, cycle) {
           <span class="rank-price">${t.amountText}</span>
         </div>${renderRankDetail(t, txns, cycle)}
       </div>`
-    )
-    .join('\n\n');
+  );
+  if (items.length <= RANK_VISIBLE) return items.join('\n\n');
+  // TOP 5만 바로 보이고 나머지는 접어 둔다("내 단지 찾기"). 항목 수는 그대로라 아래 검증도 그대로 통과한다.
+  return (
+    items.slice(0, RANK_VISIBLE).join('\n\n') +
+    `\n\n      <details class="rank-more"><summary>내 단지 찾기 · 나머지 ${items.length - RANK_VISIBLE}곳 보기</summary>\n` +
+    items.slice(RANK_VISIBLE).join('\n\n') +
+    '\n      </details>'
+  );
 }
 
 function pillText(ranked, period) {
@@ -563,9 +571,10 @@ function applyRanking(html, ranked, customPill, period, txns, cycle) {
   html = html.replace(/(<div class="rank-summary-pill">\s*)[\s\S]*?(\s*<\/div>)/, (m, a, b) => a + pill + b);
   // 단지별 사이클 지표는 각 랭킹 항목에 바로 붙이고, 랭킹 아래에는 칩 읽는 법만 적는다(예전 별도 페이지 링크는 지운다).
   html = html.replace(/\n\n    <a class="cycle-link"[^>]*>[\s\S]*?<\/a>/, '');
+  html = html.replace(/\n\n    <details class="cycle-fold">[\s\S]*?<!-- \/cycle-region --><\/details>/, '');
   html = html.replace(/\n\n    <p class="rank-cycle-note">[\s\S]*?<\/p>/, '');
   html = html.replace(/\n\n    <div class="cycle-region">[\s\S]*?<!-- \/cycle-region -->/, '');
-  if (cycle) html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + CYCLE_NOTE + renderCycleRegion(cycle) + '<!-- /cycle-region -->');
+  if (cycle) html = html.replace(/(<div class="rank-summary-pill">[\s\S]*?<\/div>)/, (m) => m + '\n\n    <details class="cycle-fold"><summary>검단 사이클·전월세 차트 보기</summary>' + CYCLE_NOTE + renderCycleRegion(cycle) + '<!-- /cycle-region --></details>');
   html = html.replace(/MARKET RANKING TOP \d+/, () => `MARKET RANKING TOP ${ranked.length}`);
   html = html.replace(/(?:오늘|최근 \d+개월간) 집계된 고유 단지가 \d+곳입니다\./, () => `${period}집계된 고유 단지가 ${ranked.length}곳입니다.`);
   html = addRankDetailUi(html);
@@ -723,6 +732,8 @@ function addRankDetailUi(html) {
 }
 
 function applyList(html, indexHtml, keep) {
+  // 이전 빌드가 씌운 접힘 래퍼는 먼저 벗겨 낸다(다시 빌드해도 중첩되지 않게).
+  html = html.replace(/<details class="news-fold"><summary>[^<]*<\/summary>\n/, '').replace(/\n<\/details>\n(?=<div class="txn-list-hidden"|<p class="source">)/, '\n');
   const H = TXN_ONLY ? '<h2>🏘️ 검단신도시 아파트 실거래가</h2>' : '<h2>📰 부동산 뉴스</h2>';
   const iS = indexHtml.indexOf(H);
   const iE = indexHtml.indexOf('<p class="source">');
@@ -739,6 +750,12 @@ function applyList(html, indexHtml, keep) {
     const m = li.match(/<span class="txn-apt">([^<]*)<\/span>/);
     return m && !keep({ apt: m[1] }) ? '' : li;
   });
+  // 부동산·검단 뉴스 목록은 접어 둔다(카드의 핵심은 위 슬라이드). 숨김 실거래 목록은 접힘 밖에 둔다.
+  const hS = list.indexOf('<div class="txn-list-hidden"');
+  const newsCount = (list.slice(0, hS < 0 ? list.length : hS).match(/<li class="article"/g) || []).length;
+  list = hS < 0
+    ? `<details class="news-fold"><summary>전체 뉴스 ${newsCount}건 보기</summary>\n${list}\n</details>\n`
+    : `<details class="news-fold"><summary>전체 뉴스 ${newsCount}건 보기</summary>\n${list.slice(0, hS)}\n</details>\n` + list.slice(hS);
   let out = html.slice(0, cS) + list + html.slice(cE);
   out = out.replace('실제 기사 원문 링크와 검단신도시 실거래가 전체 내역은 아래에서 확인하세요.', '실제 기사 원문 링크는 아래에서 확인하세요. 단지별 실거래 내역은 슬라이드 4의 단지를 누르면 펼쳐집니다.');
   out = out.replace('전체 뉴스·실거래가 목록</p>', '전체 뉴스 목록</p>');
@@ -805,6 +822,10 @@ const IG_CSS = `  /* ig-style:start */
   .rank-idx { font-family: var(--font-display); }
   .ranking-box .rank-item:nth-child(-n+3) .rank-idx { color: var(--ig-ink); }
   .rank-val { color: var(--ig-ink); font-family: var(--font-display); font-weight: 900; }
+  .rank-more > summary, .news-fold > summary, .cycle-fold > summary { cursor: pointer; list-style: none; padding: 12px 6px; font-weight: 800; font-size: 14px; color: var(--ig-ink); text-align: center; border-top: 1px solid #e6e8eb; }
+  .rank-more > summary::-webkit-details-marker, .news-fold > summary::-webkit-details-marker, .cycle-fold > summary::-webkit-details-marker { display: none; }
+  .rank-more[open] > summary, .news-fold[open] > summary, .cycle-fold[open] > summary { color: var(--ig-gray); }
+  .full-list-header { display: none; }
   .rank-summary-pill { background: #fff6a8; border: 0; color: #3a3200; border-radius: 12px; }
   @media (max-width: 560px) {
     .card-slide { padding: 22px 18px 24px; }

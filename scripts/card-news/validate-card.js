@@ -66,7 +66,7 @@ async function checkWidth(browser, width) {
       const r = s.getBoundingClientRect();
       out.slides.push(`${i + 1}:${Math.round(r.height)}`);
       if (s.scrollHeight > s.clientHeight + 1) out.clipped.push({ slide: i + 1, scrollH: s.scrollHeight, clientH: s.clientHeight });
-      const rects = SEL.flatMap((q) => [...s.querySelectorAll(q)]).map((e) => ({ e, r: e.getBoundingClientRect() }));
+      const rects = SEL.flatMap((q) => [...s.querySelectorAll(q)]).filter((e) => !e.closest('details:not([open])')).map((e) => ({ e, r: e.getBoundingClientRect() }));
       rects.forEach(({ e, r }) => {
         if (r.right > window.innerWidth + 1 || r.left < -1) out.outside.push({ slide: i + 1, cls: e.className, left: Math.round(r.left), right: Math.round(r.right) });
       });

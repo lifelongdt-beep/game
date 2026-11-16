@@ -2,7 +2,7 @@
 // 카드뉴스 루틴 묶음 도구: 호출 횟수·출력 길이를 줄이려고 고정 절차를 한 번에 돌린다(토큰 절약).
 //   node scripts/card-news/run.js prepare <작업폴더>
 //       데이터 수집(dispatch) → 인덱스 내려받기(<폴더>/index.html) → 후보(--compact)·직전 카드·인사이트 자료 목록 출력
-//   node scripts/card-news/run.js images <작업폴더> <번호 6개: 표지 1 → 이슈 4 → 오버레이 1> [--limit 600]
+//   node scripts/card-news/run.js images <작업폴더> <번호 3~6개: 표지 1 → 이슈 1~4 → 오버레이 1> [--limit 600]
 //       links.txt 생성 → 이미지 추출 dispatch → 항목별 image 상태 한 줄 + 본문 발췌(기본 600자)
 //   node scripts/card-news/run.js finalize <작업폴더> --title <PR 제목>
 //       <폴더>/content.json으로 조립·검증 → docs/briefing-infographic.html(+docs/insight-facts.md 변경분) 커밋 → 푸시 → PR 병합
@@ -69,7 +69,7 @@ function images(dir, args) {
   const li = args.indexOf('--limit');
   const limit = li >= 0 ? Number(args[li + 1]) : 600;
   const nums = args.filter((a, i) => /^\d+$/.test(a) && (li < 0 || i !== li + 1));
-  if (nums.length !== 6) die('번호 6개(표지 1 → 이슈 4 → 오버레이 1)가 필요합니다.');
+  if (nums.length < 3 || nums.length > 6) die('번호 3~6개(표지 1 → 이슈 1~4 → 오버레이 1)가 필요합니다.');
   const c = node('candidates.js', ['--index', path.join(dir, 'index.html'), ...nums]);
   if (c.code !== 0) die(c.err);
   fs.writeFileSync(path.join(dir, 'links.txt'), c.out + '\n');
@@ -148,5 +148,5 @@ function finalize(dir, args) {
   if (cmd === 'prepare') return prepare(workdir(a));
   if (cmd === 'images') return images(workdir(a), rest);
   if (cmd === 'finalize') return finalize(workdir(a), rest);
-  die('사용법: prepare <폴더> | images <폴더> <번호6개> | finalize <폴더> --title <제목> | facts (파일 상단 주석 참고)');
+  die('사용법: prepare <폴더> | images <폴더> <번호3~6개> | finalize <폴더> --title <제목> | facts (파일 상단 주석 참고)');
 })();
