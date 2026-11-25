@@ -153,7 +153,7 @@ footer{color:var(--sub);font-size:13px;text-align:center;margin-top:24px}
     getJson('data/' + id + '.json').then(function (data) {
       current = data; dongFilter = '';
       store.set(STORE_REGION, id);
-      if (location.hash !== '#r=' + id) history.replaceState(null, '', '#r=' + id);
+      try { if (location.hash !== '#r=' + id) history.replaceState(null, '', '#r=' + id); } catch (e) {}
       renderBriefing();
     }).catch(function () {
       $('loading').hidden = true;
@@ -283,7 +283,7 @@ footer{color:var(--sub);font-size:13px;text-align:center;margin-top:24px}
       renderTopicChips(); renderNews(); return;
     }
   });
-  $('changeRegion').onclick = function () { history.replaceState(null, '', location.pathname); showPicker(); };
+  $('changeRegion').onclick = function () { try { history.replaceState(null, '', location.pathname); } catch (e) {} showPicker(); };
   $('pickerBack').onclick = function () { openRegion(store.get(STORE_REGION)); };
   $('search').addEventListener('input', renderRegionList);
   // 공유받은 링크(#r=…)를 이미 열린 화면에서 누른 경우
