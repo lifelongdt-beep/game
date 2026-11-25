@@ -94,6 +94,7 @@ footer{color:var(--sub);font-size:13px;text-align:center;margin-top:24px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .mine-card{border-color:var(--accent);background:linear-gradient(var(--accent-soft),var(--card) 70%)}
 .mine-card b{font-size:19px}
+.mine-item+.mine-item{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
 button.link{all:unset;cursor:pointer;color:var(--ink);font-weight:600;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .apt .see{flex:none;margin-left:8px;padding:6px 10px;font-size:13px}
@@ -156,6 +157,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   <div id="mineEdit" hidden>
     <header class="top"><div><h1>🏡 나만의 동네 설정</h1><div class="meta">여러 동을 담고, 그 안의 아파트를 넣고 뺄 수 있어요. 이 기기에 저장돼요.</div></div>
       <button id="mineDone" class="btn primary">완료</button></header>
+    <section class="card"><h2>이름</h2><input id="mineName" class="search" type="text" maxlength="20" placeholder="예: 우리 동네, 이사 후보"></section>
     <section class="card"><h2>담은 동</h2><div id="mineAreas"></div></section>
     <section class="card"><h2>동 추가하기</h2>
       <p class="note" style="margin-bottom:10px">시·도와 시군구를 고른 뒤 동을 누르면 담기고, 다시 누르면 빠져요.</p>
@@ -168,6 +170,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <p class="note" style="margin-bottom:6px">체크를 풀면 그 아파트는 나만의 동네 실거래가에서 빠져요. "시세"를 누르면 그래프와 과거 거래가 보여요.</p>
       <div id="mineApts"></div>
     </section>
+    <p style="text-align:center;margin:8px 0 24px"><button id="mineDel" class="btn" data-del-mine="1">이 나만의 동네 지우기</button></p>
   </div>
 
   <!-- 아파트 상세 -->
@@ -206,7 +209,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
 <script>
 (function () {
   'use strict';
-  var STORE_REGION = 'briefing-region', STORE_TOPICS = 'briefing-topics', STORE_MINE = 'briefing-mine';
+  var STORE_REGION = 'briefing-region', STORE_TOPICS = 'briefing-topics', STORE_MINE = 'briefing-mine', STORE_MINES = 'briefing-mines';
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var store = {
@@ -216,10 +219,28 @@ ul.rec .right{text-align:right;white-space:nowrap}
   var parse = function (k, fb) { try { return JSON.parse(store.get(k)) || fb; } catch (e) { return fb; } };
   var index = null, national = null, current = null, dongFilter = '';
   var selectedTopics = parse(STORE_TOPICS, []);
-  // 나만의 동네: areas = [{c: 시군구 코드, d: 법정동}], ex = 뺀 아파트 키("코드|법정동|단지")
-  var mine = parse(STORE_MINE, { areas: [], ex: [] });
-  if (!Array.isArray(mine.areas)) mine = { areas: [], ex: [] };
-  if (!Array.isArray(mine.ex)) mine.ex = [];
+  // 나만의 동네는 여러 개: mines = [{ id, name, areas: [{c: 시군구 코드, d: 법정동}], ex: 뺀 아파트 키("코드|법정동|단지") }]
+  // mine = 지금 보거나 고치는 하나. 예전 하나짜리 저장값(briefing-mine)은 첫 번째로 옮긴다.
+  var mines = parse(STORE_MINES, null);
+  if (!Array.isArray(mines)) {
+    var old = parse(STORE_MINE, null);
+    mines = old && Array.isArray(old.areas) && old.areas.length ? [{ id: 'm1', name: '나만의 동네', areas: old.areas, ex: Array.isArray(old.ex) ? old.ex : [] }] : [];
+  }
+  mines = mines.filter(function (m) { return m && m.id && Array.isArray(m.areas); });
+  mines.forEach(function (m) { if (!Array.isArray(m.ex)) m.ex = []; if (!m.name) m.name = '나만의 동네'; });
+  var mine = mines[0] || null;
+  function findMine(id) { return mines.filter(function (m) { return m.id === id; })[0] || null; }
+  function newMine() {
+    var empty = mines.filter(function (m) { return !m.areas.length; })[0];
+    if (empty) return empty;
+    var n = 1, ids = mines.map(function (m) { return m.id; });
+    while (ids.indexOf('m' + n) >= 0) n++;
+    var names = mines.map(function (m) { return m.name; }), name = '나만의 동네', k = 2;
+    while (names.indexOf(name) >= 0) name = '나만의 동네 ' + k++;
+    var m = { id: 'm' + n, name: name, areas: [], ex: [] };
+    mines.push(m); saveMine();
+    return m;
+  }
   var sido = '', editSido = '', editCode = '';
   var fileCache = {};
 
@@ -230,13 +251,13 @@ ul.rec .right{text-align:right;white-space:nowrap}
     if (!fileCache[code]) fileCache[code] = getJson('data/' + code + '.json').catch(function () { delete fileCache[code]; return null; });
     return fileCache[code];
   }
-  function validId(id) { return id === 'mine' || /^\d{5}$/.test(id || ''); }
+  function validId(id) { return /^mine(-m\d+)?$/.test(id || '') || /^\d{5}$/.test(id || ''); }
   function regionOf(code) { return index.regions.filter(function (r) { return r.code === code; })[0]; }
   function regionLabel(r) { return r.sido + ' ' + r.name; }
   function topicLabel(key) { var t = (index.topics || []).filter(function (x) { return x.key === key; })[0]; return t ? t.label : key; }
   function aptKey(code, dong, apt) { return code + '|' + dong + '|' + apt.replace(/\([^)]*\)/g, '').replace(/\s+/g, ''); }
-  function saveMine() { store.set(STORE_MINE, JSON.stringify(mine)); }
-  function hasArea(c, d) { return mine.areas.some(function (a) { return a.c === c && a.d === d; }); }
+  function saveMine() { store.set(STORE_MINES, JSON.stringify(mines)); }
+  function hasArea(c, d, m) { return (m || mine).areas.some(function (a) { return a.c === c && a.d === d; }); }
   function sidoList() { var l = []; index.regions.forEach(function (r) { if (l.indexOf(r.sido) < 0) l.push(r.sido); }); return l; }
   function show(view) { ['loading', 'picker', 'mineEdit', 'briefing', 'aptDetail'].forEach(function (v) { $(v).hidden = v !== view; }); window.scrollTo(0, 0); }
   function setHash(h) { try { history.replaceState(null, '', h ? '#r=' + h : location.pathname); } catch (e) {} }
@@ -257,13 +278,18 @@ ul.rec .right{text-align:right;white-space:nowrap}
     show('picker');
     var last = store.get(STORE_REGION);
     $('pickerBack').hidden = !last;
-    var exN = mine.ex.length;
-    $('mineSummary').innerHTML = mine.areas.length
-      ? '<p style="margin:0 0 4px"><b>' + esc(mine.areas.map(function (a) { return a.d; }).join(' · ')) + '</b></p><p class="note">' + mine.areas.length + '개 동' + (exN ? ' · 아파트 ' + exN + '곳 뺌' : '') + '</p><p id="mineRecs" class="note" style="margin-top:4px"></p>' +
-        '<div class="row" style="margin-top:12px"><button class="btn primary" data-open="mine">나만의 동네 보기</button><button class="btn" data-edit="1">설정</button></div>'
-      : '<p class="note">관심 있는 동을 여러 개 담고, 그 안의 아파트를 골라 한 화면에 모아 볼 수 있어요.</p><div class="row" style="margin-top:12px"><button class="btn primary" data-edit="1">나만의 동네 만들기</button></div>';
-    if (mine.areas.length) mineRecordCount().then(function (n) {
-      var el = $('mineRecs'); if (el) el.innerHTML = n ? '🔥 최근 3개월 신고가 <b class="up">' + n + '건</b>' : '최근 3개월 신고가는 없어요.';
+    var used = mines.filter(function (m) { return m.areas.length; });
+    $('mineSummary').innerHTML = used.length
+      ? used.map(function (m) {
+          var exN = m.ex.length;
+          return '<div class="mine-item"><p style="margin:0 0 2px"><b>' + esc(m.name) + '</b></p><p class="note">' + esc(m.areas.map(function (a) { return a.d; }).join(' · ')) + ' · ' + m.areas.length + '개 동' + (exN ? ' · 아파트 ' + exN + '곳 뺌' : '') + '</p><p data-recs="' + m.id + '" class="note" style="margin-top:2px"></p>' +
+            '<div class="row" style="margin-top:8px"><button class="btn primary" data-open="mine-' + m.id + '">보기</button><button class="btn" data-edit="' + m.id + '">설정</button></div></div>';
+        }).join('') + '<div class="row" style="margin-top:12px"><button class="btn" data-new-mine="1">＋ 나만의 동네 하나 더 만들기</button></div>'
+      : '<p class="note">관심 있는 동을 여러 개 담고, 그 안의 아파트를 골라 한 화면에 모아 볼 수 있어요. 여러 개 만들어 이름을 붙일 수도 있어요.</p><div class="row" style="margin-top:12px"><button class="btn primary" data-new-mine="1">나만의 동네 만들기</button></div>';
+    used.forEach(function (m) {
+      mineRecordCount(m).then(function (n) {
+        var el = document.querySelector('[data-recs="' + m.id + '"]'); if (el) el.innerHTML = n ? '🔥 최근 3개월 신고가 <b class="up">' + n + '건</b>' : '최근 3개월 신고가는 없어요.';
+      });
     });
     if (!sido) { var m = regionOf(last); sido = m ? m.sido : sidoList()[0]; }
     regionPicker($('search'), $('sidoChips'), $('regionList'), sido, last, '');
@@ -271,7 +297,11 @@ ul.rec .right{text-align:right;white-space:nowrap}
 
   // ── 나만의 동네 설정 ──────────────────────
   function showMineEdit() {
+    if (!mine) mine = newMine();
     show('mineEdit');
+    confirmDel = false;
+    $('mineName').value = mine.name;
+    $('mineDel').textContent = '이 나만의 동네 지우기';
     if (!editSido) { var f = mine.areas[0] && regionOf(mine.areas[0].c); editSido = f ? f.sido : sido || sidoList()[0]; }
     renderMineAreas(); renderEditPicker(); renderMineApts();
   }
@@ -326,24 +356,29 @@ ul.rec .right{text-align:right;white-space:nowrap}
     });
   }
   // 나만의 동네(담은 동, 뺀 아파트 제외)의 최근 3개월 신고가 건수
-  function mineRecordCount() {
-    var codes = uniqCodes();
+  function mineRecordCount(m) {
+    var codes = uniqCodes(m);
     return Promise.all(codes.map(regionFile)).then(function (files) {
       var n = 0;
       files.forEach(function (f, i) {
         ((f && f.tx && f.tx.items) || []).forEach(function (row) {
-          if (row[7] && hasArea(codes[i], row[1]) && mine.ex.indexOf(aptKey(codes[i], row[1], row[0])) < 0) n++;
+          if (row[7] && hasArea(codes[i], row[1], m) && m.ex.indexOf(aptKey(codes[i], row[1], row[0])) < 0) n++;
         });
       });
       return n;
     });
   }
-  function uniqCodes() { var l = []; mine.areas.forEach(function (a) { if (l.indexOf(a.c) < 0) l.push(a.c); }); return l; }
+  function uniqCodes(m) { var l = []; (m || mine).areas.forEach(function (a) { if (l.indexOf(a.c) < 0) l.push(a.c); }); return l; }
 
   // ── 브리핑 열기 ──────────────────────────
   function openRegion(id) {
     if (!validId(id)) return showPicker();
-    if (id === 'mine') return openMine();
+    if (/^mine/.test(id)) {
+      var m = findMine(id.slice(5)) || findMine(store.get(STORE_REGION) && store.get(STORE_REGION).slice(5)) || mines[0];
+      if (!m) return showPicker();
+      mine = m;
+      return openMine();
+    }
     show('loading');
     regionFile(id).then(function (data) {
       if (!data) throw new Error('no data');
@@ -376,10 +411,10 @@ ul.rec .right{text-align:right;white-space:nowrap}
       news.sort(function (a, b) { return (b.n || 1) - (a.n || 1); });
       rows.sort(function (a, b) { return b[5].localeCompare(a[5]) || b[3] - a[3]; });
       current = {
-        mine: true, name: '나만의 동네', generatedAtText: gen, news: news,
+        mine: true, name: mine.name, generatedAtText: gen, news: news,
         tx: { status: partial ? 'partial' : 'ok', stale: !!stale, staleFrom: stale, months: 3, items: rows }
       };
-      dongFilter = ''; store.set(STORE_REGION, 'mine'); setHash('mine');
+      dongFilter = ''; store.set(STORE_REGION, 'mine-' + mine.id); setHash('mine-' + mine.id);
       renderBriefing();
     });
   }
@@ -482,7 +517,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   }
   function renderBriefing() {
     var r = current.mine ? null : regionOf(current.code);
-    var name = current.mine ? '나만의 동네' : (r ? r.name : current.name);
+    var name = current.mine ? current.name : (r ? r.name : current.name);
     $('title').textContent = (current.mine ? '🏡 ' : '☀️ ') + name;
     $('subtitle').textContent = (current.mine ? mine.areas.map(function (a) { return a.d; }).join(' · ') : (r ? regionLabel(r) : '')) + (current.generatedAtText ? ' · ' + current.generatedAtText + ' 기준' : '');
     document.title = name + ' 아침 부동산 브리핑';
@@ -958,7 +993,15 @@ ul.rec .right{text-align:right;white-space:nowrap}
     if (d.more) { apt.limit += 30; return renderAptList(); }
     if (d.code) return openRegion(d.code);
     if (d.open) return openRegion(d.open);
-    if (d.edit) return showMineEdit();
+    if (d.newMine) { mine = newMine(); editCode = ''; return showMineEdit(); }
+    if (d.edit) { if (findMine(d.edit)) mine = findMine(d.edit); return showMineEdit(); }
+    if (d.delMine) {
+      if (!confirmDel) { confirmDel = true; b.textContent = '한 번 더 누르면 지워져요'; return; }
+      mines = mines.filter(function (m) { return m.id !== mine.id; }); saveMine();
+      mine = mines[0] || null; confirmDel = false;
+      if (/^mine/.test(store.get(STORE_REGION) || '')) store.set(STORE_REGION, mine ? 'mine-' + mine.id : '');
+      setHash(''); return showPicker();
+    }
     if (d.sido) { sido = d.sido; return showPicker(); }
     if (d.esido) { editSido = d.esido; editCode = ''; return renderEditPicker(); }
     if (d.ecode) { editCode = d.ecode; return renderEditPicker(); }
@@ -1002,12 +1045,16 @@ ul.rec .right{text-align:right;white-space:nowrap}
   $('changeRegion').onclick = function () { setHash(''); showPicker(); };
   $('editMine').onclick = showMineEdit;
   $('mineDone').onclick = function () { mine.areas.length ? openMine() : showPicker(); };
+  var confirmDel = false;
+  $('mineName').addEventListener('input', function () {
+    mine.name = $('mineName').value.trim().slice(0, 20) || '나만의 동네'; saveMine();
+  });
   $('pickerBack').onclick = function () { openRegion(store.get(STORE_REGION)); };
   $('search').addEventListener('input', function () { regionPicker($('search'), $('sidoChips'), $('regionList'), sido, store.get(STORE_REGION), ''); });
   $('editSearch').addEventListener('input', renderEditPicker);
   addEventListener('hashchange', function () {
-    var id = (location.hash.match(/^#r=(mine|\d{5})$/) || [])[1];
-    if (index && id && (!current || id !== (current.mine ? 'mine' : current.code))) openRegion(id);
+    var id = (location.hash.match(/^#r=(mine(?:-m\d+)?|\d{5})$/) || [])[1];
+    if (index && id && (!current || id !== (current.mine ? 'mine-' + mine.id : current.code))) openRegion(id);
   });
 
   var deferred;
@@ -1021,7 +1068,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   // ── 시작 ──────────────────────────────
   Promise.all([getJson('data/index.json'), getJson('data/national.json').catch(function () { return null; })]).then(function (res) {
     index = res[0]; national = res[1];
-    var fromHash = (location.hash.match(/^#r=(mine|\d{5})$/) || [])[1];
+    var fromHash = (location.hash.match(/^#r=(mine(?:-m\d+)?|\d{5})$/) || [])[1];
     var id = fromHash || store.get(STORE_REGION);
     if (validId(id)) openRegion(id); else showPicker();
   }).catch(function () {
