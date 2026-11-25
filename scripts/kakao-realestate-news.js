@@ -272,10 +272,45 @@ function parseNewsItems(xml, requireKeyword) {
   return candidates;
 }
 
+// 구글 뉴스 RSS는 짧은 시간에 요청이 몰리면 503/429로 막는다(2026-11-25 아침, 네 검색이 모두 503으로 실패해 빈 목록이 게시됨).
+// 그래서 ① 뉴스 요청은 최소 간격을 두고 한 줄로 세우고, ② 실패하면 6·15·30·45초씩 늘려 가며(±25% 흔들어) 최대 5번 시도한다(전체 수집이 10분 제한 안에 끝나도록 대기 합계를 짧게 잡았다).
+// NEWS_RETRY_SCALE=0이면 대기 없이 시도 횟수만 쓴다(테스트용).
+const NEWS_MIN_GAP_MS = Number(process.env.NEWS_MIN_GAP_MS || 2500);
+const NEWS_RETRY_BACKOFF_SEC = [6, 15, 30, 45];
+const NEWS_RETRY_SCALE = Number(process.env.NEWS_RETRY_SCALE ?? 1);
+let newsGate = Promise.resolve();
+let newsFailureCount = 0;
+function newsTurn() {
+  const turn = newsGate.then(() => sleep(NEWS_MIN_GAP_MS * NEWS_RETRY_SCALE));
+  newsGate = turn.catch(() => {});
+  return turn;
+}
+async function fetchNewsWithRetry(url) {
+  const maxAttempts = NEWS_RETRY_BACKOFF_SEC.length + 1;
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await newsTurn();
+    try {
+      const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+      if (res.ok || !RETRYABLE_STATUS.has(res.status)) return res;
+      lastError = new Error(`뉴스 조회 실패: ${res.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+    if (attempt === maxAttempts) break;
+    const wait = NEWS_RETRY_BACKOFF_SEC[attempt - 1] * (0.75 + Math.random() * 0.5) * NEWS_RETRY_SCALE;
+    console.error(`뉴스 조회 재시도 ${attempt}/${maxAttempts - 1}: ${lastError.message} — ${Math.round(wait)}초 뒤 다시 시도`);
+    await sleep(wait * 1000);
+  }
+  newsFailureCount += 1;
+  throw lastError;
+}
+
 async function fetchNewsCandidates(query, requireKeyword) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
-  const res = await fetchWithRetry(url);
+  const res = await fetchNewsWithRetry(url);
   if (!res.ok) {
+    newsFailureCount += 1;
     throw new Error(`뉴스 조회 실패: ${res.status}`);
   }
   const xml = await res.text();
@@ -982,8 +1017,15 @@ async function main() {
   const geomdanResult = await fetchGeomdanTransactions();
   const geomdanTransactions = geomdanResult.transactions;
 
-  publishCombinedPage('index.html', articles, geomdanArticles, geomdanResult);
-  publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanResult);
+  // 뉴스 검색이 모두 실패해 기사가 하나도 없으면, 빈 목록으로 기존 페이지를 덮어쓰지 않고 마지막 정상 페이지를 그대로 둔다.
+  if (articles.length === 0 && geomdanArticles.length === 0 && newsFailureCount > 0) {
+    console.log(`::warning::뉴스 검색 ${newsFailureCount}건이 재시도 끝에도 실패해 기사가 없습니다. 빈 목록으로 덮어쓰지 않고 기존 페이지를 유지합니다.`);
+    writeOutput('news_ok', 'false');
+  } else {
+    writeOutput('news_ok', 'true');
+    publishCombinedPage('index.html', articles, geomdanArticles, geomdanResult);
+    publishCombinedPage('geomdan.html', articles, geomdanArticles, geomdanResult);
+  }
 
   if (SKIP_KAKAO_SEND) {
     console.log('SKIP_KAKAO_SEND가 설정돼 있어 카카오톡 자동 다이제스트 발송을 건너뜁니다.');
