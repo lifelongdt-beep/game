@@ -2,9 +2,9 @@
 'use strict';
 
 // 지역 선택형 아침 브리핑 데이터 수집.
-// 전국 시군구(scripts/regions-kr.json)와 추천 동네(scripts/regions.json)마다 동네 부동산 뉴스와 최근 실거래를 모으고,
+// 전국 시군구(scripts/regions-kr.json)마다 동네 부동산 뉴스와 최근 실거래를 모으고,
 // 주제별 전국 부동산 뉴스를 모아 docs/regions/data/에 JSON으로 쓴다. 화면(docs/regions/index.html)은 이 JSON을
-// 읽어 동네·주제·법정동 선택을 브라우저에서 처리한다. 기존 검단 카드뉴스·카카오톡(kakao-realestate-news.js)과는
+// 읽어 동네·주제·법정동 선택과 '나만의 동네'(여러 법정동 + 아파트 넣고 빼기, 기기에 저장)를 브라우저에서 처리한다. 기존 검단 카드뉴스·카카오톡(kakao-realestate-news.js)과는
 // 따로 돌고, 그쪽의 뉴스 수집·실거래 조회 함수만 가져다 쓴다.
 //
 // 환경 변수
@@ -20,7 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const { NEWS_QUERY, fetchNewsSafe, fetchTransactionsForMonth, windowStart, sleep } = require('./kakao-realestate-news');
-const { normalizeAptName, loadExcludedApartments, pricePerPyeong, isRealEstateNews, isGeomdanNews } = require('./geomdan-common');
+const { pricePerPyeong, isRealEstateNews } = require('./geomdan-common');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.resolve(ROOT, process.env.REGION_OUT_DIR || 'docs/regions');
@@ -100,12 +100,7 @@ function loadRegions() {
   for (const r of all) counts.set(r.name, (counts.get(r.name) || 0) + 1);
   const dup = new Set([...counts].filter(([, c]) => c > 1).map(([n]) => n));
   for (const r of all) r.news = newsRuleFor(r, dup);
-  const featured = readJson(path.join(__dirname, 'regions.json')).featured;
-  for (const f of featured) {
-    if (!/^[a-z0-9-]+$/.test(f.id)) throw new Error(`추천 동네 id는 영문 소문자·숫자·-만 쓸 수 있습니다: ${f.id}`);
-    if (!all.some((r) => r.code === f.code)) throw new Error(`추천 동네 ${f.id}의 시군구 코드 ${f.code}가 regions-kr.json에 없습니다.`);
-  }
-  return { all, featured };
+  return all;
 }
 
 // ── 뉴스 ──────────────────────────────────────────────
@@ -128,17 +123,6 @@ async function fetchLocalNewsForRegion(rule) {
     return rule.any.some((k) => head.includes(k)) && rule.all.every((k) => head.includes(k)) && isRealEstateNews(head);
   };
   return (await fetchNewsSafe(`${rule.query} ${LOCAL_TOPIC_QUERY} when:1d`, LOCAL_NEWS_COUNT, filter)).map(compactArticle);
-}
-
-async function fetchFeaturedNews(f) {
-  const topicOk = f.newsFilter === 'geomdan' ? isGeomdanNews : isRealEstateNews;
-  const filter = (title) => {
-    const head = headOf(title);
-    if ((f.titleKeywords || []).length && !f.titleKeywords.some((k) => head.includes(k))) return false;
-    if ((f.excludeKeywords || []).some((k) => head.includes(k))) return false;
-    return topicOk(head);
-  };
-  return (await fetchNewsSafe(`${f.newsQuery} when:1d`, LOCAL_NEWS_COUNT, filter)).map(compactArticle);
 }
 
 async function fetchNationalNews() {
@@ -218,7 +202,7 @@ async function pool(list, size, worker) {
 
 async function main() {
   const startedAt = Date.now();
-  const { all, featured } = loadRegions();
+  const all = loadRegions();
   const only = (process.env.REGION_CODES || '').split(',').map((s) => s.trim()).filter(Boolean);
   const targets = only.length ? all.filter((r) => only.includes(r.code)) : all;
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -273,33 +257,12 @@ async function main() {
   }
   console.log(`시군구 ${targets.length}곳 저장(지난 실거래 사용 ${report.stale}곳)`);
 
-  // 4) 추천 동네: 시군구 실거래를 법정동으로 좁히고, 뉴스는 따로 찾는다.
-  const geomdanExcluded = loadExcludedApartments();
-  for (const f of featured) {
-    const base = readJson(path.join(DATA_DIR, `${f.code}.json`), null);
-    const prev = readJson(path.join(DATA_DIR, `f-${f.id}.json`), null);
-    if (!base && !prev) continue;
-    const tx = base ? { ...base.tx } : prev.tx;
-    tx.items = (tx.items || []).filter(
-      (row) => f.dongs.some((d) => row[1].includes(d)) && !(f.useGeomdanExclusions && geomdanExcluded.has(normalizeAptName(row[0])))
-    );
-    let news = prev?.news || [];
-    if (!SKIP_NEWS) {
-      await sleep(NEWS_DELAY_MS);
-      news = await fetchFeaturedNews(f);
-    }
-    writeJson(path.join(DATA_DIR, `f-${f.id}.json`), {
-      id: f.id, code: f.code, name: f.name, generatedAt, generatedAtText, news, tx, links: f.links || [],
-    });
-  }
-
-  // 5) 화면이 처음 읽는 목록
+  // 4) 화면이 처음 읽는 목록(나만의 동네 설정에서 법정동을 고를 수 있게 동 목록도 싣는다)
   writeJson(path.join(DATA_DIR, 'index.json'), {
     generatedAt,
     generatedAtText,
     topics: TOPICS.map(({ key, label }) => ({ key, label })),
-    featured: featured.map((f) => ({ id: f.id, name: f.name, code: f.code })),
-    regions: all.map((r) => ({ code: r.code, sido: r.sido, name: r.name })),
+    regions: all.map((r) => ({ code: r.code, sido: r.sido, name: r.name, dongs: r.dongs })),
   });
   console.log(`완료: ${path.relative(ROOT, DATA_DIR)} (${Math.round((Date.now() - startedAt) / 1000)}초)`);
 }
