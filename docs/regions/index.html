@@ -579,9 +579,9 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var v = apt.view;
     if (!v.length) { $('aptList').innerHTML = '<p class="note">거래 기록이 없어요.</p>'; return; }
     var rent = apt.kind !== 'trade';
-    $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th><th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
+    $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th>' + (rent ? '' : '<th>동</th>') + '<th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
       v.slice(0, apt.limit).map(function (r) {
-        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td><td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동 ' : '') + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
+        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td>' + (rent ? '' : '<td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동' : '-') + '</td>') + '<td>' + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
       }).join('') + '</tbody></table>' + (v.some(function (r) { return r.top; }) ? '<p class="note">탑층은 건축물대장의 동별 층수로 확인한 꼭대기 층 거래예요.</p>' : '') + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
   }
   var AREA_COLORS = ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#ee46bc', '#0ba5ec', '#667085'];
