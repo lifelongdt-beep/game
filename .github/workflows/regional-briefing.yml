@@ -1,6 +1,6 @@
 name: Regional Real Estate Briefing
 
-# 지역 선택형 아침 브리핑(docs/regions/) 자료를 하루 한 번 모은다. 전국 253개 시군구의 동네 뉴스와 최근 실거래를
+# 지역 선택형 아침 브리핑(docs/regions/) 자료를 하루 한 번 모은다. 전국 253개 시군구의 동네 뉴스와 실거래 기록(매매·전월세)을
 # 모으느라 수십 분이 걸려서, 검단 카드뉴스·카카오톡 워크플로(morning-realestate-kakao.yml)와 따로 돈다.
 # 자세한 내용은 docs/kakao-realestate-news-setup.md의 "지역 선택형 아침 브리핑" 참고.
 
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 110
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,11 +35,27 @@ jobs:
         with:
           node-version: '20'
 
+      # 시군구·달별 실거래 원자료(매매 3년·전월세 2년)는 저장소에 올리지 않고 Actions 캐시로 실행 사이에 보존한다.
+      # 캐시가 지워지면(7일 넘게 안 쓰였을 때 등) 하루 호출 한도 안에서 며칠에 걸쳐 다시 채운다.
+      - name: Restore raw transaction cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/regions-raw
+          key: regions-raw-${{ github.run_id }}
+          restore-keys: regions-raw-
+
       - name: Collect regional news and transactions
         env:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
           REGION_CODES: ${{ github.event.inputs.region_codes }}
         run: node scripts/regional-briefing.js
+
+      - name: Save raw transaction cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/regions-raw
+          key: regions-raw-${{ github.run_id }}
 
       - name: Publish regional data
         run: |

@@ -3,7 +3,7 @@
 
 // 지역 선택형 아침 브리핑 데이터 수집.
 // 전국 시군구(scripts/regions-kr.json)마다 동네 부동산 뉴스와 최근 실거래를 모으고,
-// 주제별 전국 부동산 뉴스를 모아 docs/regions/data/에 JSON으로 쓴다. 화면(docs/regions/index.html)은 이 JSON을
+// 주제별 전국 부동산 뉴스를 모아 docs/regions/data/에, 아파트별 과거 매매·전월세 기록을 docs/regions/apt/에 JSON으로 쓴다. 화면(docs/regions/index.html)은 이 JSON을
 // 읽어 동네·주제·법정동 선택과 '나만의 동네'(여러 법정동 + 아파트 넣고 빼기, 기기에 저장)를 브라우저에서 처리한다. 기존 검단 카드뉴스·카카오톡(kakao-realestate-news.js)과는
 // 따로 돌고, 그쪽의 뉴스 수집·실거래 조회 함수만 가져다 쓴다.
 //
@@ -11,25 +11,29 @@
 //   DATA_GO_KR_SERVICE_KEY     국토부 실거래가 키. 없으면 실거래는 건너뛴다(뉴스는 그대로).
 //   REGION_CODES               쉼표로 고른 시군구 코드만 새로 모은다(기본: 전부). 시험 실행용.
 //   REGION_SKIP_NEWS=true      동네 뉴스 수집을 건너뛴다(실거래만 확인할 때).
-//   REGION_TX_MONTHS           실거래 기간(개월, 기본 3).
+//   REGION_TX_MONTHS           브리핑 화면 실거래 기간(개월, 기본 3).
 //   REGION_TX_CONCURRENCY      실거래를 동시에 받는 시군구 수(기본 3).
-//   REGION_TX_BUDGET_MS        시군구 하나에 쓰는 실거래 조회 시간(기본 60000).
-//   REGION_TOTAL_BUDGET_MS     실거래 전체 시간 예산(기본 3600000 = 60분). 넘으면 남은 곳은 지난 자료를 쓴다.
+//   REGION_TX_BUDGET_MS        시군구 하나에 쓰는 실거래 조회 시간(기본 300000 = 5분).
+//   REGION_TOTAL_BUDGET_MS     실거래 전체 시간 예산(기본 4200000 = 70분). 넘으면 남은 곳은 쌓아 둔 기록을 쓴다.
+//   REGION_HIST_TRADE_MONTHS / REGION_HIST_RENT_MONTHS / REGION_REFRESH_MONTHS / REGION_CALL_LIMIT / REGION_RAW_DIR
+//                              과거 기록 설정(regional-history.js 참고)
 //   REGION_OUT_DIR             출력 폴더(기본 docs/regions). 데이터는 그 아래 data/.
 
 const fs = require('fs');
 const path = require('path');
-const { NEWS_QUERY, fetchNewsSafe, fetchTransactionsForMonth, windowStart, sleep } = require('./kakao-realestate-news');
+const { NEWS_QUERY, fetchNewsSafe, windowStart, sleep } = require('./kakao-realestate-news');
+const history = require('./regional-history');
 const { pricePerPyeong, isRealEstateNews } = require('./geomdan-common');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.resolve(ROOT, process.env.REGION_OUT_DIR || 'docs/regions');
 const DATA_DIR = path.join(OUT_DIR, 'data');
+const APT_DIR = path.join(OUT_DIR, 'apt');
 const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 const TX_MONTHS = Number(process.env.REGION_TX_MONTHS || 3);
 const TX_CONCURRENCY = Number(process.env.REGION_TX_CONCURRENCY || 3);
-const TX_BUDGET_MS = Number(process.env.REGION_TX_BUDGET_MS || 60000);
-const TOTAL_BUDGET_MS = Number(process.env.REGION_TOTAL_BUDGET_MS || 3600000);
+const TX_BUDGET_MS = Number(process.env.REGION_TX_BUDGET_MS || 300000);
+const TOTAL_BUDGET_MS = Number(process.env.REGION_TOTAL_BUDGET_MS || 4200000);
 const SKIP_NEWS = process.env.REGION_SKIP_NEWS === 'true';
 const LOCAL_NEWS_COUNT = 15;
 const TOPIC_NEWS_COUNT = 8;
@@ -136,55 +140,7 @@ async function fetchNationalNews() {
 }
 
 // ── 실거래가 ──────────────────────────────────────────
-
-function monthsToFetch(now) {
-  return Array.from({ length: TX_MONTHS + 1 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-}
-
-// 시군구 하나의 최근 거래. 화면에서 법정동별로 다시 거를 수 있게 거래를 그대로 담는다.
-// 한 줄 = [단지, 법정동, 전용㎡, 거래금액(만원), 층, 계약일 YYYY.MM.DD, 평당가(만원)]
-async function fetchRegionTransactions(code, now, globalDeadline) {
-  const deadline = Math.min(Date.now() + TX_BUDGET_MS, globalDeadline);
-  const raw = [];
-  let tried = 0;
-  let failed = 0;
-  for (const ym of monthsToFetch(now)) {
-    for (let page = 1; page <= 10; page++) {
-      if (Date.now() >= deadline) {
-        failed++;
-        break;
-      }
-      tried++;
-      try {
-        const items = await fetchTransactionsForMonth(ym, deadline, code, page);
-        raw.push(...items);
-        if (items.length < 1000) break;
-      } catch (err) {
-        console.error(`[${code}] ${err.message}`);
-        failed++;
-        break;
-      }
-    }
-  }
-  const cutoff = windowStart(now, TX_MONTHS);
-  const seen = new Set();
-  const items = [];
-  for (const t of raw) {
-    if (t.cancelType === 'O') continue;
-    if (new Date(Number(t.year), Number(t.month) - 1, Number(t.day)) < cutoff) continue;
-    const row = [t.apt, t.dong, Number(t.area), Number(t.amount), t.floor, `${t.year}.${t.month}.${t.day}`, pricePerPyeong(t.amount, t.area)];
-    const key = row.join('|');
-    if (seen.has(key)) continue;
-    seen.add(key);
-    items.push(row);
-  }
-  items.sort((a, b) => b[5].localeCompare(a[5]) || b[3] - a[3]);
-  const status = tried === 0 || failed >= tried ? 'error' : failed > 0 ? 'partial' : 'ok';
-  return { status, raw: raw.length, items };
-}
+// 과거 기록 쌓기·최근 거래·아파트별 기록 파일은 regional-history.js가 맡는다.
 
 async function pool(list, size, worker) {
   let next = 0;
@@ -216,35 +172,29 @@ async function main() {
   writeJson(path.join(DATA_DIR, 'national.json'), { generatedAt, generatedAtText, ...national });
   console.log(`전국 뉴스: 주요 ${national.main.length}건, ${TOPICS.map((t) => `${t.label} ${national.topics[t.key].length}`).join(', ')}`);
 
-  // 2) 실거래(시군구 단위, 동시에 몇 곳씩)
-  const txByCode = new Map();
-  const report = { ok: 0, partial: 0, error: 0, stale: 0, empty: [] };
+  // 2) 실거래 기록 쌓기(시군구 단위, 동시에 몇 곳씩). 최근 달은 다시 받고, 비어 있는 지난 달을 채운다.
+  const recentOk = new Map();
+  const report = { ok: 0, failed: 0, missing: 0, empty: [] };
   if (SERVICE_KEY) {
     const globalDeadline = startedAt + TOTAL_BUDGET_MS;
     await pool(targets, TX_CONCURRENCY, async (r) => {
-      const tx = await fetchRegionTransactions(r.code, now, globalDeadline);
-      report[tx.status]++;
-      if (tx.status !== 'error' && tx.raw === 0) report.empty.push(`${r.sido} ${r.name}(${r.code})`);
-      txByCode.set(r.code, tx);
+      const res = await history.updateRegion(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline), 'recent');
+      recentOk.set(r.code, res.ok);
+      report[res.ok ? 'ok' : 'failed']++;
     });
-    console.log(`실거래: 성공 ${report.ok}, 일부 실패 ${report.partial}, 실패 ${report.error} / ${targets.length}곳`);
-    if (report.empty.length) console.log(`::warning::실거래가 한 건도 오지 않은 시군구(코드 확인 필요): ${report.empty.join(', ')}`);
+    await pool(targets, TX_CONCURRENCY, async (r) => {
+      report.missing += (await history.updateRegion(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline), 'backfill')).missing;
+    });
+    console.log(`실거래 기록: 최근 달 갱신 ${report.ok}곳, 실패 ${report.failed}곳, 아직 못 채운 지난 달 ${report.missing}개 ` +
+      `(호출 매매 ${history.calls.t}번, 전월세 ${history.calls.r}번)`);
   } else {
-    console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래는 건너뜁니다.');
+    console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래는 새로 받지 않습니다(쌓아 둔 기록만 씁니다).');
   }
 
-  // 3) 시군구별 파일(뉴스 + 실거래). 실거래 조회가 실패한 곳은 지난 파일의 실거래를 "지난 자료"로 이어 쓴다.
-  const staleOf = (prev) => ({ ...prev.tx, stale: true, staleFrom: prev.tx.staleFrom || prev.generatedAtText });
-  const txFor = (code, prev) => {
-    const tx = txByCode.get(code);
-    if (tx && tx.status !== 'error') return { status: tx.status, months: TX_MONTHS, items: tx.items };
-    if (prev?.tx?.items?.length) {
-      report.stale++;
-      return staleOf(prev);
-    }
-    return { status: SERVICE_KEY ? 'error' : 'nokey', months: TX_MONTHS, items: [] };
-  };
-
+  // 3) 시군구별 파일(뉴스 + 최근 실거래)과 법정동별 아파트 기록 파일
+  const cutoff = windowStart(now, TX_MONTHS);
+  let aptFiles = 0;
+  let stale = 0;
   for (const r of targets) {
     const file = path.join(DATA_DIR, `${r.code}.json`);
     const prev = readJson(file, null);
@@ -253,15 +203,31 @@ async function main() {
       await sleep(NEWS_DELAY_MS);
       news = await fetchLocalNewsForRegion(r.news);
     }
-    writeJson(file, { code: r.code, sido: r.sido, name: r.name, generatedAt, generatedAtText, news, tx: txFor(r.code, prev) });
+    const recent = history.recentTrades(r.code, now, TX_MONTHS, cutoff, pricePerPyeong);
+    let tx;
+    if (!recent.any) tx = { status: SERVICE_KEY ? 'error' : 'nokey', months: TX_MONTHS, items: [] };
+    else {
+      tx = { status: 'ok', months: TX_MONTHS, items: recent.items };
+      if (recentOk.get(r.code) === false || (!SERVICE_KEY && recent.lastAt)) {
+        // 오늘 최근 달을 새로 받지 못했으면 쌓아 둔 기록을 "지난 자료"로 보여준다.
+        const t = new Date(new Date(recent.lastAt).toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+        Object.assign(tx, { stale: true, staleFrom: `${t.getMonth() + 1}월 ${t.getDate()}일` });
+        stale++;
+      }
+      if (!recent.items.length && recentOk.get(r.code)) report.empty.push(`${r.sido} ${r.name}(${r.code})`);
+    }
+    writeJson(file, { code: r.code, sido: r.sido, name: r.name, generatedAt, generatedAtText, news, tx });
+    aptFiles += history.writeAptFiles(r, now, APT_DIR);
   }
-  console.log(`시군구 ${targets.length}곳 저장(지난 실거래 사용 ${report.stale}곳)`);
+  console.log(`시군구 ${targets.length}곳 저장(지난 실거래 사용 ${stale}곳), 아파트 기록 파일 ${aptFiles}개 갱신`);
+  if (report.empty.length) console.log(`::warning::최근 ${TX_MONTHS}개월 매매가 한 건도 없는 시군구(코드 확인 필요): ${report.empty.join(', ')}`);
 
   // 4) 화면이 처음 읽는 목록(나만의 동네 설정에서 법정동을 고를 수 있게 동 목록도 싣는다)
   writeJson(path.join(DATA_DIR, 'index.json'), {
     generatedAt,
     generatedAtText,
     topics: TOPICS.map(({ key, label }) => ({ key, label })),
+    history: { tradeMonths: history.TRADE_MONTHS, rentMonths: history.RENT_MONTHS },
     regions: all.map((r) => ({ code: r.code, sido: r.sido, name: r.name, dongs: r.dongs })),
   });
   console.log(`완료: ${path.relative(ROOT, DATA_DIR)} (${Math.round((Date.now() - startedAt) / 1000)}초)`);

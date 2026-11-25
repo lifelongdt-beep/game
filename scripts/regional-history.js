@@ -1,0 +1,197 @@
+'use strict';
+
+// 지역 브리핑의 아파트별 과거 거래(매매·전세·월세) 기록.
+// 시군구·달마다 받은 원자료를 .cache/regions-raw/<코드>/<YYYYMM>-t.json(매매)·-r.json(전월세)에 쌓아 두고
+// (워크플로가 actions/cache로 실행 사이에 보존한다), 지난 달은 한 번 받으면 재사용하고 최근 몇 달만 매번 다시 받는다.
+// 처음에는 기록이 없어 하루 호출 한도 안에서 며칠에 걸쳐 채운다. 쌓인 기록으로
+//   - 최근 거래(브리핑 화면의 실거래가)와
+//   - 법정동별 아파트 기록 파일 docs/regions/apt/<코드>/<동 번호>.json(아파트 상세 화면의 그래프·거래 목록)
+// 을 만든다.
+
+const fs = require('fs');
+const path = require('path');
+const { fetchTransactionsForMonth, fetchWithRetry, xmlTag } = require('./kakao-realestate-news');
+
+const ROOT = path.resolve(__dirname, '..');
+const RAW_DIR = path.resolve(ROOT, process.env.REGION_RAW_DIR || '.cache/regions-raw');
+const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
+const TRADE_MONTHS = Number(process.env.REGION_HIST_TRADE_MONTHS || 36); // 매매 기록 기간
+const RENT_MONTHS = Number(process.env.REGION_HIST_RENT_MONTHS || 24); // 전월세 기록 기간
+const REFRESH_MONTHS = Number(process.env.REGION_REFRESH_MONTHS || 3); // 늦은 신고·해제를 반영하려고 매번 다시 받는 최근 달 수
+// 공공데이터포털 개발계정은 서비스마다 하루 10,000번이 한도라, 매매·전월세 각각 이만큼만 부른다(나머지는 다음 날 이어 받음).
+const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
+
+const RENT_ENDPOINTS = [
+  'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent',
+  'https://apis.data.go.kr/1613000/RTMSDataSvcAptRentDev/getRTMSDataSvcAptRentDev',
+];
+let rentEndpoint = 0;
+const calls = { t: 0, r: 0 };
+const num0 = (v) => Number(String(v || '0').replace(/[,\s]/g, '')) || 0;
+const ymd = (y, m, d) => Number(`${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`);
+
+function monthList(now, count) {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+const rawPath = (code, ym, kind) => path.join(RAW_DIR, code, `${ym}-${kind}.json`);
+function readRaw(code, ym, kind) {
+  try {
+    return JSON.parse(fs.readFileSync(rawPath(code, ym, kind), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+function writeRaw(code, ym, kind, rows) {
+  fs.mkdirSync(path.join(RAW_DIR, code), { recursive: true });
+  fs.writeFileSync(rawPath(code, ym, kind), JSON.stringify({ at: new Date().toISOString(), rows }));
+}
+
+// 매매 한 줄 = [단지, 법정동, 전용㎡, 거래금액(만원), 층, 계약일 YYYYMMDD]
+async function fetchTradeMonth(code, ym, deadline) {
+  const rows = [];
+  for (let page = 1; page <= 10; page++) {
+    calls.t++;
+    const items = await fetchTransactionsForMonth(ym, deadline, code, page);
+    for (const t of items) {
+      if (t.cancelType === 'O') continue;
+      rows.push([t.apt, t.dong, Number(t.area), Number(t.amount), t.floor, ymd(t.year, t.month, t.day)]);
+    }
+    if (items.length < 1000) break;
+  }
+  return rows;
+}
+
+// 전월세 한 줄 = [단지, 법정동, 전용㎡, 보증금(만원), 월세(만원), 층, 계약일 YYYYMMDD, 신규/갱신]
+async function fetchRentMonth(code, ym, deadline) {
+  const rows = [];
+  for (let page = 1; page <= 10; page++) {
+    let xml;
+    for (;;) {
+      calls.r++;
+      const url = `${RENT_ENDPOINTS[rentEndpoint]}?serviceKey=${SERVICE_KEY}&LAWD_CD=${code}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=${page}`;
+      const res = await fetchWithRetry(url, 5, deadline);
+      const text = await res.text();
+      const rc = xmlTag(text, 'resultCode');
+      if (res.ok && !text.includes('<cmmMsgHeader>') && (!rc || ['00', '000'].includes(rc))) {
+        xml = text;
+        break;
+      }
+      const msg = xmlTag(text, 'returnAuthMsg') || xmlTag(text, 'errMsg') || xmlTag(text, 'resultMsg') || `HTTP ${res.status}`;
+      if (rentEndpoint + 1 < RENT_ENDPOINTS.length) {
+        rentEndpoint++;
+        continue;
+      }
+      throw new Error(`전월세 API 오류(${code} ${ym}): ${msg}`);
+    }
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
+    for (const it of items) {
+      rows.push([
+        xmlTag(it, 'aptNm'), xmlTag(it, 'umdNm'), Number(xmlTag(it, 'excluUseAr')), num0(xmlTag(it, 'deposit')), num0(xmlTag(it, 'monthlyRent')),
+        xmlTag(it, 'floor'), ymd(xmlTag(it, 'dealYear'), xmlTag(it, 'dealMonth'), xmlTag(it, 'dealDay')), xmlTag(it, 'contractType'),
+      ]);
+    }
+    if (page * 1000 >= Number(xmlTag(xml, 'totalCount') || 0)) break;
+  }
+  return rows;
+}
+
+// 시군구 하나의 기록을 채운다. phase 'recent'는 최근 REFRESH_MONTHS달을 다시 받고, 'backfill'은 그 전 달 중
+// 아직 없는 달을 최근 달부터 받는다. 호출부는 모든 시군구의 recent를 먼저 돌린 뒤 backfill을 돌린다
+// (하루 호출 한도가 지난 기록 채우기에 먼저 다 쓰여 최근 거래를 못 받는 일이 없게).
+// 돌려주는 값: { ok: 맡은 달을 모두 받았는지, missing: 못 받은 달 수 }
+async function updateRegion(code, now, deadline, phase) {
+  let missing = 0;
+  const jobs = [];
+  for (const [kind, count] of [['t', TRADE_MONTHS], ['r', RENT_MONTHS]]) {
+    monthList(now, count).forEach((ym, i) => {
+      const recent = i < REFRESH_MONTHS;
+      if (phase === 'recent' ? recent : !recent && !fs.existsSync(rawPath(code, ym, kind))) jobs.push({ kind, ym });
+    });
+  }
+  for (const job of jobs) {
+    if (Date.now() >= deadline || calls[job.kind] >= CALL_LIMIT) {
+      missing++;
+      continue;
+    }
+    try {
+      const rows = job.kind === 't' ? await fetchTradeMonth(code, job.ym, deadline) : await fetchRentMonth(code, job.ym, deadline);
+      writeRaw(code, job.ym, job.kind, rows);
+    } catch (err) {
+      console.error(`[${code}] ${err.message}`);
+      missing++;
+    }
+  }
+  return { ok: missing === 0, missing };
+}
+
+// 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가]
+function recentTrades(code, now, months, cutoff, pricePerPyeong) {
+  const cut = ymd(cutoff.getFullYear(), cutoff.getMonth() + 1, cutoff.getDate());
+  const out = [];
+  let lastAt = '';
+  let any = false;
+  for (const ym of monthList(now, months + 1)) {
+    const raw = readRaw(code, ym, 't');
+    if (!raw) continue;
+    any = true;
+    if (raw.at > lastAt) lastAt = raw.at;
+    for (const r of raw.rows) {
+      if (r[5] < cut) continue;
+      const s = String(r[5]);
+      out.push([r[0], r[1], r[2], r[3], r[4], `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}`, pricePerPyeong(r[3], r[2])]);
+    }
+  }
+  out.sort((a, b) => b[5].localeCompare(a[5]) || b[3] - a[3]);
+  return { any, lastAt, items: out };
+}
+
+// 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
+// { d: 법정동, apts: { 단지: { t: [[YYYYMMDD, ㎡, 금액, 층]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+function writeAptFiles(region, now, outDir) {
+  const byDong = new Map();
+  const slot = (dong, apt) => {
+    if (!byDong.has(dong)) byDong.set(dong, {});
+    const apts = byDong.get(dong);
+    return (apts[apt] = apts[apt] || { t: [], r: [] });
+  };
+  for (const ym of monthList(now, TRADE_MONTHS)) {
+    for (const r of readRaw(region.code, ym, 't')?.rows || []) slot(r[1], r[0]).t.push([r[5], r[2], r[3], r[4]]);
+  }
+  for (const ym of monthList(now, RENT_MONTHS)) {
+    for (const r of readRaw(region.code, ym, 'r')?.rows || []) slot(r[1], r[0]).r.push([r[6], r[2], r[3], r[4], r[5], r[7]]);
+  }
+  if (!byDong.size) return 0;
+  const dir = path.join(outDir, region.code);
+  fs.mkdirSync(dir, { recursive: true });
+  const groups = new Map();
+  for (const [dong, apts] of byDong) {
+    const i = region.dongs.indexOf(dong);
+    const key = i >= 0 ? String(i) : 'x';
+    if (!groups.has(key)) groups.set(key, { d: i >= 0 ? dong : '기타', apts: {} });
+    Object.assign(groups.get(key).apts, apts);
+  }
+  let written = 0;
+  for (const [key, data] of groups) {
+    for (const a of Object.values(data.apts)) {
+      a.t.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
+      a.r.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
+    }
+    const file = path.join(dir, `${key}.json`);
+    const text = JSON.stringify(data) + '\n';
+    let old = '';
+    try {
+      old = fs.readFileSync(file, 'utf8');
+    } catch {}
+    if (old !== text) {
+      fs.writeFileSync(file, text);
+      written++;
+    }
+  }
+  return written;
+}
+
+module.exports = { updateRegion, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS };

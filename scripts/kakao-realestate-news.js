@@ -1011,7 +1011,7 @@ async function main() {
 
 // 지역 선택형 브리핑(scripts/regional-briefing.js)이 뉴스 수집·실거래 조회 함수를 다시 쓴다.
 // 그쪽에서 require할 때는 아래 main()이 돌지 않게, 직접 실행할 때만 main()을 부른다.
-module.exports = { NEWS_QUERY, fetchNewsSafe, fetchTransactionsForMonth, windowStart, formatAmount, sleep };
+module.exports = { NEWS_QUERY, fetchNewsSafe, fetchTransactionsForMonth, fetchWithRetry, xmlTag, windowStart, formatAmount, sleep };
 
 if (IS_MAIN) {
   main().catch((err) => {
