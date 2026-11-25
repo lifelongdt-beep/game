@@ -362,3 +362,8 @@ Secrets 등록 후 저장소 **Actions → Morning Real Estate News to KakaoTalk
 - **탑층 표시**: 매매 기록의 필지(시군구·법정동 코드·본번·부번)로 건축물대장 표제부(`BldRgstHubService/getBrTitleInfo`, 실패하면 `BldRgstService_v2`)를 조회해 주거용 동마다 지상 층수를 `.cache/regions-raw/bld/<필지>.json`에 쌓는다(필지마다 한 번, 1년 뒤 다시). 거래의 동·층이 그 동 꼭대기 층이면 아파트 상세 과거 거래에 "탑층" 딱지를 단다(거래에 동이 없으면 단지의 동 높이가 모두 같을 때만). 키는 GitHub 비밀값 `BLD_SERVICE_KEY`(없으면 `DATA_GO_KR_SERVICE_KEY`)에 공공데이터포털 '건축HUB 건축물대장정보 서비스' 활용 신청된 키를 넣는다. 하루 호출은 `BLD_CALL_LIMIT`(기본 8000)까지. 실거래 자료에 호수가 없어 테라스·복층 같은 호실 종류는 알 수 없다.
 - **단지 정보**: 같은 필지 조회 때 총괄표제부(`getBrRecapTitleInfo`)도 받아 준공(사용승인일)·세대수·동 수·주차 대수·용적률·건폐율을, 동별 표제부로 최고층·지하층·승강기 수를 모은다(총괄표제부가 없으면 동별 합계). 아파트 기록 파일의 단지마다 `b`로 싣고, 아파트 상세 맨 위 "단지 정보" 칸에 보여 준다. 단지 필지는 그 단지 매매에 가장 많이 나온 필지로 정한다.
 - **시험 실행**: `REGION_CODES=28185 REGION_OUT_DIR=/tmp/regions node scripts/regional-briefing.js`.
+
+### 뉴스 수집 실패 시 자동 재시도 (2026-11-25)
+- 구글 뉴스 RSS가 503/429를 내면 `scripts/kakao-realestate-news.js`가 요청 사이 최소 2.5초 간격을 두고, 실패한 검색을 6·15·30·45초(±25%)씩 늘려 가며 최대 5번 시도한다.
+- 모든 뉴스 검색이 재시도 끝에도 실패해 기사가 하나도 없으면 `docs/index.html`·`docs/geomdan.html`을 빈 목록으로 덮어쓰지 않고 마지막 정상 페이지를 유지한다(워크플로 출력 `news_ok=false`, 로그에 `::warning::`).
+- 카드뉴스 루틴의 `run.js prepare`는 수집된 기사가 5건 미만이면 경고를 출력한다. 이때는 같은 명령을 한 번 더 실행한다.

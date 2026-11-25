@@ -52,12 +52,27 @@ function facts() {
   }
 }
 
-function prepare(dir) {
+// 수집 결과(docs/index.html)의 기사 개수. 구글 뉴스 장애로 비어 있으면 0이다.
+const countArticles = (html) => (html.match(/<li class="article"/g) || []).length;
+const FRESH_MIN_ARTICLES = 5;
+
+// 한 번 부를 때 수집 dispatch는 한 번만 돌린다(Bash 제한 10분 안에 끝나야 해서 안에서 여러 번 돌리지 않는다).
+// 수집 스크립트 자체가 뉴스 요청을 실패 시 최대 5번 다시 시도하고, 그래도 기사가 없으면 기존 페이지를 덮어쓰지 않는다.
+// 결과가 너무 적으면 사용자가 prepare를 한 번 더 부르도록 크게 알린다.
+function collect(dir) {
   const d = node('actions.js', ['dispatch', BRANCH, 'skip_kakao_send=true']);
   if (d.code !== 0) die('데이터 수집 실패: ' + (d.err || d.out).slice(-400));
   must('git', ['fetch', '-q', 'origin', BRANCH], '브랜치 가져오기');
-  const idx = must('git', ['show', `origin/${BRANCH}:docs/index.html`], 'index.html 받기');
-  fs.writeFileSync(path.join(dir, 'index.html'), idx.out);
+  const idx = must('git', ['show', `origin/${BRANCH}:docs/index.html`], 'index.html 받기').out;
+  fs.writeFileSync(path.join(dir, 'index.html'), idx);
+  const n = countArticles(idx);
+  if (n < FRESH_MIN_ARTICLES) {
+    console.log(`⚠ 수집된 기사가 ${n}건뿐입니다(기준 ${FRESH_MIN_ARTICLES}건). 구글 뉴스 일시 장애일 수 있으니 이 명령(prepare)을 한 번 더 실행하세요. 두 번째도 적으면 후보를 억지로 채우지 말고 짧게 구성하세요.`);
+  }
+}
+
+function prepare(dir) {
+  collect(dir);
   console.log(`TZ=Asia/Seoul ${run('date', ['+%Y-%m-%d %H:%M'], { env: { ...process.env, TZ: 'Asia/Seoul' } }).out}`);
   console.log(node('candidates.js', ['--index', path.join(dir, 'index.html'), '--compact']).out);
   console.log('\n' + node('candidates.js', ['--prev']).out);
