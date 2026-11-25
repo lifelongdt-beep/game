@@ -42,6 +42,16 @@ h3{font-size:16px;margin:16px 0 6px}
 .range .mid{position:absolute;top:-4px;width:2px;height:18px;background:var(--accent)}
 .range .me{position:absolute;top:-6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#f79009;border:2px solid var(--card)}
 .range .lab{position:absolute;top:14px;font-size:11px;color:var(--sub);transform:translateX(-50%);white-space:nowrap}
+.cmp{list-style:none;margin:8px 0 0;padding:0}
+.cmp li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.cmp li.me{font-weight:700}
+.cmp .bar{grid-column:1 / -1;height:6px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
+.cmp .bar i{display:block;height:100%;background:var(--accent);opacity:.6}
+.cmp li.me .bar i{background:#f79009;opacity:1}
+.cmp .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin:10px 0}
+.flow b{display:block}
+.flow .em{font-size:22px;line-height:1}
 .verdict{font-weight:700;font-size:16px;margin:6px 0}
 dl.info{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px 12px;margin:10px 0 4px}
 dl.info div{min-width:0}
@@ -175,6 +185,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <p class="note">사거나 팔려는 집의 넓이·층과 가격을 넣으면 최근 매매와 비교해 드려요.</p>
       <div class="valform"><label>넓이<select id="valArea"></select></label><label>층<input id="valFloor" type="number" inputmode="numeric" min="1" placeholder="예: 12"></label><label class="wide">가격<input id="valPrice" type="text" inputmode="decimal" placeholder="예: 6억 2천, 6.2억, 62000"></label></div>
       <div id="valOut"></div></section>
+    <section class="card" id="cmpCard"><h2>시장 흐름과 동네 비교</h2><div id="flowOut"></div><div id="cmpOut"></div></section>
     <section class="card"><h2>과거 거래</h2><div id="aptList"></div></section>
   </div>
 
@@ -499,7 +510,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
       $('aptTitle').textContent = name;
       $('aptSub').textContent = regionLabel(reg) + ' ' + dong;
       renderAptInfo(apt.rec.b);
-      setupVal();
+      apt.file = file;
+      setupVal(); renderFlowCmp();
       show('aptDetail'); renderApt();
     });
   }
@@ -757,6 +769,98 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('valOut').innerHTML = html;
   }
   ['valArea', 'valFloor', 'valPrice'].forEach(function (id) { $(id).addEventListener('input', renderVal); });
+  // ── 시장 흐름 ── 최근 3개월과 그 전 12개월(3~15개월 전)을 비교한다.
+  // 가격은 넓이마다 중앙값 변동률을 구해 거래 수로 가중 평균하고, 거래량은 월평균 건수로 비교한다.
+  function flowOf(tradeLists) {
+    var now = new Date(), nowM = now.getFullYear() * 12 + now.getMonth();
+    var groups = {}, nNew = 0, nOld = 0;
+    tradeLists.forEach(function (t) {
+      t.forEach(function (x) {
+        var m = mIdx(x[0]), age = nowM - m, k = areaKey(x[1]);
+        if (age < 0 || age >= 15) return;
+        var g = groups[k] = groups[k] || { a: [], b: [] };
+        if (age < 3) { g.a.push(x[2]); nNew++; } else { g.b.push(x[2]); nOld++; }
+      });
+    });
+    var w = 0, c = 0;
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k];
+      if (!g.a.length || !g.b.length) return;
+      var n = g.a.length + g.b.length;
+      c += (median(g.a) / median(g.b) - 1) * 100 * n; w += n;
+    });
+    return { price: w ? c / w : null, volNew: nNew / 3, volOld: nOld / 12, nNew: nNew };
+  }
+  function flowText(f) {
+    if (f.price == null) return null;
+    var up = f.price >= 1, down = f.price <= -1;
+    var vol = f.volOld ? f.volNew / f.volOld : null, more = vol != null && vol >= 1.2, less = vol != null && vol <= 0.8;
+    var em, head;
+    if (up && more) { em = '🔥'; head = '거래가 늘며 오르는 중'; }
+    else if (up) { em = '📈'; head = less ? '거래는 줄었지만 가격은 오름' : '오르는 중'; }
+    else if (down && more) { em = '🔄'; head = '거래가 늘며 내리는 중'; }
+    else if (down) { em = '📉'; head = less ? '거래가 줄며 내리는 중(관망세)' : '내리는 중'; }
+    else { em = '➖'; head = more ? '가격은 보합, 거래는 늘어남' : less ? '가격은 보합, 거래는 줄어듦' : '보합'; }
+    var sub = '최근 3개월 가격 ' + (f.price >= 0 ? '+' : '') + f.price.toFixed(1) + '% (그 전 1년 대비)' +
+      (vol != null ? ' · 거래 월 ' + f.volNew.toFixed(1) + '건 (전 ' + f.volOld.toFixed(1) + '건)' : '');
+    return { em: em, head: head, sub: sub };
+  }
+  // ── 동네 비교 ── 같은 법정동 단지들의 평당가(최근 6개월, 적으면 1년)를 비슷한 크기끼리 비교한다.
+  // 크기는 이 단지에서 가장 많이 거래된 넓이의 구간(60㎡ 이하·85㎡ 이하·102㎡ 이하·그 위)으로 맞추고,
+  // 준공 연도를 알면 ±7년 안의 단지만 비교한다(없으면 전부).
+  function sizeClass(a) { return a <= 60 ? 0 : a <= 85 ? 1 : a <= 102 ? 2 : 3; }
+  var SIZE_NAMES = ['60㎡ 이하', '60~85㎡', '85~102㎡', '102㎡ 초과'];
+  function renderFlowCmp() {
+    var file = apt.file, mine = apt.rec;
+    var f1 = flowText(flowOf([mine.t]));
+    var all = file && file.apts ? Object.keys(file.apts).map(function (k) { return file.apts[k].t; }) : [];
+    var f2 = all.length > 1 ? flowText(flowOf(all)) : null;
+    var flowHtml = '';
+    [[f1, '이 단지'], [f2, apt.dong + ' 전체']].forEach(function (x) {
+      if (x[0]) flowHtml += '<div class="flow"><span class="em">' + x[0].em + '</span><div><b>' + esc(x[1]) + ': ' + esc(x[0].head) + '</b><span class="note">' + esc(x[0].sub) + '</span></div></div>';
+    });
+    $('flowOut').innerHTML = flowHtml || '<p class="note">최근 거래가 적어 흐름을 판단하기 어려워요.</p>';
+    // 동네 비교
+    var cnt = {};
+    mine.t.forEach(function (x) { var c = sizeClass(x[1]); cnt[c] = (cnt[c] || 0) + 1; });
+    var cls = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+    var out = '';
+    if (cls != null && file && file.apts) {
+      cls = Number(cls);
+      var now = new Date(), nowM = now.getFullYear() * 12 + now.getMonth();
+      var myYear = mine.b && mine.b.apr ? Math.floor(mine.b.apr / 10000) : 0;
+      var stat = function (rec, months) {
+        var v = rec.t.filter(function (x) { return sizeClass(x[1]) === cls && nowM - mIdx(x[0]) < months; }).map(function (x) { return x[2] / pyeong(x[1]); });
+        return v.length ? { ppy: median(v), n: v.length } : null;
+      };
+      var months = 6, list = [];
+      for (var tries = 0; tries < 2; tries++) {
+        list = Object.keys(file.apts).map(function (name) {
+          var rec = file.apts[name], y = rec.b && rec.b.apr ? Math.floor(rec.b.apr / 10000) : 0;
+          if (name !== apt.name && myYear && y && Math.abs(y - myYear) > 7) return null;
+          var s = stat(rec, months);
+          return s ? { name: name, ppy: s.ppy, n: s.n, year: y, me: name === apt.name } : null;
+        }).filter(Boolean);
+        if (list.length >= 3 && list.some(function (x) { return x.me; })) break;
+        months = 12;
+      }
+      var me = list.filter(function (x) { return x.me; })[0];
+      if (me && list.length >= 2) {
+        list.sort(function (a, b) { return b.ppy - a.ppy; });
+        var others = list.filter(function (x) { return !x.me; }).map(function (x) { return x.ppy; });
+        var diff = (me.ppy / quant(others, 0.5) - 1) * 100, rank = list.indexOf(me) + 1, maxP = list[0].ppy;
+        out += '<p class="verdict">' + esc(apt.dong) + ' 비슷한 단지 ' + list.length + '곳 중 ' + rank + '위, 다른 단지 중앙값보다 ' + (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%</p>' +
+          '<p class="note">평당가 기준 · ' + SIZE_NAMES[cls] + ' · 최근 ' + (months === 6 ? '6개월' : '1년') + (myYear ? ' · 준공 ' + (myYear - 7) + '~' + (myYear + 7) + '년 단지' : '') + '</p><ul class="cmp">' +
+          list.slice(0, 8).concat(rank > 8 ? [me] : []).map(function (x) {
+            return '<li' + (x.me ? ' class="me"' : '') + '><span class="nm">' + esc(x.name) + (x.year ? ' <span class="note">(' + x.year + ')</span>' : '') + '</span><span>' + manwon(x.ppy) + ' · ' + x.n + '건</span><span class="bar"><i style="width:' + (x.ppy / maxP * 100).toFixed(1) + '%"></i></span></li>';
+          }).join('') + '</ul>';
+      } else {
+        out += '<p class="note">같은 동에 비교할 만한 비슷한 단지 거래가 부족해요.</p>';
+      }
+    }
+    $('cmpOut').innerHTML = out;
+    $('cmpCard').hidden = !flowHtml && !out;
+  }
   function priceText(r) {
     if (apt.kind === 'wolse') return won(r.dep) + ' / ' + r.rent.toLocaleString('ko-KR') + '만';
     return won(apt.kind === 'jeonse' ? r.dep : r.price);
