@@ -1,0 +1,59 @@
+name: Regional Real Estate Briefing
+
+# 지역 선택형 아침 브리핑(docs/regions/) 자료를 하루 한 번 모은다. 전국 253개 시군구의 동네 뉴스와 최근 실거래를
+# 모으느라 수십 분이 걸려서, 검단 카드뉴스·카카오톡 워크플로(morning-realestate-kakao.yml)와 따로 돈다.
+# 자세한 내용은 docs/kakao-realestate-news-setup.md의 "지역 선택형 아침 브리핑" 참고.
+
+on:
+  schedule:
+    # 매일 04:37 KST = 전날 19:37 UTC. 정시를 피한 이유는 기존 워크플로 주석 참고(정시 예약은 많이 밀린다).
+    - cron: '37 19 * * *'
+  workflow_dispatch:
+    inputs:
+      region_codes:
+        description: '쉼표로 구분한 시군구 코드만 모읍니다(예: 28185,11680). 비우면 전국.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regional-briefing
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Collect regional news and transactions
+        env:
+          DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+          REGION_CODES: ${{ github.event.inputs.region_codes }}
+        run: node scripts/regional-briefing.js
+
+      - name: Publish regional data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/regions
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음, 커밋 생략"
+            exit 0
+          fi
+          git commit -m "docs: 지역 브리핑 자료 갱신"
+          # 아침 뉴스 워크플로가 그 사이 main에 커밋했을 수 있어 받아서 올린다(두 워크플로가 건드리는 파일은 겹치지 않는다).
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            sleep $((i * 10))
+          done
+          exit 1

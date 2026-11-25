@@ -1,0 +1,12 @@
+{
+  "name": "아침 부동산 브리핑",
+  "short_name": "아침 부동산",
+  "description": "전국 어느 동네든 부동산 소식과 실거래가를 매일 아침 한 화면에",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#1f6feb",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

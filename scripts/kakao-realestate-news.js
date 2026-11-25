@@ -116,8 +116,10 @@ const isExcludedApt = (t) => GEOMDAN_EXCLUDED_APTS.has(normalizeAptName(t.apt));
 const GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS = Number(process.env.GEOMDAN_TRANSACTION_FALLBACK_BUDGET_MS || 30000);
 const TRANSACTIONS_CACHE_PATH = 'docs/geomdan-transactions-cache.json';
 
-const REST_API_KEY = requireEnv('KAKAO_REST_API_KEY');
-const REFRESH_TOKEN = requireEnv('KAKAO_REFRESH_TOKEN');
+// 다른 스크립트가 함수만 가져다 쓸 때(require)는 카카오 키가 없어도 되므로 직접 실행할 때만 필수로 검사한다.
+const IS_MAIN = require.main === module;
+const REST_API_KEY = IS_MAIN ? requireEnv('KAKAO_REST_API_KEY') : process.env.KAKAO_REST_API_KEY || '';
+const REFRESH_TOKEN = IS_MAIN ? requireEnv('KAKAO_REFRESH_TOKEN') : process.env.KAKAO_REFRESH_TOKEN || '';
 const CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || '';
 
 function requireEnv(name) {
@@ -418,10 +420,11 @@ function xmlTag(xml, tag) {
 // 계약월 하나에 대해 실거래가 상세 자료를 조회한다. 인증키는 공공데이터포털의
 // '일반 인증키(Encoding)' 값을 그대로 써야 하므로, URLSearchParams로 다시
 // 인코딩하지 않고 URL 문자열에 직접 이어붙인다(이중 인코딩되면 인증에 실패한다).
-async function fetchTransactionsForMonth(dealYmd, deadline) {
+// lawdCd·pageNo를 넘기면 다른 지역(scripts/regional-briefing.js)도 같은 방식으로 조회한다. 기본값은 검단구 첫 쪽(1000건).
+async function fetchTransactionsForMonth(dealYmd, deadline, lawdCd = LAWD_CD, pageNo = 1) {
   const url =
     'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev' +
-    `?serviceKey=${DATA_GO_KR_SERVICE_KEY}&LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=1`;
+    `?serviceKey=${DATA_GO_KR_SERVICE_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=${pageNo}`;
 
   const res = await fetchWithRetry(url, 5, deadline);
   const xml = await res.text();
@@ -1006,7 +1009,13 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// 지역 선택형 브리핑(scripts/regional-briefing.js)이 뉴스 수집·실거래 조회 함수를 다시 쓴다.
+// 그쪽에서 require할 때는 아래 main()이 돌지 않게, 직접 실행할 때만 main()을 부른다.
+module.exports = { NEWS_QUERY, fetchNewsSafe, fetchTransactionsForMonth, windowStart, formatAmount, sleep };
+
+if (IS_MAIN) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
