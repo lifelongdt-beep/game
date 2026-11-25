@@ -83,6 +83,9 @@ button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .fig .grid{stroke:var(--line)}
 .fig .dot{fill:var(--accent);opacity:.28}
 .fig .line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.fig .gapfill{fill:rgba(247,144,9,.18);stroke:none}
+.fig .gaplabel{fill:#b54708;font-weight:700}
+@media (prefers-color-scheme:dark){.fig .gaplabel{fill:#fdb022}}
 .legend{color:var(--sub);font-size:13px;margin:0 0 6px}
 .key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--sub)}
 .key i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
@@ -529,7 +532,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var kinds = [['trade', '매매'], ['jeonse', '전세'], ['wolse', '월세']];
     $('aptKinds').innerHTML = kinds.map(function (k) {
       return '<button class="chip" data-kind="' + k[0] + '" aria-pressed="' + (apt.kind === k[0]) + '">' + k[1] + ' ' + aptRows(k[0]).length + '건</button>';
-    }).join('');
+    }).join('') + '<button class="chip" data-kind="gap" aria-pressed="' + (apt.kind === 'gap') + '">매매·전세 갭</button>';
+    if (apt.kind === 'gap') return renderGap();
     var rows = aptRows(apt.kind);
     var areas = {}, order = [];
     rows.forEach(function (r) { var k = areaKey(r.area); if (!areas[k]) { areas[k] = 0; order.push(k); } areas[k]++; });
@@ -546,6 +550,105 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('aptLegend').textContent = apt.view.length ? '점은 거래 한 건, 선은 달마다 ' + unit + ' 중앙값이에요.' + (apt.area === 'all' && Object.keys(areas).length > 1 ? ' 넓이마다 선 색이 달라요.' : '') + (apt.kind === 'trade' ? ' 빨간 점은 신고가예요.' : '') + (hist ? ' 최근 ' + Math.round(hist / 12) + '년 기록이에요.' : '') : '';
     $('aptFig').hidden = !apt.view.length;
     renderAptStats(); renderAptList(); drawApt();
+  }
+  // ── 매매·전세 갭 ── 넓이 하나에서 달마다 최근 3개월(그달 포함) 매매 중앙값과 전세 보증금 중앙값을 비교한다.
+  // 거래가 드문 단지도 선이 이어지게 3개월 창을 쓰고, 넓이를 섞으면 갭이 평형 비율에 휘둘려 넓이를 꼭 고르게 한다.
+  function gapSeries(trade, jeonse) {
+    var t = {}, j = {}, ms = [];
+    trade.forEach(function (r) { var m = mIdx(r.dt); (t[m] = t[m] || []).push(r.price); ms.push(m); });
+    jeonse.forEach(function (r) { var m = mIdx(r.dt); (j[m] = j[m] || []).push(r.dep); ms.push(m); });
+    if (!ms.length) return [];
+    var lo = Math.min.apply(null, ms), hi = Math.max.apply(null, ms), out = [];
+    var win = function (src, m) { return [].concat(src[m] || [], src[m - 1] || [], src[m - 2] || []); };
+    for (var m = lo; m <= hi; m++) {
+      var a = win(t, m), b = win(j, m);
+      if (!a.length || !b.length) continue;
+      var sale = median(a), jeon = median(b);
+      out.push({ m: m, sale: sale, jeon: jeon, gap: sale - jeon, ratio: jeon / sale * 100, n: a.length + b.length });
+    }
+    return out;
+  }
+  function renderGap() {
+    var trade = aptRows('trade'), jeonse = aptRows('jeonse');
+    var ta = {}, ja = {};
+    trade.forEach(function (r) { var k = areaKey(r.area); ta[k] = (ta[k] || 0) + 1; });
+    jeonse.forEach(function (r) { var k = areaKey(r.area); ja[k] = (ja[k] || 0) + 1; });
+    var order = Object.keys(ta).filter(function (k) { return ja[k]; }).sort(function (a, b) { return a - b; });
+    if (!order.length) {
+      apt.gap = [];
+      $('aptAreas').innerHTML = '';
+      $('aptStats').innerHTML = '<p class="note" style="margin-top:12px">매매와 전세가 모두 있는 넓이가 없어 갭을 볼 수 없어요.</p>';
+      $('aptLegend').textContent = ''; $('aptKey').innerHTML = ''; $('aptList').innerHTML = ''; $('aptFig').hidden = true;
+      return;
+    }
+    if (order.indexOf(apt.area) < 0) apt.area = order.slice().sort(function (a, b) { return (ta[b] + ja[b]) - (ta[a] + ja[a]); })[0];
+    $('aptAreas').innerHTML = order.map(function (k) {
+      return '<button class="chip" data-area="' + k + '" aria-pressed="' + (apt.area === k) + '">' + k + '㎡ (약 ' + pyeong(Number(k)) + '평)</button>';
+    }).join('');
+    var inArea = function (r) { return areaKey(r.area) === apt.area; };
+    apt.gap = gapSeries(trade.filter(inArea), jeonse.filter(inArea));
+    var g = apt.gap;
+    $('aptFig').hidden = !g.length;
+    $('aptLegend').textContent = g.length ? '파란 선은 매매가, 초록 선은 전세 보증금이에요. 달마다 최근 3개월 거래 중앙값이고, 두 선 사이가 갭(매매가 − 전세가)이에요.' : '';
+    if (!g.length) {
+      $('aptStats').innerHTML = '<p class="note" style="margin-top:12px">같은 시기에 매매와 전세 거래가 함께 있는 달이 없어요.</p>';
+      $('aptList').innerHTML = ''; $('aptKey').innerHTML = ''; drawApt();
+      return;
+    }
+    var last = g[g.length - 1];
+    var ago = g.filter(function (p) { return p.m <= last.m - 12; }).pop();
+    var diff = ago ? last.gap - ago.gap : null;
+    $('aptStats').innerHTML = '<div class="stat"><div><b>' + esc(won(last.gap)) + '</b><span>지금 갭 (' + fmtMonth(last.m) + ' 기준)</span></div>' +
+      '<div><b>' + last.ratio.toFixed(0) + '%</b><span>전세가율</span></div>' +
+      '<div><b class="' + (diff == null ? '' : diff >= 0 ? 'up' : 'down') + '">' + (diff == null ? '-' : (diff >= 0 ? '+' : '−') + won(Math.abs(diff))) + '</b><span>1년 전 갭보다' + (ago ? ' (' + esc(won(ago.gap)) + ')' : '') + '</span></div></div>';
+    renderAptList(); drawApt();
+  }
+  function fmtMonth(m) { return Math.floor(m / 12) + '.' + String(m % 12 + 1).padStart(2, '0'); }
+  function renderGapList() {
+    var g = apt.gap.slice().reverse();
+    $('aptList').innerHTML = '<table class="hist"><thead><tr><th>달</th><th>매매</th><th>전세</th><th>갭</th><th>전세가율</th></tr></thead><tbody>' +
+      g.slice(0, apt.limit).map(function (p) {
+        return '<tr><td>' + fmtMonth(p.m) + '</td><td>' + esc(won(p.sale)) + '</td><td>' + esc(won(p.jeon)) + '</td><td><b>' + esc(won(p.gap)) + '</b></td><td>' + p.ratio.toFixed(0) + '%</td></tr>';
+      }).join('') + '</tbody></table><p class="note">달마다 그달까지 최근 3개월 거래의 중앙값이에요.</p>' + (g.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (g.length - apt.limit) + '달 남음)</button></p>' : '');
+  }
+  function drawGap() {
+    var svg = $('aptSvg'), g = apt.gap || [];
+    var W = svg.clientWidth, H = svg.clientHeight;
+    if (!W || !g.length) { svg.innerHTML = ''; return; }
+    var L = 46, R = 10, T = 10, B = 26;
+    var m0 = g[0].m, m1 = g[g.length - 1].m;
+    if (m1 - m0 < 2) { m0 -= 1; m1 += 1; }
+    var vals = [].concat(g.map(function (p) { return p.sale; }), g.map(function (p) { return p.jeon; }));
+    var p0 = Math.min.apply(null, vals), p1 = Math.max.apply(null, vals), pad = (p1 - p0) * 0.08 || p1 * 0.05 || 1;
+    p0 = Math.max(0, p0 - pad); p1 += pad;
+    var x = function (m) { return L + (m - m0) / (m1 - m0) * (W - L - R); };
+    var y = function (p) { return T + (1 - (p - p0) / (p1 - p0)) * (H - T - B); };
+    var out = '';
+    for (var k = 0; k <= 4; k++) {
+      var pv = p0 + (p1 - p0) * k / 4, gy = y(pv).toFixed(1);
+      out += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '"/><text class="ax" x="' + (L - 6) + '" y="' + (Number(gy) + 4) + '" text-anchor="end">' + (pv / 10000).toFixed(p1 - p0 < 30000 ? 1 : 0) + '억</text>';
+    }
+    var ticks = W < 520 ? 3 : 5;
+    for (var t = 0; t <= ticks; t++) {
+      var mv = Math.round(m0 + (m1 - m0) * t / ticks);
+      out += '<text class="ax" x="' + x(mv).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (t === 0 ? 'start' : t === ticks ? 'end' : 'middle') + '">' + String(Math.floor(mv / 12)).slice(2) + '.' + String(mv % 12 + 1).padStart(2, '0') + '</text>';
+    }
+    // 이어진 달끼리 한 덩어리로 그려, 빈 달은 선을 끊는다.
+    var runs = [], cur = [];
+    g.forEach(function (p, i) { if (i && p.m !== g[i - 1].m + 1) { runs.push(cur); cur = []; } cur.push(p); });
+    runs.push(cur);
+    var pt = function (p, key) { return x(p.m).toFixed(1) + ' ' + y(p[key]).toFixed(1); };
+    runs.forEach(function (run) {
+      out += '<path class="gapfill" d="M' + run.map(function (p) { return pt(p, 'sale'); }).join(' L') + ' L' + run.slice().reverse().map(function (p) { return pt(p, 'jeon'); }).join(' L') + ' Z"/>';
+      ['sale', 'jeon'].forEach(function (key) {
+        out += '<path class="line" style="stroke:' + (key === 'sale' ? AREA_COLORS[0] : AREA_COLORS[1]) + '" d="M' + run.map(function (p) { return pt(p, key); }).join(' L') + '"/>';
+        if (run.length === 1) out += '<circle class="dot" style="fill:' + (key === 'sale' ? AREA_COLORS[0] : AREA_COLORS[1]) + '" cx="' + x(run[0].m).toFixed(1) + '" cy="' + y(run[0][key]).toFixed(1) + '" r="3.5"/>';
+      });
+    });
+    var last = g[g.length - 1], lx = x(last.m), ys = y(last.sale), yj = y(last.jeon);
+    if (yj - ys > 18) out += '<text class="ax gaplabel" x="' + (lx - 6).toFixed(1) + '" y="' + ((ys + yj) / 2 + 4).toFixed(1) + '" text-anchor="end">갭 ' + esc(won(last.gap)) + '</text>';
+    svg.innerHTML = out;
+    $('aptKey').innerHTML = '<span><i style="background:' + AREA_COLORS[0] + '"></i>매매가</span><span><i style="background:' + AREA_COLORS[1] + '"></i>전세 보증금</span><span><i style="background:rgba(247,144,9,.25)"></i>갭</span>';
   }
   function priceText(r) {
     if (apt.kind === 'wolse') return won(r.dep) + ' / ' + r.rent.toLocaleString('ko-KR') + '만';
@@ -576,6 +679,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       '<div><b class="' + (chg == null ? '' : chg >= 0 ? 'up' : 'down') + '">' + (chg == null ? '-' : (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%') + '</b><span>1년 전보다 (' + (multi ? '넓이별 변동률 평균' : '최근 3개월 중앙값') + ')</span></div></div>';
   }
   function renderAptList() {
+    if (apt.kind === 'gap') return renderGapList();
     var v = apt.view;
     if (!v.length) { $('aptList').innerHTML = '<p class="note">거래 기록이 없어요.</p>'; return; }
     var rent = apt.kind !== 'trade';
@@ -586,6 +690,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   }
   var AREA_COLORS = ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#ee46bc', '#0ba5ec', '#667085'];
   function drawApt() {
+    if (apt && apt.kind === 'gap') return drawGap();
     var svg = $('aptSvg'), v = apt ? apt.view : [];
     var W = svg.clientWidth, H = svg.clientHeight;
     if (!W || !v.length) { svg.innerHTML = ''; return; }
