@@ -128,21 +128,45 @@ async function updateRegion(code, now, deadline, phase) {
   return { ok: missing === 0, missing };
 }
 
-// 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가]
+// 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가, 신고가]
+// 신고가: 같은 단지·같은 넓이(전용㎡ 반올림)에서 계약일이 앞선 기록 속 거래(최대 TRADE_MONTHS개월)의 최고가를 넘으면
+// 그 이전 최고가(만원), 아니면 0. 앞선 거래가 하나도 없으면(첫 거래) 신고가로 보지 않는다.
+// 기록이 아직 덜 찼으면(처음 며칠) 그 기간 안의 최고가 기준이다.
 function recentTrades(code, now, months, cutoff, pricePerPyeong) {
   const cut = ymd(cutoff.getFullYear(), cutoff.getMonth() + 1, cutoff.getDate());
   const out = [];
+  const groups = new Map();
   let lastAt = '';
   let any = false;
-  for (const ym of monthList(now, months + 1)) {
+  monthList(now, TRADE_MONTHS).forEach((ym, i) => {
     const raw = readRaw(code, ym, 't');
-    if (!raw) continue;
-    any = true;
-    if (raw.at > lastAt) lastAt = raw.at;
+    if (!raw) return;
+    if (i <= months) {
+      any = true;
+      if (raw.at > lastAt) lastAt = raw.at;
+    }
     for (const r of raw.rows) {
-      if (r[5] < cut) continue;
-      const s = String(r[5]);
-      out.push([r[0], r[1], r[2], r[3], r[4], `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}`, pricePerPyeong(r[3], r[2])]);
+      const key = `${r[0]}|${r[1]}|${Math.round(r[2])}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(r);
+    }
+  });
+  for (const list of groups.values()) {
+    list.sort((a, b) => a[5] - b[5]);
+    let best = 0; // 앞선 날짜까지의 최고가
+    let dayBest = 0; // 같은 날 거래끼리는 서로 비교하지 않는다
+    let day = 0;
+    for (const r of list) {
+      if (r[5] !== day) {
+        best = Math.max(best, dayBest);
+        dayBest = 0;
+        day = r[5];
+      }
+      if (r[5] >= cut) {
+        const s = String(r[5]);
+        out.push([r[0], r[1], r[2], r[3], r[4], `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}`, pricePerPyeong(r[3], r[2]), best && r[3] > best ? best : 0]);
+      }
+      dayBest = Math.max(dayBest, r[3]);
     }
   }
   out.sort((a, b) => b[5].localeCompare(a[5]) || b[3] - a[3]);

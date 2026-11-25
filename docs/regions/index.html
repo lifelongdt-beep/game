@@ -84,6 +84,13 @@ table.hist th,table.hist td{padding:8px 4px;border-top:1px solid var(--line);tex
 table.hist th{color:var(--sub);font-weight:500;font-size:13px;border-top:0}
 table.hist td:first-child,table.hist th:first-child{text-align:left}
 .up{color:#d92d20}.down{color:#1570ef}
+.tag.hot{background:#fee4e2;color:#d92d20}
+@media (prefers-color-scheme:dark){.tag.hot{background:#55160c;color:#fda29b}}
+.fig .dot.hot{fill:#d92d20;opacity:.9}
+ul.rec{list-style:none;margin:0;padding:0}
+ul.rec li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+ul.rec li:first-child{border-top:0}
+ul.rec .right{text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -205,9 +212,12 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     $('pickerBack').hidden = !last;
     var exN = mine.ex.length;
     $('mineSummary').innerHTML = mine.areas.length
-      ? '<p style="margin:0 0 4px"><b>' + esc(mine.areas.map(function (a) { return a.d; }).join(' · ')) + '</b></p><p class="note">' + mine.areas.length + '개 동' + (exN ? ' · 아파트 ' + exN + '곳 뺌' : '') + '</p>' +
+      ? '<p style="margin:0 0 4px"><b>' + esc(mine.areas.map(function (a) { return a.d; }).join(' · ')) + '</b></p><p class="note">' + mine.areas.length + '개 동' + (exN ? ' · 아파트 ' + exN + '곳 뺌' : '') + '</p><p id="mineRecs" class="note" style="margin-top:4px"></p>' +
         '<div class="row" style="margin-top:12px"><button class="btn primary" data-open="mine">나만의 동네 보기</button><button class="btn" data-edit="1">설정</button></div>'
       : '<p class="note">관심 있는 동을 여러 개 담고, 그 안의 아파트를 골라 한 화면에 모아 볼 수 있어요.</p><div class="row" style="margin-top:12px"><button class="btn primary" data-edit="1">나만의 동네 만들기</button></div>';
+    if (mine.areas.length) mineRecordCount().then(function (n) {
+      var el = $('mineRecs'); if (el) el.innerHTML = n ? '🔥 최근 3개월 신고가 <b class="up">' + n + '건</b>' : '최근 3개월 신고가는 없어요.';
+    });
     if (!sido) { var m = regionOf(last); sido = m ? m.sido : sidoList()[0]; }
     regionPicker($('search'), $('sidoChips'), $('regionList'), sido, last, '');
   }
@@ -268,6 +278,19 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
       $('mineApts').innerHTML = html;
     });
   }
+  // 나만의 동네(담은 동, 뺀 아파트 제외)의 최근 3개월 신고가 건수
+  function mineRecordCount() {
+    var codes = uniqCodes();
+    return Promise.all(codes.map(regionFile)).then(function (files) {
+      var n = 0;
+      files.forEach(function (f, i) {
+        ((f && f.tx && f.tx.items) || []).forEach(function (row) {
+          if (row[7] && hasArea(codes[i], row[1]) && mine.ex.indexOf(aptKey(codes[i], row[1], row[0])) < 0) n++;
+        });
+      });
+      return n;
+    });
+  }
   function uniqCodes() { var l = []; mine.areas.forEach(function (a) { if (l.indexOf(a.c) < 0) l.push(a.c); }); return l; }
 
   // ── 브리핑 열기 ──────────────────────────
@@ -300,7 +323,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
         (tx.items || []).forEach(function (row) {
           if (!hasArea(codes[i], row[1])) return;
           if (mine.ex.indexOf(aptKey(codes[i], row[1], row[0])) >= 0) return;
-          rows.push(row.concat(codes[i]));
+          rows.push(row.slice(0, 7).concat(row[7] || 0, codes[i]));
         });
       });
       news.sort(function (a, b) { return (b.n || 1) - (a.n || 1); });
@@ -344,7 +367,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     var tx = current.tx || { items: [] };
     var months = tx.months || 3;
     var multi = !!current.mine && uniqCodes().length > 1;
-    var rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], code: r[7] || current.code || '' }; });
+    var rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], rec: r[7] || 0, code: r[8] || current.code || '' }; });
     var dkey = function (r) { return r.code + '|' + r.dong; };
     var dlabel = function (r) { var g = multi && regionOf(r.code); return (g ? g.name + ' ' : '') + r.dong; };
     var dongs = [], labels = {};
@@ -364,7 +387,15 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     }
     var ppys = view.map(function (r) { return r.ppy; }).filter(Boolean).sort(function (a, b) { return a - b; });
     var median = ppys.length ? ppys[Math.floor(ppys.length / 2)] : null;
-    html += '<div class="stat"><div><b>' + view.length.toLocaleString('ko-KR') + '건</b><span>최근 ' + months + '개월 거래</span></div><div><b>' + manwon(median) + '</b><span>평당가 중앙값</span></div></div>';
+    var recs = view.filter(function (r) { return r.rec; });
+    html += '<div class="stat"><div><b>' + view.length.toLocaleString('ko-KR') + '건</b><span>최근 ' + months + '개월 거래</span></div><div><b>' + manwon(median) + '</b><span>평당가 중앙값</span></div><div><b class="' + (recs.length ? 'up' : '') + '">' + recs.length + '건</b><span>신고가</span></div></div>';
+    if (recs.length) {
+      html += '<h3>🔥 신고가 ' + recs.length + '건</h3><p class="note" style="margin-bottom:4px">같은 단지·같은 넓이에서 그전 최고가를 넘긴 거래예요.</p><ul class="rec">' + recs.slice(0, 15).map(function (r) {
+        var up = (r.amount / r.rec - 1) * 100;
+        return '<li><div><div>' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.round(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + '</div></div>' +
+          '<div class="right"><b class="up">' + esc(won(r.amount)) + '</b><div class="sub">이전 ' + esc(won(r.rec)) + ' · +' + up.toFixed(1) + '%</div></div></li>';
+      }).join('') + '</ul>' + (recs.length > 15 ? '<p class="note">' + (recs.length - 15) + '건 더 있어요. 동 버튼으로 좁혀 보세요.</p>' : '');
+    }
     var best = {}, order = [];
     view.filter(function (r) { return r.ppy; }).sort(function (a, b) { return b.ppy - a.ppy || b.amount - a.amount; }).forEach(function (r) {
       var k = r.code + r.dong + r.apt.replace(/\([^)]*\)/g, '').replace(/\s+/g, '');
@@ -377,7 +408,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
       }).join('') + '</ol>';
     }
     html += '<h3>최근 거래</h3><ul class="tx">' + view.slice(0, 15).map(function (r) {
-      return '<li><div><div>' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.round(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + '</div></div><b>' + esc(won(r.amount)) + '</b></li>';
+      return '<li><div><div>' + aptButton(r) + (r.rec ? ' <span class="tag hot">신고가</span>' : '') + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.round(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + '</div></div><b>' + esc(won(r.amount)) + '</b></li>';
     }).join('') + '</ul>';
     html += '<p class="note" style="margin-top:10px">국토교통부 아파트 매매 실거래가, 해제된 계약 제외. 평당가는 전용면적으로 추정한 공급면적 기준이에요.</p>';
     $('tx').innerHTML = html;
@@ -418,8 +449,9 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
 
   // ── 아파트 상세: 시세 그래프 + 과거 거래(매매·전세·월세, 넓이별) ──
   var apt = null, aptReturn = 'briefing';
-  function aptButton(r) { return '<button class="link" data-apt-open="' + esc(r.code + '|' + r.dong + '|' + r.apt) + '">' + esc(r.apt) + '</button>'; }
-  function openApt(code, dong, name) {
+  // 목록에서 누른 거래의 넓이로 상세를 연다(신고가를 누르면 그 넓이 그래프가 바로 보이게).
+  function aptButton(r) { return '<button class="link" data-apt-open="' + esc(r.code + '|' + r.dong + '|' + r.apt) + '" data-pick-area="' + Math.round(r.area) + '">' + esc(r.apt) + '</button>'; }
+  function openApt(code, dong, name, area) {
     var reg = regionOf(code);
     if (!reg) return;
     aptReturn = $('mineEdit').hidden ? 'briefing' : 'mineEdit';
@@ -427,7 +459,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     show('loading');
     getJson('apt/' + code + '/' + (i >= 0 ? i : 'x') + '.json').catch(function () { return null; }).then(function (file) {
       var rec = file && file.apts && file.apts[name];
-      apt = { code: code, dong: dong, name: name, region: reg, rec: rec || { t: [], r: [] }, kind: 'trade', area: '', limit: 30 };
+      apt = { code: code, dong: dong, name: name, region: reg, rec: rec || { t: [], r: [] }, kind: 'trade', area: area || '', limit: 30 };
       $('aptTitle').textContent = name;
       $('aptSub').textContent = regionLabel(reg) + ' ' + dong;
       show('aptDetail'); renderApt();
@@ -435,11 +467,25 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
   }
   // 한 줄 = { dt: 계약 YYYYMMDD, area, price(그래프 값), dep, rent, floor, ct }
   function aptRows(kind) {
-    if (kind === 'trade') return apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3] }; });
+    if (kind === 'trade') return markRecords(apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3] }; }));
     return apt.rec.r.filter(function (x) { return kind === 'jeonse' ? !x[3] : x[3] > 0; })
       .map(function (x) { return { dt: x[0], area: x[1], dep: x[2], rent: x[3], price: kind === 'jeonse' ? x[2] : x[3], floor: x[4], ct: x[5] }; });
   }
   function areaKey(a) { return String(Math.round(a)); }
+  // 신고가 표시: 같은 넓이에서 계약일이 앞선 거래들의 최고가를 넘으면 rec = 그 이전 최고가(같은 날 거래끼리는 비교하지 않음)
+  function markRecords(rows) {
+    var groups = {};
+    rows.forEach(function (r) { (groups[areaKey(r.area)] = groups[areaKey(r.area)] || []).push(r); });
+    Object.keys(groups).forEach(function (k) {
+      var list = groups[k].slice().sort(function (a, b) { return a.dt - b.dt; }), best = 0, dayBest = 0, day = 0;
+      list.forEach(function (r) {
+        if (r.dt !== day) { best = Math.max(best, dayBest); dayBest = 0; day = r.dt; }
+        r.rec = best && r.price > best ? best : 0;
+        dayBest = Math.max(dayBest, r.price);
+      });
+    });
+    return rows;
+  }
   // 전용㎡ → 공급 평형(대략). 주거공용 비율을 면적대별로 어림한다.
   function pyeong(a) { return Math.round(a / 3.3058 * (a < 60 ? 1.35 : a < 85 ? 1.3 : 1.27)); }
   function median(list) { var s = list.slice().sort(function (a, b) { return a - b; }); return s.length ? s[Math.floor(s.length / 2)] : null; }
@@ -463,7 +509,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     apt.view = rows.filter(function (r) { return apt.area === 'all' || areaKey(r.area) === apt.area; });
     var unit = apt.kind === 'wolse' ? '월세' : apt.kind === 'jeonse' ? '전세 보증금' : '거래가';
     var hist = apt.kind === 'trade' ? (index.history || {}).tradeMonths : (index.history || {}).rentMonths;
-    $('aptLegend').textContent = apt.view.length ? '점은 거래 한 건, 선은 달마다 ' + unit + ' 중앙값이에요.' + (hist ? ' 최근 ' + Math.round(hist / 12) + '년 기록이에요.' : '') : '';
+    $('aptLegend').textContent = apt.view.length ? '점은 거래 한 건, 선은 달마다 ' + unit + ' 중앙값이에요.' + (apt.kind === 'trade' ? ' 빨간 점은 신고가예요.' : '') + (hist ? ' 최근 ' + Math.round(hist / 12) + '년 기록이에요.' : '') : '';
     $('aptFig').hidden = !apt.view.length;
     renderAptStats(); renderAptList(); drawApt();
   }
@@ -490,7 +536,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     var rent = apt.kind !== 'trade';
     $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th><th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
       v.slice(0, apt.limit).map(function (r) {
-        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td><td>' + esc(r.floor) + '층</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td><b>' + esc(priceText(r)) + '</b></td></tr>';
+        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td><td>' + esc(r.floor) + '층</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
       }).join('') + '</tbody></table>' + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
   }
   function drawApt() {
@@ -516,7 +562,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
       var mv = Math.round(m0 + (m1 - m0) * t / ticks);
       out += '<text class="ax" x="' + x(mv).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (t === 0 ? 'start' : t === ticks ? 'end' : 'middle') + '">' + String(Math.floor(mv / 12)).slice(2) + '.' + String(mv % 12 + 1).padStart(2, '0') + '</text>';
     }
-    v.forEach(function (r) { out += '<circle class="dot" cx="' + x(mIdx(r.dt)).toFixed(1) + '" cy="' + y(r.price).toFixed(1) + '" r="3.5"/>'; });
+    v.slice().sort(function (a, b) { return (a.rec ? 1 : 0) - (b.rec ? 1 : 0); }).forEach(function (r) { out += '<circle class="dot' + (r.rec ? ' hot' : '') + '" cx="' + x(mIdx(r.dt)).toFixed(1) + '" cy="' + y(r.price).toFixed(1) + '" r="3.5"/>'; });
     var byM = {};
     v.forEach(function (r) { var m = mIdx(r.dt); (byM[m] = byM[m] || []).push(r.price); });
     var line = Object.keys(byM).map(Number).sort(function (a, b) { return a - b; }).map(function (m, i) { return (i ? 'L' : 'M') + x(m).toFixed(1) + ' ' + y(median(byM[m])).toFixed(1); }).join(' ');
@@ -532,7 +578,7 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
     var b = e.target.closest('button');
     if (!b) return;
     var d = b.dataset;
-    if (d.aptOpen) { e.preventDefault(); var q = d.aptOpen.split('|'); return openApt(q[0], q[1], q.slice(2).join('|')); }
+    if (d.aptOpen) { e.preventDefault(); var q = d.aptOpen.split('|'); return openApt(q[0], q[1], q.slice(2).join('|'), d.pickArea); }
     if (d.kind) { apt.kind = d.kind; apt.area = ''; return renderApt(); }
     if (b.hasAttribute('data-area')) { apt.area = d.area; return renderApt(); }
     if (d.more) { apt.limit += 30; return renderAptList(); }
