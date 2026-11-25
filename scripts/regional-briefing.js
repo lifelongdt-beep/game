@@ -193,7 +193,7 @@ async function main() {
     });
     console.log(`건축물대장: 호출 ${history.calls.b}번, 아직 못 받은 필지 ${bldMissing}곳`);
     console.log(`실거래 기록: 최근 달 갱신 ${report.ok}곳, 실패 ${report.failed}곳, 아직 못 채운 지난 달 ${report.missing}개 ` +
-      `(호출 매매 ${history.calls.t}번, 전월세 ${history.calls.r}번)`);
+      `(호출 매매 ${history.calls.t}번, 전월세 ${history.calls.r}번, 분양권 ${history.calls.s}번)`);
   } else {
     console.log('DATA_GO_KR_SERVICE_KEY가 없어 실거래는 새로 받지 않습니다(쌓아 둔 기록만 씁니다).');
   }

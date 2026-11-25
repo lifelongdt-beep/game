@@ -109,6 +109,9 @@ button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .fig .ratiodot{fill:#7a5af8}
 .fig .ratioax{fill:#7a5af8}
 .key i.dash{background:none;border-top:2px dashed #7a5af8;height:0;vertical-align:middle}
+.fig .line.thin{stroke-width:1.5;opacity:.85}
+.fig .pre{fill:#f79009;stroke:var(--card);stroke-width:1}
+.key i.diamond{width:9px;height:9px;border-radius:1px;background:#f79009;transform:rotate(45deg)}
 .fig .gapfill{fill:rgba(247,144,9,.18);stroke:none}
 .fig .gaplabel{fill:#b54708;font-weight:700}
 @media (prefers-color-scheme:dark){.fig .gaplabel{fill:#fdb022}}
@@ -124,6 +127,7 @@ table.hist th{color:var(--sub);font-weight:500;font-size:13px;border-top:0}
 table.hist td:first-child,table.hist th:first-child{text-align:left}
 .up{color:#d92d20}.down{color:#1570ef}
 .tag.hot{background:#fee4e2;color:#d92d20}
+.tag.pre{background:#fef0c7;color:#b54708;font-size:11px}
 .tag.top{background:#ebe9fe;color:#5925dc;font-size:11px}
 @media (prefers-color-scheme:dark){.tag.top{background:#2e1a6b;color:#bdb4fe}}
 @media (prefers-color-scheme:dark){.tag.hot{background:#55160c;color:#fda29b}}
@@ -200,6 +204,12 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <p class="note" style="margin-bottom:10px">보고 싶은 주제를 고르면 그 주제 기사만 보여요. 아무것도 안 고르면 전부 보여요.</p>
       <div id="topicChips" class="chips wrap-chips"></div></section>
     <section class="card"><h2 id="localTitle"></h2><div id="localNews"></div></section>
+    <section class="card" id="mineDash" hidden><h2>📊 시세 흐름과 분석</h2>
+      <div id="mdStats"></div>
+      <p id="mdLegend" class="legend"></p>
+      <div class="fig" id="mdFig"><svg id="mdSvg" role="img" aria-label="나만의 동네 평균 시세 그래프"></svg></div>
+      <div id="mdKey" class="key"></div>
+      <div id="mdAnalysis"></div></section>
     <section class="card"><h2 id="txTitle"></h2><div id="tx"></div></section>
     <section class="card"><h2>🇰🇷 전국 부동산 뉴스</h2><div id="nationalNews"></div></section>
     <footer id="footer"></footer>
@@ -338,9 +348,9 @@ ul.rec .right{text-align:right;white-space:nowrap}
       var files = res[0], hist = res[1], html = '';
       mine.areas.forEach(function (a, ai) {
         var apts = {};
-        var add = function (name, n) { var k = aptKey(a.c, a.d, name); if (!apts[k]) apts[k] = { name: name, n: 0, key: k }; apts[k].n += n; };
+        var add = function (name, n, sn) { var k = aptKey(a.c, a.d, name); if (!apts[k]) apts[k] = { name: name, n: 0, s: 0, key: k }; apts[k].n += n; apts[k].s += sn || 0; };
         var h = hist[ai];
-        if (h && h.apts) Object.keys(h.apts).forEach(function (name) { add(name, h.apts[name].t.length); });
+        if (h && h.apts) Object.keys(h.apts).forEach(function (name) { add(name, h.apts[name].t.length, (h.apts[name].s || []).length); });
         else ((files[codes.indexOf(a.c)] || {}).tx || { items: [] }).items.forEach(function (row) { if (row[1] === a.d) add(row[0], 1); });
         var list = Object.keys(apts).map(function (k) { return apts[k]; }).sort(function (x, y) { return x.name.localeCompare(y.name, 'ko'); });
         var r = regionOf(a.c);
@@ -349,7 +359,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
         html += '<div class="row" style="margin-bottom:4px"><button class="btn" data-all-on="' + esc(a.c + '|' + a.d) + '">모두 넣기</button><button class="btn" data-all-off="' + esc(a.c + '|' + a.d) + '">모두 빼기</button></div>';
         html += list.map(function (x) {
           var on = mine.ex.indexOf(x.key) < 0;
-          return '<label class="apt' + (on ? '' : ' off') + '"><input type="checkbox" data-apt="' + esc(x.key) + '"' + (on ? ' checked' : '') + '><span class="name">' + esc(x.name) + '</span><span class="sub">매매 ' + x.n + '건</span><button class="btn see" data-apt-open="' + esc(a.c + '|' + a.d + '|' + x.name) + '">시세</button></label>';
+          return '<label class="apt' + (on ? '' : ' off') + '"><input type="checkbox" data-apt="' + esc(x.key) + '"' + (on ? ' checked' : '') + '><span class="name">' + esc(x.name) + '</span><span class="sub">' + (x.n || !x.s ? '매매 ' + x.n + '건' : '분양권 ' + x.s + '건') + '</span><button class="btn see" data-apt-open="' + esc(a.c + '|' + a.d + '|' + x.name) + '">시세</button></label>';
         }).join('');
       });
       $('mineApts').innerHTML = html;
@@ -526,8 +536,154 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('txTitle').textContent = '🏘️ ' + name + ' 실거래가';
     $('footer').textContent = '매일 새벽 자동으로 갱신돼요. 기사 제목은 구글 뉴스 검색 결과예요.' + (current.mine ? ' 뺀 아파트는 설정에서 다시 넣을 수 있어요.' : ' 동 버튼으로 좁혀 볼 수 있어요.');
     renderTopicChips(); renderNews(); renderTx();
+    $('mineDash').hidden = true;
+    if (current.mine) renderMineDash();
     show('briefing');
   }
+
+  // ── 나만의 동네 시세 흐름과 분석 ──
+  // 담은 동의 아파트 기록(뺀 아파트 제외)으로 달마다 평당가 중앙값(그달 포함 최근 3개월 매매)을 그린다.
+  // 단지·넓이가 섞여도 흔들림이 적게 평당가 중앙값을 쓰고, 동이 여럿이면 동마다 선을 더한다. 분양권은 평균에 넣지 않고 따로 그린다.
+  var mdData = null;
+  var DONG_COLORS = ['#12b76a', '#0ba5ec', '#7a5af8', '#ee46bc', '#667085', '#1f6feb']; // 분양권 주황과 겹치지 않게
+  function renderMineDash() {
+    var m = mine;
+    Promise.all(m.areas.map(function (a) { return aptFile(a.c, a.d); })).then(function (files) {
+      if (!current || !current.mine || mine !== m) return;
+      var apts = [];
+      files.forEach(function (f, i) {
+        if (!f || !f.apts) return;
+        var a = m.areas[i];
+        Object.keys(f.apts).forEach(function (name) {
+          if (m.ex.indexOf(aptKey(a.c, a.d, name)) >= 0) return;
+          apts.push({ code: a.c, dong: a.d, name: name, rec: f.apts[name] });
+        });
+      });
+      mdData = buildMineDash(apts, m);
+      $('mineDash').hidden = !mdData;
+      if (mdData) { renderMineStats(); drawMineDash(); }
+    });
+  }
+  function nowMonth() { var d = new Date(); return d.getFullYear() * 12 + d.getMonth(); }
+  function monthlyPpy(rows) { // rows: [{m, ppy}] → [{m, v}] 3개월 창 중앙값
+    var byM = {};
+    rows.forEach(function (r) { (byM[r.m] = byM[r.m] || []).push(r.ppy); });
+    var ms = Object.keys(byM).map(Number);
+    if (!ms.length) return [];
+    var lo = Math.min.apply(null, ms), hi = Math.max.apply(null, ms), out = [];
+    for (var mm = lo; mm <= hi; mm++) {
+      var w = [].concat(byM[mm] || [], byM[mm - 1] || [], byM[mm - 2] || []);
+      if (w.length) out.push({ m: mm, v: median(w) });
+    }
+    return out;
+  }
+  // 1년 변동률: 단지·넓이마다 최근 3개월 중앙값 ÷ 12~15개월 전 중앙값을 거래 수로 가중 평균
+  function yoyOf(list) {
+    var nm = nowMonth(), w = 0, c = 0;
+    list.forEach(function (a) {
+      var g = {};
+      a.rec.t.forEach(function (x) {
+        var age = nm - mIdx(x[0]), k = areaKey(x[1]);
+        if (age < 0) return;
+        var o = g[k] = g[k] || { a: [], b: [] };
+        if (age < 3) o.a.push(x[2]); else if (age >= 12 && age < 15) o.b.push(x[2]);
+      });
+      Object.keys(g).forEach(function (k) {
+        var o = g[k]; if (!o.a.length || !o.b.length) return;
+        var n = o.a.length + o.b.length; c += (median(o.a) / median(o.b) - 1) * 100 * n; w += n;
+      });
+    });
+    return w ? { pct: c / w, n: w } : null;
+  }
+  // 전세가율: 단지·넓이마다 최근 6개월 전세 보증금 중앙값 ÷ 매매 중앙값을 거래 수로 가중 평균
+  function jeonseRatio(list) {
+    var nm = nowMonth(), w = 0, c = 0;
+    list.forEach(function (a) {
+      var g = {};
+      a.rec.t.forEach(function (x) { if (nm - mIdx(x[0]) < 6) { var o = g[areaKey(x[1])] = g[areaKey(x[1])] || { s: [], j: [] }; o.s.push(x[2]); } });
+      a.rec.r.forEach(function (x) { if (!x[3] && nm - mIdx(x[0]) < 6) { var o = g[areaKey(x[1])]; if (o) o.j.push(x[2]); } });
+      Object.keys(g).forEach(function (k) { var o = g[k]; if (!o.s.length || !o.j.length) return; var n = o.s.length + o.j.length; c += median(o.j) / median(o.s) * 100 * n; w += n; });
+    });
+    return w ? c / w : null;
+  }
+  function buildMineDash(apts, m) {
+    var rows = [], pre = [], byDong = {};
+    apts.forEach(function (a) {
+      a.rec.t.forEach(function (x) { var r = { m: mIdx(x[0]), ppy: x[2] / pyeong(x[1]) }; rows.push(r); (byDong[a.dong] = byDong[a.dong] || []).push(r); });
+      (a.rec.s || []).forEach(function (x) { pre.push({ m: mIdx(x[0]), ppy: x[2] / pyeong(x[1]) }); });
+    });
+    if (!rows.length) return null;
+    var dongs = m.areas.map(function (a) { return a.d; }).filter(function (d, i, l) { return byDong[d] && l.indexOf(d) === i; });
+    return {
+      apts: apts, all: monthlyPpy(rows), pre: monthlyPpy(pre), preRows: pre,
+      dongs: dongs.length > 1 ? dongs.map(function (d) { return { d: d, pts: monthlyPpy(byDong[d]) }; }) : []
+    };
+  }
+  function renderMineStats() {
+    var d = mdData, nm = nowMonth(), last = d.all[d.all.length - 1];
+    var peak = d.all.reduce(function (a, p) { return p.v > a.v ? p : a; }, d.all[0]);
+    var yoy = yoyOf(d.apts), jr = jeonseRatio(d.apts);
+    var flow = flowText(flowOf(d.apts.map(function (a) { return a.rec.t; })));
+    var html = '<div class="stat"><div><b>' + manwon(last.v) + '</b><span>평당가 (' + fmtMonth(last.m) + ', 최근 3개월 중앙값)</span></div>' +
+      '<div><b class="' + (yoy == null ? '' : yoy.pct >= 0 ? 'up' : 'down') + '">' + (yoy == null ? '-' : (yoy.pct >= 0 ? '+' : '') + yoy.pct.toFixed(1) + '%') + '</b><span>1년 전보다 (같은 단지·넓이끼리)</span></div>' +
+      '<div><b>' + (last.v / peak.v * 100).toFixed(0) + '%</b><span>기록 중 고점(' + fmtMonth(peak.m) + ') 대비</span></div>' +
+      '<div><b>' + (jr == null ? '-' : jr.toFixed(0) + '%') + '</b><span>전세가율 (최근 6개월)</span></div></div>';
+    $('mdStats').innerHTML = html;
+    $('mdLegend').textContent = '굵은 선은 담은 동 전체의 평당가(달마다 최근 3개월 매매 중앙값)예요.' + (d.dongs.length ? ' 가는 선은 동마다 따로 그린 거예요.' : '') + (d.pre.length ? ' 주황 마름모는 분양권 거래로, 평균에는 넣지 않았어요.' : '');
+    // 분석
+    var a = '';
+    if (flow) a += '<div class="flow"><span class="em">' + flow.em + '</span><div><b>지금 흐름: ' + esc(flow.head) + '</b><span class="note">' + esc(flow.sub) + '</span></div></div>';
+    if (d.dongs.length) {
+      var ds = d.dongs.map(function (x) { var y = yoyOf(d.apts.filter(function (p) { return p.dong === x.d; })); return { d: x.d, y: y }; }).filter(function (x) { return x.y; });
+      ds.sort(function (p, q) { return q.y.pct - p.y.pct; });
+      if (ds.length) a += '<h3>동별 1년 변동</h3><ul class="cmp">' + ds.map(function (x) {
+        return '<li><span class="nm">' + esc(x.d) + '</span><span class="' + (x.y.pct >= 0 ? 'up' : 'down') + '">' + (x.y.pct >= 0 ? '+' : '') + x.y.pct.toFixed(1) + '%</span></li>';
+      }).join('') + '</ul>';
+    }
+    var per = d.apts.map(function (p) { return { p: p, y: yoyOf([p]) }; }).filter(function (x) { return x.y; });
+    if (per.length >= 2) {
+      per.sort(function (p, q) { return q.y.pct - p.y.pct; });
+      var row = function (x) { return '<li><span class="nm">' + aptButton({ code: x.p.code, dong: x.p.dong, apt: x.p.name, area: 0 }) + ' <span class="note">' + esc(x.p.dong) + '</span></span><span class="' + (x.y.pct >= 0 ? 'up' : 'down') + '">' + (x.y.pct >= 0 ? '+' : '') + x.y.pct.toFixed(1) + '%</span></li>'; };
+      var n = Math.min(3, Math.floor(per.length / 2) || 1);
+      a += '<h3>1년 동안 많이 오른 단지</h3><ul class="cmp">' + per.slice(0, n).map(row).join('') + '</ul>';
+      a += '<h3>덜 오르거나 내린 단지</h3><ul class="cmp">' + per.slice(-n).reverse().map(row).join('') + '</ul>';
+    }
+    var preRecent = d.preRows.filter(function (r) { return nm - r.m < 3; });
+    if (d.preRows.length) a += '<h3>분양권</h3><p class="note">최근 3개월 분양권 거래 ' + preRecent.length + '건' + (preRecent.length ? ', 평당가 중앙값 ' + manwon(median(preRecent.map(function (r) { return r.ppy; }))) + (last ? ' (일반 매매 ' + manwon(last.v) + ')' : '') : '') + '. 분양권은 아직 입주 전 거래라 평균 시세에서 뺐어요.</p>';
+    a += '<p class="note" style="margin-top:10px">평당가는 전용면적으로 어림한 공급 평수 기준이에요. 변동률은 같은 단지·같은 넓이끼리 비교해 단지 구성이 바뀌어도 흔들리지 않게 했어요.</p>';
+    $('mdAnalysis').innerHTML = a;
+  }
+  function drawMineDash() {
+    var svg = $('mdSvg'), d = mdData;
+    var W = svg.clientWidth, H = svg.clientHeight;
+    if (!d || !W) return;
+    var L = 50, R = 10, T = 10, B = 26;
+    var pts = d.all.concat(d.pre).concat([].concat.apply([], d.dongs.map(function (x) { return x.pts; })));
+    var ms = pts.map(function (p) { return p.m; }), vs = pts.map(function (p) { return p.v; });
+    var m0 = Math.min.apply(null, ms), m1 = Math.max.apply(null, ms);
+    if (m1 - m0 < 2) { m0 -= 1; m1 += 1; }
+    var p0 = Math.min.apply(null, vs), p1 = Math.max.apply(null, vs), pad = (p1 - p0) * 0.08 || p1 * 0.05 || 1;
+    p0 = Math.max(0, p0 - pad); p1 += pad;
+    var x = function (m) { return L + (m - m0) / (m1 - m0) * (W - L - R); };
+    var y = function (v) { return T + (1 - (v - p0) / (p1 - p0)) * (H - T - B); };
+    var out = '';
+    for (var k = 0; k <= 4; k++) {
+      var pv = p0 + (p1 - p0) * k / 4, gy = y(pv).toFixed(1);
+      out += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '"/><text class="ax" x="' + (L - 6) + '" y="' + (Number(gy) + 4) + '" text-anchor="end">' + Math.round(pv).toLocaleString('ko-KR') + '</text>';
+    }
+    var ticks = W < 520 ? 3 : 5;
+    for (var t = 0; t <= ticks; t++) {
+      var mv = Math.round(m0 + (m1 - m0) * t / ticks);
+      out += '<text class="ax" x="' + x(mv).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (t === 0 ? 'start' : t === ticks ? 'end' : 'middle') + '">' + String(Math.floor(mv / 12)).slice(2) + '.' + String(mv % 12 + 1).padStart(2, '0') + '</text>';
+    }
+    var path = function (list) { return 'M' + list.map(function (p) { return x(p.m).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join(' L'); };
+    d.dongs.forEach(function (dd, i) { out += '<path class="line thin" style="stroke:' + DONG_COLORS[i % DONG_COLORS.length] + '" d="' + path(dd.pts) + '"/>'; });
+    out += '<path class="line" style="stroke:var(--ink);stroke-width:3" d="' + path(d.all) + '"/>';
+    d.pre.forEach(function (p) { var cx = x(p.m), cy = y(p.v); out += '<path class="pre" d="M' + cx.toFixed(1) + ' ' + (cy - 5).toFixed(1) + ' l5 5 l-5 5 l-5 -5 Z"/>'; });
+    svg.innerHTML = out;
+    $('mdKey').innerHTML = '<span><i style="background:var(--ink)"></i>전체 평균(평당가, 만원)</span>' + d.dongs.map(function (dd, i) { return '<span><i style="background:' + DONG_COLORS[i % DONG_COLORS.length] + '"></i>' + esc(dd.d) + '</span>'; }).join('') + (d.pre.length ? '<span><i class="diamond"></i>분양권</span>' : '');
+  }
+  new ResizeObserver(function () { if (mdData && !$('mineDash').hidden) drawMineDash(); }).observe($('mdFig'));
 
   // ── 아파트 상세: 시세 그래프 + 과거 거래(매매·전세·월세, 넓이별) ──
   var apt = null, aptReturn = 'briefing';
@@ -612,10 +768,13 @@ ul.rec .right{text-align:right;white-space:nowrap}
       return '<button class="chip" data-area="' + k + '" aria-pressed="' + (apt.area === k) + '">' + k + '㎡ (약 ' + pyeong(Number(k)) + '평) · ' + areas[k] + '건</button>';
     }).join('') : '';
     apt.view = rows.filter(function (r) { return apt.area === 'all' || areaKey(r.area) === apt.area; });
+    // 분양권·입주권 거래는 시세(중앙값·신고가·통계)에 넣지 않고 그래프와 목록에만 따로 표시한다.
+    apt.pre = apt.kind !== 'trade' ? [] : (apt.rec.s || []).map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3], pre: x[4] === '입' ? '입주권' : '분양권' }; })
+      .filter(function (r) { return apt.area === 'all' || areaKey(r.area) === apt.area; });
     var unit = apt.kind === 'wolse' ? '월세' : apt.kind === 'jeonse' ? '전세 보증금' : '거래가';
     var hist = apt.kind === 'trade' ? (index.history || {}).tradeMonths : (index.history || {}).rentMonths;
-    $('aptLegend').textContent = apt.view.length ? '점은 거래 한 건, 선은 달마다 ' + unit + ' 중앙값이에요.' + (apt.area === 'all' && Object.keys(areas).length > 1 ? ' 넓이마다 선 색이 달라요.' : '') + (apt.kind === 'trade' ? ' 빨간 점은 신고가예요.' : '') + (hist ? ' 최근 ' + Math.round(hist / 12) + '년 기록이에요.' : '') : '';
-    $('aptFig').hidden = !apt.view.length;
+    $('aptLegend').textContent = apt.view.length ? '점은 거래 한 건, 선은 달마다 ' + unit + ' 중앙값이에요.' + (apt.area === 'all' && Object.keys(areas).length > 1 ? ' 넓이마다 선 색이 달라요.' : '') + (apt.kind === 'trade' ? ' 빨간 점은 신고가예요.' : '') + (apt.pre.length ? ' 주황 마름모는 분양권·입주권 거래로, 시세 선과 통계에는 넣지 않았어요.' : '') + (hist ? ' 최근 ' + Math.round(hist / 12) + '년 기록이에요.' : '') : '';
+    $('aptFig').hidden = !apt.view.length && !apt.pre.length;
     renderAptStats(); renderAptList(); drawApt();
   }
   // ── 매매·전세 갭 ── 넓이 하나에서 달마다 최근 3개월(그달 포함) 매매 중앙값과 전세 보증금 중앙값을 비교한다.
@@ -927,11 +1086,12 @@ ul.rec .right{text-align:right;white-space:nowrap}
   function renderAptList() {
     if (apt.kind === 'gap') return renderGapList();
     var v = apt.view;
+    if (apt.pre && apt.pre.length) v = v.concat(apt.pre).sort(function (a, b) { return b.dt - a.dt || b.price - a.price; });
     if (!v.length) { $('aptList').innerHTML = '<p class="note">거래 기록이 없어요.</p>'; return; }
     var rent = apt.kind !== 'trade';
     $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th>' + (rent ? '' : '<th>동</th>') + '<th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
       v.slice(0, apt.limit).map(function (r) {
-        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td>' + (rent ? '' : '<td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동' : '-') + '</td>') + '<td>' + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
+        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td>' + (rent ? '' : '<td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동' : '-') + '</td>') + '<td>' + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + (r.pre ? '<span class="tag pre">' + r.pre + '</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
       }).join('') + '</tbody></table>' + (v.some(function (r) { return r.top; }) ? '<p class="note">탑층은 건축물대장의 동별 층수로 확인한 꼭대기 층 거래예요.</p>' : '') + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
   }
   var AREA_COLORS = ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#ee46bc', '#0ba5ec', '#667085'];
@@ -939,9 +1099,10 @@ ul.rec .right{text-align:right;white-space:nowrap}
     if (apt && apt.kind === 'gap') return drawGap();
     var svg = $('aptSvg'), v = apt ? apt.view : [];
     var W = svg.clientWidth, H = svg.clientHeight;
-    if (!W || !v.length) { svg.innerHTML = ''; return; }
+    if (!W || (!v.length && !(apt.pre || []).length)) { svg.innerHTML = ''; return; }
     var L = 46, R = 10, T = 10, B = 26;
-    var ms = v.map(function (r) { return mIdx(r.dt); }), ps = v.map(function (r) { return r.price; });
+    var pre = apt.pre || [];
+    var ms = v.concat(pre).map(function (r) { return mIdx(r.dt); }), ps = v.concat(pre).map(function (r) { return r.price; });
     var m0 = Math.min.apply(null, ms), m1 = Math.max.apply(null, ms);
     if (m1 - m0 < 2) { m0 -= 1; m1 += 1; }
     var p0 = Math.min.apply(null, ps), p1 = Math.max.apply(null, ps), pad = (p1 - p0) * 0.08 || p1 * 0.05 || 1;
@@ -973,6 +1134,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       var line = Object.keys(byM).map(Number).sort(function (a, b) { return a - b; }).map(function (m, i) { return (i ? 'L' : 'M') + x(m).toFixed(1) + ' ' + y(median(byM[m])).toFixed(1); }).join(' ');
       out += '<path class="line" style="stroke:' + color(k) + '" d="' + line + '"/>';
     });
+    pre.forEach(function (r) { var cx = x(mIdx(r.dt)), cy = y(r.price); out += '<path class="pre" d="M' + cx.toFixed(1) + ' ' + (cy - 5).toFixed(1) + ' l5 5 l-5 5 l-5 -5 Z"><title>' + r.pre + ' ' + won(r.price) + '</title></path>'; });
     svg.innerHTML = out;
     $('aptKey').innerHTML = keys.length > 1 ? keys.map(function (k) {
       return '<span><i style="background:' + color(k) + '"></i>' + k + '㎡ (약 ' + pyeong(Number(k)) + '평)</span>';

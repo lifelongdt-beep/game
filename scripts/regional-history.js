@@ -17,6 +17,7 @@ const RAW_DIR = path.resolve(ROOT, process.env.REGION_RAW_DIR || '.cache/regions
 const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 const TRADE_MONTHS = Number(process.env.REGION_HIST_TRADE_MONTHS || 36); // 매매 기록 기간
 const RENT_MONTHS = Number(process.env.REGION_HIST_RENT_MONTHS || 24); // 전월세 기록 기간
+const PRESALE_MONTHS = Number(process.env.REGION_HIST_PRESALE_MONTHS || 36); // 분양권·입주권 전매 기록 기간(0이면 받지 않음)
 const REFRESH_MONTHS = Number(process.env.REGION_REFRESH_MONTHS || 3); // 늦은 신고·해제를 반영하려고 매번 다시 받는 최근 달 수
 // 공공데이터포털 개발계정은 서비스마다 하루 10,000번이 한도라, 매매·전월세 각각 이만큼만 부른다(나머지는 다음 날 이어 받음).
 const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
@@ -32,7 +33,11 @@ const RENT_ENDPOINTS = [
   'https://apis.data.go.kr/1613000/RTMSDataSvcAptRentDev/getRTMSDataSvcAptRentDev',
 ];
 let rentEndpoint = 0;
-const calls = { t: 0, r: 0, b: 0 };
+// 분양권·입주권 전매 실거래(아파트 매매 자료에는 들어 있지 않아 따로 받는다).
+const PRESALE_ENDPOINT = 'https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade';
+let presaleFails = 0; // 연달아 실패하면(활용 신청 전 등) 이번 실행에서는 더 부르지 않는다
+
+const calls = { t: 0, r: 0, b: 0, s: 0 };
 const num0 = (v) => Number(String(v || '0').replace(/[,\s]/g, '')) || 0;
 const ymd = (y, m, d) => Number(`${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`);
 
@@ -106,6 +111,33 @@ async function fetchRentMonth(code, ym, deadline) {
   return rows;
 }
 
+// 분양권·입주권 한 줄 = [단지, 법정동, 전용㎡, 거래금액(만원), 층, 계약일 YYYYMMDD, 구분(분/입)]
+async function fetchPresaleMonth(code, ym, deadline) {
+  const rows = [];
+  for (let page = 1; page <= 10; page++) {
+    calls.s++;
+    const url = `${PRESALE_ENDPOINT}?serviceKey=${SERVICE_KEY}&LAWD_CD=${code}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=${page}`;
+    const res = await fetchWithRetry(url, 5, deadline);
+    const xml = await res.text();
+    const rc = xmlTag(xml, 'resultCode');
+    if (!res.ok || xml.includes('<cmmMsgHeader>') || (rc && !['00', '000'].includes(rc))) {
+      const msg = xmlTag(xml, 'returnAuthMsg') || xmlTag(xml, 'errMsg') || xmlTag(xml, 'resultMsg') || `HTTP ${res.status}`;
+      throw new Error(`분양권 API 오류(${code} ${ym}): ${msg}`);
+    }
+    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+      const it = m[1];
+      if (xmlTag(it, 'cdealType') === 'O') continue;
+      rows.push([
+        xmlTag(it, 'aptNm'), xmlTag(it, 'umdNm'), Number(xmlTag(it, 'excluUseAr')), num0(xmlTag(it, 'dealAmount')), xmlTag(it, 'floor'),
+        ymd(xmlTag(it, 'dealYear'), xmlTag(it, 'dealMonth'), xmlTag(it, 'dealDay')), xmlTag(it, 'ownershipGbn'),
+      ]);
+    }
+    if (page * 1000 >= Number(xmlTag(xml, 'totalCount') || 0)) break;
+  }
+  presaleFails = 0;
+  return rows;
+}
+
 // 시군구 하나의 기록을 채운다. phase 'recent'는 최근 REFRESH_MONTHS달을 다시 받고, 'backfill'은 그 전 달 중
 // 아직 없는 달을 최근 달부터 받는다. 호출부는 모든 시군구의 recent를 먼저 돌린 뒤 backfill을 돌린다
 // (하루 호출 한도가 지난 기록 채우기에 먼저 다 쓰여 최근 거래를 못 받는 일이 없게).
@@ -113,21 +145,28 @@ async function fetchRentMonth(code, ym, deadline) {
 async function updateRegion(code, now, deadline, phase) {
   let missing = 0;
   const jobs = [];
-  for (const [kind, count] of [['t', TRADE_MONTHS], ['r', RENT_MONTHS]]) {
+  for (const [kind, count] of [['t', TRADE_MONTHS], ['r', RENT_MONTHS], ['s', PRESALE_MONTHS]]) {
     monthList(now, count).forEach((ym, i) => {
       const recent = i < REFRESH_MONTHS;
       if (phase === 'recent' ? recent : !recent && !fs.existsSync(rawPath(code, ym, kind))) jobs.push({ kind, ym });
     });
   }
   for (const job of jobs) {
-    if (Date.now() >= deadline || calls[job.kind] >= CALL_LIMIT) {
+    if (Date.now() >= deadline || calls[job.kind] >= CALL_LIMIT || (job.kind === 's' && presaleFails >= 3)) {
       missing++;
       continue;
     }
     try {
-      const rows = job.kind === 't' ? await fetchTradeMonth(code, job.ym, deadline) : await fetchRentMonth(code, job.ym, deadline);
+      const fetcher = { t: fetchTradeMonth, r: fetchRentMonth, s: fetchPresaleMonth }[job.kind];
+      const rows = await fetcher(code, job.ym, deadline);
       writeRaw(code, job.ym, job.kind, rows);
     } catch (err) {
+      if (job.kind === 's') {
+        presaleFails++;
+        if (presaleFails === 3) console.error(`[${code}] ${err.message} — 분양권 API가 연달아 실패해 이번 실행에서는 건너뜁니다(공공데이터포털 '분양권전매 실거래가' 활용 신청 확인).`);
+        // 분양권은 부가 정보라 못 받아도 최근 거래 갱신 실패로 치지 않는다
+        continue;
+      }
       console.error(`[${code}] ${err.message}`);
       missing++;
     }
@@ -313,13 +352,13 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
 }
 
 // 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
-// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), s: 분양권·입주권 [[YYYYMMDD, ㎡, 금액, 층, 분/입]](없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
 function writeAptFiles(region, now, outDir) {
   const byDong = new Map();
   const slot = (dong, apt) => {
     if (!byDong.has(dong)) byDong.set(dong, {});
     const apts = byDong.get(dong);
-    return (apts[apt] = apts[apt] || { t: [], r: [] });
+    return (apts[apt] = apts[apt] || { t: [], r: [], s: [] });
   };
   const bld = new Map();
   for (const ym of monthList(now, TRADE_MONTHS)) {
@@ -327,6 +366,9 @@ function writeAptFiles(region, now, outDir) {
   }
   for (const ym of monthList(now, RENT_MONTHS)) {
     for (const r of readRaw(region.code, ym, 'r')?.rows || []) slot(r[1], r[0]).r.push([r[6], r[2], r[3], r[4], r[5], r[7]]);
+  }
+  for (const ym of monthList(now, PRESALE_MONTHS)) {
+    for (const r of readRaw(region.code, ym, 's')?.rows || []) slot(r[1], r[0]).s.push([r[5], r[2], r[3], r[4], r[6]]);
   }
   // 단지 정보: 그 단지 매매에 가장 많이 나온 필지의 건축물대장 정보
   const lotCount = new Map();
@@ -360,6 +402,8 @@ function writeAptFiles(region, now, outDir) {
     for (const a of Object.values(data.apts)) {
       a.t.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
       a.r.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
+      if (a.s.length) a.s.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
+      else delete a.s;
     }
     const file = path.join(dir, `${key}.json`);
     const text = JSON.stringify(data) + '\n';
@@ -375,4 +419,4 @@ function writeAptFiles(region, now, outDir) {
   return written;
 }
 
-module.exports = { updateRegion, updateBuildings, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS };
+module.exports = { updateRegion, updateBuildings, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS, PRESALE_MONTHS };
