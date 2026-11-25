@@ -238,7 +238,33 @@ async function main() {
     history: { tradeMonths: history.TRADE_MONTHS, rentMonths: history.RENT_MONTHS },
     regions: all.map((r) => ({ code: r.code, sido: r.sido, name: r.name, dongs: r.dongs })),
   });
+  writeJson(path.join(DATA_DIR, 'samples.json'), buildSamples());
   console.log(`완료: ${path.relative(ROOT, DATA_DIR)} (${Math.round((Date.now() - startedAt) / 1000)}초)`);
+}
+
+// 나만의 동네 샘플: 기존 검단 카드뉴스의 4개 법정동과 "신도시가 아닌 기존 단지" 목록을 그대로 옮긴다.
+// 화면은 처음 한 번 이 샘플을 보통 나만의 동네처럼 넣어 주고, 사용자가 고치거나 지울 수 있다.
+const GEOMDAN_SAMPLE_DONGS = ['당하동', '마전동', '불로동', '원당동'];
+// 화면의 aptKey와 똑같이 만든다: 코드|법정동|단지명(괄호 안 덧붙임과 공백을 뺀다).
+const sampleAptKey = (code, dong, apt) => `${code}|${dong}|${apt.replace(/\([^)]*\)/g, '').replace(/\s+/g, '')}`;
+function buildSamples(file = path.join(__dirname, 'geomdan-excluded-apartments.txt')) {
+  const code = '28290';
+  const ex = [];
+  let dong = '';
+  let text = '';
+  try { text = fs.readFileSync(file, 'utf8'); } catch (err) { console.error(`샘플용 제외 단지 목록을 읽지 못했습니다: ${err.message}`); }
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const head = line.match(/^#\s*(\S+동)\s*$/);
+    if (head) { dong = head[1]; continue; }
+    if (line.startsWith('#') || !GEOMDAN_SAMPLE_DONGS.includes(dong)) continue;
+    const key = sampleAptKey(code, dong, line);
+    if (!ex.includes(key)) ex.push(key);
+  }
+  return {
+    samples: [{ key: 'geomdan', name: '검단신도시', areas: GEOMDAN_SAMPLE_DONGS.map((d) => ({ c: code, d })), ex }],
+  };
 }
 
 if (require.main === module) {
@@ -248,4 +274,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, TOPICS, topicsOf, newsRuleFor };
+module.exports = { main, buildSamples, TOPICS, topicsOf, newsRuleFor };
