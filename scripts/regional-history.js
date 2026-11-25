@@ -307,7 +307,7 @@ function topFlag(row, cache) {
 }
 
 // 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가, 신고가]
-// 신고가: 같은 단지·같은 넓이(전용㎡ 반올림)에서 계약일이 앞선 기록 속 거래(최대 TRADE_MONTHS개월)의 최고가를 넘으면
+// 신고가: 같은 단지·같은 넓이(전용㎡ 소수점 버림)에서 계약일이 앞선 기록 속 거래(최대 TRADE_MONTHS개월)의 최고가를 넘으면
 // 그 이전 최고가(만원), 아니면 0. 앞선 거래가 하나도 없으면(첫 거래) 신고가로 보지 않는다.
 // 기록이 아직 덜 찼으면(처음 며칠) 그 기간 안의 최고가 기준이다.
 function recentTrades(code, now, months, cutoff, pricePerPyeong) {
@@ -324,7 +324,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
       if (raw.at > lastAt) lastAt = raw.at;
     }
     for (const r of raw.rows) {
-      const key = `${r[0]}|${r[1]}|${Math.round(r[2])}`;
+      const key = `${r[0]}|${r[1]}|${Math.floor(r[2])}`; // 넓이는 소수점을 버려 묶는다(84.5㎡와 84.9㎡는 같은 84㎡)
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(r);
     }

@@ -24,7 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { NEWS_QUERY, fetchNewsSafe, windowStart, sleep } = require('./kakao-realestate-news');
 const history = require('./regional-history');
-const { pricePerPyeong, isRealEstateNews } = require('./geomdan-common');
+const { pricePerPyeong, isRealEstateNews, TRANSPORT_PLAN_RE } = require('./geomdan-common');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.resolve(ROOT, process.env.REGION_OUT_DIR || 'docs/regions');
@@ -54,7 +54,8 @@ const TOPICS = [
     query: '(재건축 OR 재개발 OR 정비사업 OR 리모델링 OR 선도지구 OR 모아타운)' },
   { key: 'rent', label: '전월세', re: /전세|월세|임대차|역전세|갭투자|임대주택|보증금/,
     query: '(전세 OR 월세 OR 전월세 OR 임대차 OR 역전세 OR 전세가율) 아파트' },
-  { key: 'transport', label: '교통·개발', re: /GTX|철도|지하철|전철|노선|개통|착공|역세권|광역교통|고속도로|도로|신도시|택지|산업단지|개발사업|트램|BRT/,
+  { key: 'transport', label: '교통·개발', // 국가철도망·광역교통 계획 같은 국가 교통 계획 기사(검단 카드뉴스가 반드시 넣는 기준)도 교통·개발로 본다.
+    re: new RegExp(/GTX|철도|지하철|전철|노선|개통|착공|역세권|광역교통|고속도로|도로|신도시|택지|산업단지|개발사업|트램|BRT/.source + '|' + TRANSPORT_PLAN_RE.source),
     query: '(GTX OR 광역철도 OR "지하철 연장" OR 개통 OR 착공 OR 신도시 OR 택지) 부동산' },
 ];
 const LOCAL_TOPIC_QUERY = '(부동산 OR 아파트 OR 분양 OR 청약 OR 재건축 OR 재개발 OR 전세 OR 집값 OR 실거래 OR 개통 OR 착공 OR 신도시)';
