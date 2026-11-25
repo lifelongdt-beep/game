@@ -33,6 +33,16 @@ h3{font-size:16px;margin:16px 0 6px}
 .chips.wrap-chips{flex-wrap:wrap;overflow:visible}
 .chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:14px;cursor:pointer;font-family:inherit}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.valform{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.valform label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub);flex:1 1 90px}
+.valform label.wide{flex:2 1 180px}
+.valform select,.valform input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:16px;font-family:inherit;width:100%;box-sizing:border-box}
+.range{position:relative;height:10px;border-radius:999px;background:var(--accent-soft);margin:22px 4px 26px}
+.range .band{position:absolute;top:0;bottom:0;background:var(--accent);opacity:.35;border-radius:999px}
+.range .mid{position:absolute;top:-4px;width:2px;height:18px;background:var(--accent)}
+.range .me{position:absolute;top:-6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#f79009;border:2px solid var(--card)}
+.range .lab{position:absolute;top:14px;font-size:11px;color:var(--sub);transform:translateX(-50%);white-space:nowrap}
+.verdict{font-weight:700;font-size:16px;margin:6px 0}
 dl.info{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px 12px;margin:10px 0 4px}
 dl.info div{min-width:0}
 dl.info dt{color:var(--sub);font-size:12px}
@@ -161,6 +171,10 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <div class="fig" id="aptFig"><svg id="aptSvg" role="img" aria-label="시세 변화 그래프"></svg></div>
       <div id="aptKey" class="key"></div>
     </section>
+    <section class="card" id="valCard"><h2>가격 점검</h2>
+      <p class="note">사거나 팔려는 집의 넓이·층과 가격을 넣으면 최근 매매와 비교해 드려요.</p>
+      <div class="valform"><label>넓이<select id="valArea"></select></label><label>층<input id="valFloor" type="number" inputmode="numeric" min="1" placeholder="예: 12"></label><label class="wide">가격<input id="valPrice" type="text" inputmode="decimal" placeholder="예: 6억 2천, 6.2억, 62000"></label></div>
+      <div id="valOut"></div></section>
     <section class="card"><h2>과거 거래</h2><div id="aptList"></div></section>
   </div>
 
@@ -485,6 +499,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       $('aptTitle').textContent = name;
       $('aptSub').textContent = regionLabel(reg) + ' ' + dong;
       renderAptInfo(apt.rec.b);
+      setupVal();
       show('aptDetail'); renderApt();
     });
   }
@@ -665,6 +680,83 @@ ul.rec .right{text-align:right;white-space:nowrap}
     svg.innerHTML = out;
     $('aptKey').innerHTML = '<span><i style="background:' + AREA_COLORS[0] + '"></i>매매가</span><span><i style="background:' + AREA_COLORS[1] + '"></i>전세 보증금</span><span><i style="background:rgba(247,144,9,.25)"></i>갭</span><span><i class="dash"></i>전세가율 (오른쪽 %)</span>';
   }
+  // ── 가격 점검 ──
+  // 예상 시세: 같은 넓이의 최근 6개월 매매(적으면 12개월, 그래도 적으면 전체)를 층 보정해 중앙값과 25~75% 범위를 낸다.
+  // 층 보정: 같은 넓이 기록에서 거래가 ÷ 그달 전후 3개월 중앙값을 저층(1~3층)·중층·고층(단지 최고층의 2/3 이상)별로 모아 그 중앙값을 계수로 쓴다.
+  function parsePrice(t) {
+    t = String(t || '').replace(/[,\s원]/g, '');
+    if (!t) return 0;
+    var m = t.match(/^([0-9.]+)억(?:([0-9.]+)(천)?)?(?:만)?$/);
+    if (m) return Math.round(Number(m[1]) * 10000 + (m[2] ? Number(m[2]) * (m[3] ? 1000 : 1) : 0));
+    m = t.match(/^([0-9.]+)(만)?$/);
+    if (!m) return 0;
+    var n = Number(m[1]);
+    return m[2] || n >= 100 ? Math.round(n) : Math.round(n * 10000);
+  }
+  function eok(n) { return n >= 10000 ? (n / 10000).toFixed(2).replace(/0$/, '') + '억' : Math.round(n).toLocaleString('ko-KR') + '만'; }
+  function quant(list, q) { var s = list.slice().sort(function (a, b) { return a - b; }); if (!s.length) return null; var i = (s.length - 1) * q, lo = Math.floor(i); return s[lo] + (s[Math.min(lo + 1, s.length - 1)] - s[lo]) * (i - lo); }
+  function setupVal() {
+    var cnt = {};
+    apt.rec.t.forEach(function (x) { var k = areaKey(x[1]); cnt[k] = (cnt[k] || 0) + 1; });
+    var keys = Object.keys(cnt).sort(function (a, b) { return a - b; });
+    $('valCard').hidden = !keys.length;
+    if (!keys.length) return;
+    var def = keys.slice().sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+    $('valArea').innerHTML = keys.map(function (k) { return '<option value="' + k + '"' + (k === def ? ' selected' : '') + '>' + k + '㎡ (약 ' + pyeong(Number(k)) + '평)</option>'; }).join('');
+    $('valFloor').value = ''; $('valPrice').value = '';
+    renderVal();
+  }
+  function renderVal() {
+    var area = $('valArea').value, myFloor = parseInt($('valFloor').value, 10), price = parsePrice($('valPrice').value);
+    var rows = apt.rec.t.filter(function (x) { return areaKey(x[1]) === area; }).map(function (x) { return { m: mIdx(x[0]), price: x[2], floor: parseInt(x[3], 10) }; });
+    if (!rows.length) { $('valOut').innerHTML = ''; return; }
+    var top = (apt.rec.b && apt.rec.b.top) || Math.max.apply(null, rows.map(function (r) { return r.floor || 0; }));
+    var band = function (f) { return !f ? '' : f <= 3 ? 'low' : top >= 6 && f >= top * 2 / 3 ? 'high' : 'mid'; };
+    var byM = {};
+    rows.forEach(function (r) { (byM[r.m] = byM[r.m] || []).push(r.price); });
+    var ratios = { low: [], mid: [], high: [] };
+    rows.forEach(function (r) {
+      var b = band(r.floor); if (!b) return;
+      var near = [].concat(byM[r.m - 1] || [], byM[r.m] || [], byM[r.m + 1] || []);
+      if (near.length >= 2) ratios[b].push(r.price / median(near));
+    });
+    var factor = function (b) { return b && ratios[b].length >= 3 ? median(ratios[b]) : 1; };
+    var now = new Date(), nowM = now.getFullYear() * 12 + now.getMonth();
+    var pick = function (n) { return rows.filter(function (r) { return r.m > nowM - n; }); };
+    var recent = pick(6), span = '최근 6개월';
+    if (recent.length < 3) { recent = pick(12); span = '최근 1년'; }
+    if (recent.length < 3) { recent = rows; span = '기록 전체'; }
+    var myB = band(myFloor), myF = factor(myB);
+    var adj = recent.map(function (r) { return r.price / factor(band(r.floor)) * myF; });
+    var lo = quant(adj, 0.25), mid = quant(adj, 0.5), hi = quant(adj, 0.75);
+    var maxEver = Math.max.apply(null, rows.map(function (r) { return r.price; }));
+    var bandName = { low: '저층', mid: '중층', high: '고층' }[myB];
+    var r5 = function (n) { return Math.round(n / 100) * 100; };
+    var html = '<div class="stat"><div><b>' + esc(won(r5(mid))) + '</b><span>예상 시세 (' + span + ' ' + recent.length + '건' + (bandName ? ', ' + bandName + ' 기준' : '') + ')</span></div>' +
+      '<div><b>' + eok(lo) + ' ~ ' + eok(hi) + '</b><span>보통 거래되는 범위</span></div></div>';
+    // 막대: 최근 거래 최저~최고 위에 보통 범위와 내 가격
+    var a0 = Math.min.apply(null, adj.concat(price ? [price] : [])), a1 = Math.max.apply(null, adj.concat(price ? [price] : []));
+    if (a1 - a0 < 1) { a0 -= 1000; a1 += 1000; }
+    var pos = function (v) { return ((v - a0) / (a1 - a0) * 100).toFixed(1) + '%'; };
+    html += '<div class="range"><div class="band" style="left:' + pos(lo) + ';width:calc(' + pos(hi) + ' - ' + pos(lo) + ')"></div><div class="mid" style="left:' + pos(mid) + '"></div>' +
+      (price ? '<div class="me" style="left:' + pos(price) + '" title="넣은 가격"></div>' : '') +
+      '<span class="lab" style="left:0;transform:none">' + esc(won(r5(a0))) + '</span><span class="lab" style="left:100%;transform:translateX(-100%)">' + esc(won(r5(a1))) + '</span></div>';
+    if (price) {
+      var below = adj.filter(function (v) { return v < price; }).length;
+      var vsMid = (price / mid - 1) * 100, vsMax = price / maxEver * 100;
+      var verdict = price < lo ? '최근 거래보다 싼 편이에요' : price > hi ? '최근 거래보다 비싼 편이에요' : '최근 거래 수준이에요';
+      html += '<p class="verdict">' + esc(won(price)) + ': ' + verdict + '</p><ul class="note" style="margin:0;padding-left:18px">' +
+        '<li>예상 시세보다 ' + (vsMid >= 0 ? '+' : '') + vsMid.toFixed(1) + '%</li>' +
+        '<li>' + span + ' 거래 ' + adj.length + '건 중 ' + below + '건이 이 가격보다 낮아요</li>' +
+        '<li>이 넓이 최고가 ' + esc(won(maxEver)) + '의 ' + vsMax.toFixed(0) + '%' + (price > maxEver ? ' — 이 가격이면 신고가예요' : '') + '</li></ul>';
+    } else {
+      html += '<p class="note">가격을 넣으면 이 범위에서 어디쯤인지 알려 드려요. 주황 점이 넣은 가격이에요.</p>';
+    }
+    if (recent.length < 5) html += '<p class="note">거래가 적어서 참고용으로만 보세요.</p>';
+    html += '<p class="note">층은 같은 넓이 기록에서 저층·중층·고층 가격 차이를 계산해 반영해요. 향·동 위치·수리 상태는 반영하지 못해요.</p>';
+    $('valOut').innerHTML = html;
+  }
+  ['valArea', 'valFloor', 'valPrice'].forEach(function (id) { $(id).addEventListener('input', renderVal); });
   function priceText(r) {
     if (apt.kind === 'wolse') return won(r.dep) + ' / ' + r.rent.toLocaleString('ko-KR') + '만';
     return won(apt.kind === 'jeonse' ? r.dep : r.price);
