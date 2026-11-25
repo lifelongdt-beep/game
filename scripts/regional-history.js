@@ -24,10 +24,7 @@ const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
 const BLD_KEY = process.env.BLD_SERVICE_KEY || SERVICE_KEY;
 const BLD_CALL_LIMIT = Number(process.env.BLD_CALL_LIMIT || 8000);
 const BLD_MAX_AGE_DAYS = Number(process.env.BLD_MAX_AGE_DAYS || 365); // 층수는 거의 안 바뀌어 1년에 한 번만 다시 받는다
-const BLD_ENDPOINTS = [
-  'https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo',
-  'https://apis.data.go.kr/1613000/BldRgstService_v2/getBrTitleInfo',
-];
+const BLD_ENDPOINTS = ['https://apis.data.go.kr/1613000/BldRgstHubService', 'https://apis.data.go.kr/1613000/BldRgstService_v2'];
 let bldEndpoint = 0;
 
 const RENT_ENDPOINTS = [
@@ -138,7 +135,7 @@ async function updateRegion(code, now, deadline, phase) {
   return { ok: missing === 0, missing };
 }
 
-// 건축물대장 표제부: 필지 하나의 건물(동)별 지상 층수. .cache/regions-raw/bld/<필지>.json = { at, dongs: { 동 이름: 층수 } }
+// 건축물대장: 필지 하나의 건물(동)별 지상 층수와 단지 정보. .cache/regions-raw/bld/<필지>.json = { at, dongs: { 동 이름: 층수 }, info }
 const bldPath = (lot) => path.join(RAW_DIR, 'bld', `${lot}.json`);
 function readBld(lot) {
   try {
@@ -150,14 +147,15 @@ function readBld(lot) {
 // "101동", "101", "제101동" → "101". 비교용.
 const normDong = (s) => String(s || '').replace(/\s/g, '').replace(/^제/, '').replace(/동$/, '');
 
-async function fetchBldLot(lot, deadline) {
+// 건축물대장 조회 한 가지(op)의 item 목록. 첫 주소가 안 되면 예전 서비스 주소로 바꿔 계속 쓴다.
+async function bldItems(op, lot, deadline) {
   const [cd, bun, ji] = lot.split('-');
-  const dongs = {};
+  const out = [];
   for (let page = 1; page <= 5; page++) {
     let xml;
     for (;;) {
       calls.b++;
-      const url = `${BLD_ENDPOINTS[bldEndpoint]}?serviceKey=${BLD_KEY}&sigunguCd=${cd.slice(0, 5)}&bjdongCd=${cd.slice(5)}&platGbCd=0&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=${page}`;
+      const url = `${BLD_ENDPOINTS[bldEndpoint]}/${op}?serviceKey=${BLD_KEY}&sigunguCd=${cd.slice(0, 5)}&bjdongCd=${cd.slice(5)}&platGbCd=0&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=${page}`;
       const res = await fetchWithRetry(url, 5, deadline);
       const text = await res.text();
       const rc = xmlTag(text, 'resultCode');
@@ -170,20 +168,58 @@ async function fetchBldLot(lot, deadline) {
         bldEndpoint++;
         continue;
       }
-      throw new Error(`건축물대장 API 오류(${lot}): ${msg}`);
+      throw new Error(`건축물대장 API 오류(${op} ${lot}): ${msg}`);
     }
-    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
-      const it = m[1];
-      const floors = num0(xmlTag(it, 'grndFlrCnt'));
-      const purpose = xmlTag(it, 'mainPurpsCdNm');
-      // 아파트 단지 필지에는 상가·관리동도 함께 있어 주거용 동만 담는다.
-      if (!floors || (purpose && !/공동주택|아파트|주거/.test(purpose))) continue;
-      const name = normDong(xmlTag(it, 'dongNm')) || '-';
-      dongs[name] = Math.max(dongs[name] || 0, floors);
-    }
+    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) out.push(m[1]);
     if (page * 100 >= Number(xmlTag(xml, 'totalCount') || 0)) break;
   }
-  return dongs;
+  return out;
+}
+
+const isHome = (purpose) => !purpose || /공동주택|아파트|주거/.test(purpose);
+const parking = (it) => ['indrAutoUtcnt', 'oudrAutoUtcnt', 'indrMechUtcnt', 'oudrMechUtcnt'].reduce((n, k) => n + num0(xmlTag(it, k)), 0);
+const ratio = (v) => Math.round(Number(v || 0) * 10) / 10 || 0;
+
+// 필지 하나: 동별 지상 층수(탑층 표시)와 단지 정보.
+// info = { apr: 사용승인일 YYYYMMDD, hh: 세대수, bld: 주거동 수, park: 주차 대수, far: 용적률 %, bcr: 건폐율 %, top: 최고층, ug: 지하층, elv: 승강기 }
+// 단지 합계는 총괄표제부(getBrRecapTitleInfo)를 먼저 쓰고, 없으면(동이 하나뿐인 필지 등) 동별 표제부를 더해 만든다.
+async function fetchBldLot(lot, deadline) {
+  const dongs = {};
+  const sum = { apr: 0, hh: 0, bld: 0, park: 0, far: 0, bcr: 0, top: 0, ug: 0, elv: 0 };
+  for (const it of await bldItems('getBrTitleInfo', lot, deadline)) {
+    const floors = num0(xmlTag(it, 'grndFlrCnt'));
+    sum.park += parking(it);
+    if (!sum.far) sum.far = ratio(xmlTag(it, 'vlRat'));
+    if (!sum.bcr) sum.bcr = ratio(xmlTag(it, 'bcRat'));
+    // 아파트 단지 필지에는 상가·관리동도 함께 있어 층수·세대수는 주거용 동만 센다.
+    if (!floors || !isHome(xmlTag(it, 'mainPurpsCdNm'))) continue;
+    const name = normDong(xmlTag(it, 'dongNm')) || '-';
+    dongs[name] = Math.max(dongs[name] || 0, floors);
+    sum.bld++;
+    sum.hh += num0(xmlTag(it, 'hhldCnt'));
+    sum.top = Math.max(sum.top, floors);
+    sum.ug = Math.max(sum.ug, num0(xmlTag(it, 'ugrndFlrCnt')));
+    sum.elv += num0(xmlTag(it, 'rideUseElvtCnt')) + num0(xmlTag(it, 'emgenUseElvtCnt'));
+    const apr = num0(xmlTag(it, 'useAprDay'));
+    if (apr && (!sum.apr || apr < sum.apr)) sum.apr = apr;
+  }
+  if (!sum.bld) return { dongs, info: null };
+  let recap = [];
+  try {
+    recap = await bldItems('getBrRecapTitleInfo', lot, deadline);
+  } catch (err) {
+    console.error(err.message); // 총괄표제부가 안 돼도 동별 합계로 보여준다
+  }
+  const r = recap[0];
+  if (r) {
+    sum.hh = num0(xmlTag(r, 'hhldCnt')) || sum.hh;
+    sum.bld = num0(xmlTag(r, 'mainBldCnt')) || sum.bld;
+    sum.park = num0(xmlTag(r, 'totPkngCnt')) || parking(r) || sum.park;
+    sum.far = ratio(xmlTag(r, 'vlRat')) || sum.far;
+    sum.bcr = ratio(xmlTag(r, 'bcRat')) || sum.bcr;
+    sum.apr = num0(xmlTag(r, 'useAprDay')) || sum.apr;
+  }
+  return { dongs, info: sum };
 }
 
 // 시군구 하나의 매매 기록에 나온 필지 중 층수를 아직 모르는(또는 오래된) 곳을 건축물대장에서 받는다.
@@ -198,15 +234,15 @@ async function updateBuildings(code, now, deadline) {
   let missing = 0;
   for (const lot of lots) {
     const cur = readBld(lot);
-    if (cur && Date.parse(cur.at) > old) continue;
+    if (cur && 'info' in cur && Date.parse(cur.at) > old) continue;
     if (Date.now() >= deadline || calls.b >= BLD_CALL_LIMIT) {
       missing++;
       continue;
     }
     try {
-      const dongs = await fetchBldLot(lot, deadline);
+      const got = await fetchBldLot(lot, deadline);
       fs.mkdirSync(path.dirname(bldPath(lot)), { recursive: true });
-      fs.writeFileSync(bldPath(lot), JSON.stringify({ at: new Date().toISOString(), dongs }));
+      fs.writeFileSync(bldPath(lot), JSON.stringify({ at: new Date().toISOString(), ...got }));
     } catch (err) {
       console.error(`[${code}] ${err.message}`);
       missing++;
@@ -277,7 +313,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
 }
 
 // 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
-// { d: 법정동, apts: { 단지: { t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
 function writeAptFiles(region, now, outDir) {
   const byDong = new Map();
   const slot = (dong, apt) => {
@@ -291,6 +327,23 @@ function writeAptFiles(region, now, outDir) {
   }
   for (const ym of monthList(now, RENT_MONTHS)) {
     for (const r of readRaw(region.code, ym, 'r')?.rows || []) slot(r[1], r[0]).r.push([r[6], r[2], r[3], r[4], r[5], r[7]]);
+  }
+  // 단지 정보: 그 단지 매매에 가장 많이 나온 필지의 건축물대장 정보
+  const lotCount = new Map();
+  for (const ym of monthList(now, TRADE_MONTHS)) {
+    for (const r of readRaw(region.code, ym, 't')?.rows || []) {
+      if (!r[7]) continue;
+      const k = `${r[1]}|${r[0]}`;
+      if (!lotCount.has(k)) lotCount.set(k, new Map());
+      const m = lotCount.get(k);
+      m.set(r[7], (m.get(r[7]) || 0) + 1);
+    }
+  }
+  for (const [k, m] of lotCount) {
+    const [dong, apt] = k.split('|');
+    const lot = [...m].sort((a, b) => b[1] - a[1])[0][0];
+    const info = readBld(lot)?.info;
+    if (info) slot(dong, apt).b = info;
   }
   if (!byDong.size) return 0;
   const dir = path.join(outDir, region.code);

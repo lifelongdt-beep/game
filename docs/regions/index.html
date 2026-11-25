@@ -33,6 +33,11 @@ h3{font-size:16px;margin:16px 0 6px}
 .chips.wrap-chips{flex-wrap:wrap;overflow:visible}
 .chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:14px;cursor:pointer;font-family:inherit}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+dl.info{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px 12px;margin:10px 0 4px}
+dl.info div{min-width:0}
+dl.info dt{color:var(--sub);font-size:12px}
+dl.info dd{margin:2px 0 0;font-weight:700;font-size:15px;white-space:nowrap}
+dl.info dd small{display:block;font-weight:400;font-size:12px;color:var(--sub)}
 .stat{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
 .stat div{flex:1 1 0;min-width:120px;background:var(--accent-soft);border-radius:12px;padding:10px 12px}
 .stat b{display:block;font-size:clamp(16px,4.6vw,20px);white-space:nowrap}
@@ -141,6 +146,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   <div id="aptDetail" hidden>
     <header class="top"><div><h1 id="aptTitle"></h1><div id="aptSub" class="meta"></div></div>
       <button id="aptBack" class="btn">← 돌아가기</button></header>
+    <section class="card" id="aptInfoCard" hidden><h2>단지 정보</h2><dl id="aptInfo" class="info"></dl><p class="note">건축물대장 기준이에요.</p></section>
     <section class="card"><div id="aptKinds" class="chips"></div><div id="aptAreas" class="chips" style="margin-top:10px"></div>
       <div id="aptStats"></div>
       <p id="aptLegend" class="legend"></p>
@@ -470,8 +476,28 @@ ul.rec .right{text-align:right;white-space:nowrap}
       apt = { code: code, dong: dong, name: name, region: reg, rec: rec || { t: [], r: [] }, kind: 'trade', area: area || '', limit: 30 };
       $('aptTitle').textContent = name;
       $('aptSub').textContent = regionLabel(reg) + ' ' + dong;
+      renderAptInfo(apt.rec.b);
       show('aptDetail'); renderApt();
     });
+  }
+  // 단지 정보 칸(건축물대장). 값이 없는 항목은 빼고, 정보가 하나도 없으면 칸을 숨긴다.
+  function renderAptInfo(b) {
+    var items = [];
+    if (b) {
+      if (b.apr) {
+        var y = Math.floor(b.apr / 10000), m = Math.floor(b.apr / 100) % 100, age = new Date().getFullYear() - y + 1;
+        items.push(['준공', y + '.' + String(m).padStart(2, '0'), age + '년 차']);
+      }
+      if (b.hh) items.push(['세대수', b.hh.toLocaleString('ko-KR') + '세대']);
+      if (b.bld) items.push(['동 수', b.bld + '개 동']);
+      if (b.top) items.push(['층수', '최고 ' + b.top + '층', b.ug ? '지하 ' + b.ug + '층' : '']);
+      if (b.park) items.push(['주차', b.park.toLocaleString('ko-KR') + '대', b.hh ? '세대당 ' + (b.park / b.hh).toFixed(2) + '대' : '']);
+      if (b.far) items.push(['용적률', b.far + '%']);
+      if (b.bcr) items.push(['건폐율', b.bcr + '%']);
+      if (b.elv) items.push(['승강기', b.elv + '대']);
+    }
+    $('aptInfo').innerHTML = items.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + (x[2] ? '<small>' + esc(x[2]) + '</small>' : '') + '</dd></div>'; }).join('');
+    $('aptInfoCard').hidden = !items.length;
   }
   // 한 줄 = { dt: 계약 YYYYMMDD, area, price(그래프 값), dep, rent, floor, ct }
   function aptRows(kind) {
