@@ -67,6 +67,8 @@ ol.news li,ol.rank li,ul.tx li{padding:10px 0;border-top:1px solid var(--line)}
 ol.news li:first-child,ol.rank li:first-child,ul.tx li:first-child{border-top:0}
 ol.news a{color:var(--ink);text-decoration:none;font-weight:600}
 .src{color:var(--sub);font-size:13px;margin-top:2px}
+.sum{color:#3d4555;font-size:14px;line-height:1.55;margin:5px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.sum.open{display:block;-webkit-line-clamp:unset}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-right:4px;font-weight:600}
 ol.rank li{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:baseline}
 ol.rank .no{color:var(--accent);font-weight:700}
@@ -141,6 +143,28 @@ ul.rec{list-style:none;margin:0;padding:0}
 ul.rec li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 ul.rec li:first-child{border-top:0}
 ul.rec .right{text-align:right;white-space:nowrap}
+
+/* 카드뉴스: 옆으로 넘기는 카드(검단 카드뉴스처럼 사진 위 헤드라인 + 핵심 내용) */
+.cn-row{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none}
+.cn-row::-webkit-scrollbar{display:none}
+.cn{flex:0 0 84%;max-width:360px;scroll-snap-align:center;position:relative;border-radius:16px;overflow:hidden;aspect-ratio:4/5;color:#fff;background:#1d2330 center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;text-decoration:none}
+.cn::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.35) 38%,rgba(0,0,0,.86) 100%)}
+.cn.noimg::before{background:none}
+.cn>*{position:relative}
+.cn .cn-in{padding:18px 18px 16px}
+.cn .cn-no{position:absolute;top:12px;right:14px;font-size:12px;opacity:.85;background:rgba(0,0,0,.35);padding:2px 8px;border-radius:999px}
+.cn .cn-kick{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.22);margin-bottom:8px}
+.cn .cn-kick.p{background:#d92d20}.cn .cn-kick.a{background:#1f6feb}.cn .cn-kick.l{background:#12b76a}
+.cn h3{margin:0 0 8px;font-size:21px;line-height:1.32;font-weight:800;color:#fff;word-break:keep-all;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.cn p{margin:0;font-size:14px;line-height:1.55;opacity:.93;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.cn .cn-src{margin-top:10px;font-size:12px;opacity:.8}
+.cn.cover h3{font-size:24px}
+.cn.cnstat{justify-content:center}
+.cn.cnstat .cn-big{font-size:22px;font-weight:800;margin:2px 0 6px;white-space:nowrap}
+.cn.cnstat ul{list-style:none;margin:8px 0 0;padding:0;font-size:14px;line-height:1.5}
+.cn.cnstat li{display:flex;justify-content:space-between;gap:8px;border-top:1px solid rgba(255,255,255,.18);padding:6px 0}
+.cn.cnstat li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn.cnstat li b{white-space:nowrap}
+.cn-dots{text-align:center;font-size:12px;color:var(--sub);margin-top:4px}
 </style>
 </head>
 <body>
@@ -205,6 +229,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
   <div id="briefing" hidden>
     <header class="top"><div><h1 id="title"></h1><div id="subtitle" class="meta"></div></div>
       <div class="row" style="justify-content:flex-end"><button id="editMine" class="btn" hidden>설정</button><button id="changeRegion" class="btn">동네 바꾸기</button></div></header>
+    <section class="card" id="cardNewsCard" hidden><h2>🗞️ 오늘의 카드뉴스</h2>
+      <div id="cardNews" class="cn-row"></div><div id="cardNewsDots" class="cn-dots"></div></section>
     <section class="card"><h2>🧭 뉴스 방향</h2>
       <p class="note" style="margin-bottom:10px">보고 싶은 주제를 고르면 그 주제 기사만 보여요. 아무것도 안 고르면 전부 보여요.</p>
       <div id="topicChips" class="chips wrap-chips"></div></section>
@@ -479,7 +505,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     return '<ol class="news">' + list.slice(0, limit || 15).map(function (a) {
       var tags = (a.tp || []).map(function (k) { return '<span class="tag">' + esc(topicLabel(k)) + '</span>'; }).join('');
       var href = /^https?:\/\//.test(a.l) ? a.l : '#';
-      return '<li><a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(a.t) + '</a><div class="src">' + tags + esc(a.s) + (a.n > 1 ? ' · ' + a.n + '개 매체' : '') + '</div></li>';
+      return '<li><a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(a.t) + '</a>' + (a.x ? '<p class="sum" data-sum="1">' + esc(a.x) + '</p>' : '') + '<div class="src">' + tags + esc(a.s) + (a.n > 1 ? ' · ' + a.n + '개 매체' : '') + '</div></li>';
     }).join('') + '</ol>';
   }
   function won(n) {
@@ -556,6 +582,68 @@ ul.rec .right{text-align:right;white-space:nowrap}
     } else list = national.main || [];
     $('nationalNews').innerHTML = newsHtml(list, '고른 주제의 전국 뉴스가 오늘은 없어요.', 12);
   }
+
+  // ── 카드뉴스 ──────────────────────────────
+  // 검단 카드뉴스(scripts/card-news)의 기사 고르는 기준을 따른다: 정책(P) > 지표(A) > 그 밖(-), 행사·광고·정치 공방(X) 제외,
+  // 같은 사건을 다룬 매체가 많을수록, 오늘 나온 기사일수록 앞. 발행 3일이 지난 기사는 쓰지 않는다.
+  // 동네 기사 최대 4장(동 이름이 제목에 있으면 먼저) → 전국 정책·시장 1장 → 실거래 요약 1장.
+  var CN_STALE_DAYS = 3, CN_RANK = { P: 0, A: 1, '-': 2, B: 2 };
+  function cnFresh(a) { return !a.d || (Date.now() - Date.parse(a.d)) < CN_STALE_DAYS * 864e5; }
+  function cnDongStems() {
+    var list = current.mine ? mine.areas.map(function (a) { return a.d; }) : ((regionOf(current.code) || {}).dongs || []);
+    return list.map(function (d) { return d.replace(/[0-9]*[동읍면리가]$/, ''); }).filter(function (d) { return d.length >= 2; });
+  }
+  function cnPick(list, n, skip) {
+    var stems = cnDongStems();
+    var near = function (a) { return stems.some(function (d) { return a.t.indexOf(d) >= 0; }) ? 0 : 1; };
+    return list.filter(function (a) { return a.g !== 'X' && cnFresh(a) && !skip[a.l]; }).map(function (a, i) { return { a: a, i: i }; })
+      .sort(function (p, q) {
+        var a = p.a, b = q.a;
+        return near(a) - near(b) || (CN_RANK[a.g] == null ? 2 : CN_RANK[a.g]) - (CN_RANK[b.g] == null ? 2 : CN_RANK[b.g]) ||
+          (b.n || 1) - (a.n || 1) || (b.x ? 1 : 0) - (a.x ? 1 : 0) || (Date.parse(b.d || 0) - Date.parse(a.d || 0)) || p.i - q.i;
+      }).slice(0, n).map(function (p) { return p.a; });
+  }
+  var CN_COLORS = ['#1f3b73', '#5b2a86', '#0b5c4b', '#7a3412', '#334155', '#7a1f3d'];
+  function cnArticle(a, kick, kcls, cover, idx) {
+    var href = /^https?:\/\//.test(a.l) ? a.l : '#';
+    var img = a.i && /^https:\/\//.test(a.i) ? a.i : '';
+    var style = img ? 'background-image:url(\'' + img.replace(/['\\()\s]/g, encodeURIComponent) + '\')' : 'background:linear-gradient(160deg,' + CN_COLORS[idx % CN_COLORS.length] + ',#111827)';
+    var topics = (a.tp || []).slice(0, 2).map(topicLabel).join(' · ');
+    return '<a class="cn' + (cover ? ' cover' : '') + (img ? '' : ' noimg') + '" href="' + esc(href) + '" target="_blank" rel="noopener" style="' + esc(style) + '"><div class="cn-in">' +
+      '<span class="cn-kick ' + kcls + '">' + esc(kick) + (topics ? ' · ' + esc(topics) : '') + '</span>' +
+      '<h3>' + esc(a.t) + '</h3>' + (a.x ? '<p>' + esc(a.x) + '</p>' : '') +
+      '<div class="cn-src">' + esc(a.s || '') + (a.n > 1 ? ' · ' + a.n + '개 매체 보도' : '') + ' · 원문 보기 ›</div></div></a>';
+  }
+  function cnStat(name) {
+    var tx = current.tx || {}, rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], ppy: r[6], rec: r[7] || 0 }; });
+    if (!rows.length) return '';
+    var recs = rows.filter(function (r) { return r.rec; }).sort(function (a, b) { return b.amount / b.rec - a.amount / a.rec; });
+    var ppys = rows.map(function (r) { return r.ppy; }).filter(Boolean).sort(function (a, b) { return a - b; });
+    var med = ppys.length ? ppys[Math.floor(ppys.length / 2)] : 0;
+    var top = rows.slice().sort(function (a, b) { return b.amount - a.amount; })[0];
+    var li = recs.slice(0, 3).map(function (r) { return '<li><span>🔥 ' + esc(r.apt) + ' ' + Math.floor(r.area) + '㎡</span><b>' + esc(won(r.amount)) + '</b></li>'; }).join('');
+    if (!li && top) li = '<li><span>최고가 ' + esc(top.apt) + ' ' + Math.floor(top.area) + '㎡</span><b>' + esc(won(top.amount)) + '</b></li>';
+    return '<div class="cn cnstat noimg" style="background:linear-gradient(160deg,#0f766e,#0b1f2a)"><div class="cn-in">' +
+      '<span class="cn-kick l">실거래 · 최근 ' + (tx.months || 3) + '개월</span><h3>' + esc(name) + ' 아파트 거래</h3>' +
+      '<div class="cn-big">' + rows.length.toLocaleString('ko-KR') + '건 · 신고가 ' + recs.length + '건</div>' +
+      '<p>평당가 중앙값 ' + esc(manwon(med)) + (tx.stale ? ' (' + esc(tx.staleFrom) + ' 자료)' : '') + '</p><ul>' + li + '</ul>' +
+      '<div class="cn-src">국토교통부 실거래가 · 아래 실거래가 칸에서 자세히</div></div></div>';
+  }
+  function renderCardNews(name) {
+    var skip = {}, cards = [];
+    var local = cnPick((current.news || []).filter(matchesTopics), 4, skip);
+    local.forEach(function (a, i) { skip[a.l] = 1; cards.push(cnArticle(a, i === 0 ? name + ' 소식' : '동네 소식', 'l', i === 0, i)); });
+    if (national) {
+      var pool = selectedTopics.length ? [].concat.apply([], selectedTopics.map(function (k) { return national.topics[k] || []; })) : (national.main || []);
+      var nat = cnPick(pool.filter(function (a) { return a.g === 'P' || a.g === 'A'; }), local.length ? 1 : 3, skip);
+      nat.forEach(function (a, i) { skip[a.l] = 1; cards.push(cnArticle(a, a.g === 'P' ? '전국 · 정책' : '전국 · 시장', a.g === 'P' ? 'p' : 'a', !local.length && i === 0, cards.length)); });
+    }
+    var st = cnStat(name); if (st) cards.push(st);
+    $('cardNewsCard').hidden = !cards.length;
+    $('cardNews').innerHTML = cards.map(function (c, i) { return c.replace('<div class="cn-in">', '<span class="cn-no">' + (i + 1) + ' / ' + cards.length + '</span><div class="cn-in">'); }).join('');
+    $('cardNews').scrollLeft = 0;
+    $('cardNewsDots').textContent = cards.length > 1 ? '옆으로 넘겨 보세요 · ' + cards.length + '장' : '';
+  }
   function renderTopicChips() {
     $('topicChips').innerHTML = '<button class="chip" data-topic="" aria-pressed="' + !selectedTopics.length + '">전체</button>' +
       index.topics.map(function (t) { return '<button class="chip" data-topic="' + esc(t.key) + '" aria-pressed="' + (selectedTopics.indexOf(t.key) >= 0) + '">' + esc(t.label) + '</button>'; }).join('');
@@ -570,7 +658,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('localTitle').textContent = current.mine ? '📰 내 동네가 속한 시군구 소식' : '📰 ' + name + ' 소식';
     $('txTitle').textContent = '🏘️ ' + name + ' 실거래가';
     $('footer').textContent = '매일 새벽 자동으로 갱신돼요. 기사 제목은 구글 뉴스 검색 결과예요.' + (current.mine ? ' 뺀 아파트는 설정에서 다시 넣을 수 있어요.' : ' 동 버튼으로 좁혀 볼 수 있어요.');
-    renderTopicChips(); renderNews(); renderTx();
+    renderTopicChips(); renderNews(); renderTx(); current.cnName = name; renderCardNews(name);
     $('mineDash').hidden = true;
     if (current.mine) renderMineDash();
     show('briefing');
@@ -1293,6 +1381,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
 
   // ── 이벤트 ──────────────────────────────
   document.addEventListener('click', function (e) {
+    var sm = e.target.closest('[data-sum]');
+    if (sm) { sm.classList.toggle('open'); return; }
     var b = e.target.closest('button');
     if (!b) return;
     var d = b.dataset;
@@ -1345,7 +1435,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       else if (selectedTopics.indexOf(k) >= 0) selectedTopics = selectedTopics.filter(function (x) { return x !== k; });
       else selectedTopics = selectedTopics.concat(k);
       store.set(STORE_TOPICS, JSON.stringify(selectedTopics));
-      renderTopicChips(); renderNews(); return;
+      renderTopicChips(); renderNews(); renderCardNews(current.cnName); return;
     }
   });
   document.addEventListener('change', function (e) {

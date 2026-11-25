@@ -24,6 +24,8 @@ const fs = require('fs');
 const path = require('path');
 const { NEWS_QUERY, fetchNewsSafe, windowStart, sleep } = require('./kakao-realestate-news');
 const history = require('./regional-history');
+const { addSummaries } = require('./news-summary');
+const { tierOf } = require('./news-tier');
 const { pricePerPyeong, isRealEstateNews, TRANSPORT_PLAN_RE } = require('./geomdan-common');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -35,6 +37,8 @@ const TX_MONTHS = Number(process.env.REGION_TX_MONTHS || 3);
 const TX_CONCURRENCY = Number(process.env.REGION_TX_CONCURRENCY || 3);
 const TX_BUDGET_MS = Number(process.env.REGION_TX_BUDGET_MS || 300000);
 const TOTAL_BUDGET_MS = Number(process.env.REGION_TOTAL_BUDGET_MS || 4200000);
+// 뉴스 핵심 내용(기사 첫머리) 읽기에 쓰는 시간. 못 읽은 기사는 다음 날 이어서 읽는다.
+const SUMMARY_BUDGET_MS = Number(process.env.REGION_SUMMARY_BUDGET_MS || 900000);
 const SKIP_NEWS = process.env.REGION_SKIP_NEWS === 'true';
 const LOCAL_NEWS_COUNT = 15;
 const TOPIC_NEWS_COUNT = 8;
@@ -120,6 +124,8 @@ function compactArticle(a) {
     n: a.sourceCount || 1,
     d: a.pubDate && !isNaN(new Date(a.pubDate)) ? new Date(a.pubDate).toISOString() : null,
     tp: topicsOf(a.title),
+    // 가치 등급(P 정책, A 지표, X 행사·광고 등 제외, - 판단 불가): 화면의 카드뉴스가 기사를 고르는 기준(검단 카드뉴스와 같은 규칙)
+    g: tierOf(a.title, { local: null }),
   };
 }
 
@@ -228,6 +234,15 @@ async function main() {
     aptFiles += history.writeAptFiles(r, now, APT_DIR);
   }
   console.log(`시군구 ${targets.length}곳 저장(지난 실거래 사용 ${stale}곳), 아파트 기록 파일 ${aptFiles}개 갱신`);
+  // 3-1) 뉴스 핵심 내용: 전국 뉴스 먼저, 그다음 시군구 뉴스. 읽은 내용(x)을 파일에 다시 써 넣는다.
+  if (!SKIP_NEWS && process.env.REGION_NEWS_SUMMARY !== '0') {
+    const regionFiles = targets.map((r) => path.join(DATA_DIR, `${r.code}.json`)).map((f) => ({ f, d: readJson(f, null) })).filter((o) => o.d);
+    const lists = [national.main, ...TOPICS.map((t) => national.topics[t.key]), ...regionFiles.map((o) => o.d.news)];
+    const st = await addSummaries(lists, { deadline: Date.now() + SUMMARY_BUDGET_MS });
+    writeJson(path.join(DATA_DIR, 'national.json'), { generatedAt, generatedAtText, ...national });
+    for (const o of regionFiles) writeJson(o.f, o.d);
+    console.log(`뉴스 핵심 내용: 새로 읽은 기사 ${st.read}건(내용 찾음 ${st.found}건, 사진 ${st.images}건), 시간이 모자라 못 읽은 기사 ${st.skipped}건, 내용이 붙은 기사 ${st.withX}건`);
+  }
   if (report.empty.length) console.log(`::warning::최근 ${TX_MONTHS}개월 매매가 한 건도 없는 시군구(코드 확인 필요): ${report.empty.join(', ')}`);
 
   // 4) 화면이 처음 읽는 목록(나만의 동네 설정에서 법정동을 고를 수 있게 동 목록도 싣는다)
