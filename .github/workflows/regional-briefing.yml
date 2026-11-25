@@ -62,6 +62,7 @@ jobs:
         env:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
           BLD_SERVICE_KEY: ${{ secrets.BLD_SERVICE_KEY }}
+          BUNYANGGUAN: ${{ secrets.BUNYANGGUAN }}
           REGION_CODES: ${{ github.event.inputs.region_codes }}
         run: node scripts/regional-briefing.js
 

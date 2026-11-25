@@ -23,6 +23,8 @@ const REFRESH_MONTHS = Number(process.env.REGION_REFRESH_MONTHS || 3); // 늦은
 const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
 // 건축물대장(동별 지상 층수 → 탑층 표시). 따로 받은 키가 있으면 그 키를, 없으면 실거래 키를 쓴다.
 const BLD_KEY = process.env.BLD_SERVICE_KEY || SERVICE_KEY;
+// 분양권전매 실거래가. 사용자가 비밀값 BUNYANGGUAN에 넣은 키를 먼저 쓰고, 없으면 실거래 키를 쓴다(같은 공공데이터포털 키라도 된다).
+const PRESALE_KEY = process.env.BUNYANGGUAN || SERVICE_KEY;
 const BLD_CALL_LIMIT = Number(process.env.BLD_CALL_LIMIT || 8000);
 const BLD_MAX_AGE_DAYS = Number(process.env.BLD_MAX_AGE_DAYS || 365); // 층수는 거의 안 바뀌어 1년에 한 번만 다시 받는다
 const BLD_ENDPOINTS = ['https://apis.data.go.kr/1613000/BldRgstHubService', 'https://apis.data.go.kr/1613000/BldRgstService_v2'];
@@ -116,7 +118,7 @@ async function fetchPresaleMonth(code, ym, deadline) {
   const rows = [];
   for (let page = 1; page <= 10; page++) {
     calls.s++;
-    const url = `${PRESALE_ENDPOINT}?serviceKey=${SERVICE_KEY}&LAWD_CD=${code}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=${page}`;
+    const url = `${PRESALE_ENDPOINT}?serviceKey=${PRESALE_KEY}&LAWD_CD=${code}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=${page}`;
     const res = await fetchWithRetry(url, 5, deadline);
     const xml = await res.text();
     const rc = xmlTag(xml, 'resultCode');
