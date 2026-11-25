@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026년 11월 25일 AM 5:03",
-  "generatedDate": "2026-11-25",
+  "generatedAt": "2026년 11월 26일 AM 4:05",
+  "generatedDate": "2026-11-26",
   "transactions": [
     {
       "apt": "힐스테이트신검단센트럴",
@@ -21,7 +21,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "힐스테이트신검단센트럴",
@@ -42,7 +46,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "힐스테이트신검단센트럴",
@@ -63,7 +71,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "힐스테이트신검단센트럴",
@@ -84,7 +96,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "힐스테이트신검단센트럴",
@@ -105,7 +121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -126,7 +146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -147,7 +171,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "힐스테이트신검단센트럴",
@@ -168,7 +196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1001",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1001",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -189,7 +221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -210,7 +246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -231,7 +271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -252,7 +296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "우미린더시그니처",
@@ -273,7 +321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -294,7 +346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -315,7 +371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -336,7 +396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -357,7 +421,11 @@
       "buyer": "개인",
       "aptDong": "2304동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더시그니처",
@@ -378,7 +446,11 @@
       "buyer": "개인",
       "aptDong": "3001동",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -399,7 +471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -420,7 +496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -441,7 +521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -462,7 +546,11 @@
       "buyer": "개인",
       "aptDong": "2305동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -483,7 +571,11 @@
       "buyer": "개인",
       "aptDong": "2301동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더시그니처",
@@ -504,7 +596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -525,7 +621,11 @@
       "buyer": "개인",
       "aptDong": "3001동",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -546,7 +646,11 @@
       "buyer": "개인",
       "aptDong": "3012동",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -567,7 +671,11 @@
       "buyer": "개인",
       "aptDong": "2301동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -588,7 +696,11 @@
       "buyer": "개인",
       "aptDong": "2304동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -609,7 +721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "우미린더시그니처",
@@ -630,7 +746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -651,7 +771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -672,7 +796,11 @@
       "buyer": "개인",
       "aptDong": "2204동",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더시그니처",
@@ -693,7 +821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -714,7 +846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더헤리티지",
@@ -735,7 +871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더시그니처",
@@ -756,7 +896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -777,7 +921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -798,7 +946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -819,7 +971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -840,7 +996,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더헤리티지",
@@ -861,7 +1021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더시그니처",
@@ -882,7 +1046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -903,7 +1071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -924,7 +1096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -945,7 +1121,11 @@
       "buyer": "개인",
       "aptDong": "3102동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -966,7 +1146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -987,7 +1171,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1008,7 +1196,11 @@
       "buyer": "개인",
       "aptDong": "2202동",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더시그니처",
@@ -1029,7 +1221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋1차",
@@ -1050,7 +1246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1071,7 +1271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1092,7 +1296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역풍경채어바니티",
@@ -1113,7 +1321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1005-4",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "1005",
+      "bubun": "0004"
     },
     {
       "apt": "우미린더시그니처",
@@ -1134,7 +1346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋1차",
@@ -1155,7 +1371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1176,7 +1396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1197,7 +1421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1218,7 +1446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1239,7 +1471,36 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
+    },
+    {
+      "apt": "우미린더시그니처",
+      "dong": "원당동",
+      "area": "84.9732",
+      "amount": "79200",
+      "floor": "29",
+      "year": "2026",
+      "month": "11",
+      "day": "19",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "1022-1",
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더시그니처",
@@ -1260,7 +1521,11 @@
       "buyer": "개인",
       "aptDong": "3008동",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1281,7 +1546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1297,12 +1566,16 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "2411동",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1323,7 +1596,11 @@
       "buyer": "개인",
       "aptDong": "3103동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1344,7 +1621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1365,7 +1646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1386,7 +1671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1407,7 +1696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더시그니처",
@@ -1428,7 +1721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1449,7 +1746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1470,7 +1771,11 @@
       "buyer": "개인",
       "aptDong": "1802동",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1491,7 +1796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1512,7 +1821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1533,7 +1846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1554,7 +1871,11 @@
       "buyer": "개인",
       "aptDong": "2204동",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1575,7 +1896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1596,7 +1921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1617,7 +1946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더헤리티지",
@@ -1638,7 +1971,11 @@
       "buyer": "개인",
       "aptDong": "2202동",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1659,7 +1996,11 @@
       "buyer": "개인",
       "aptDong": "2401동",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -1680,7 +2021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1701,7 +2046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1722,7 +2071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -1743,7 +2096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1764,7 +2121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1785,7 +2146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1806,7 +2171,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1827,28 +2196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
-    },
-    {
-      "apt": "e편한세상검단어반센트로",
-      "dong": "당하동",
-      "area": "59.98",
-      "amount": "54800",
-      "floor": "5",
-      "year": "2026",
-      "month": "07",
-      "day": "26",
-      "buildYear": "2024",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "",
-      "jibun": "223-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1869,7 +2221,11 @@
       "buyer": "개인",
       "aptDong": "1802동",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋1차",
@@ -1890,7 +2246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더시그니처",
@@ -1911,7 +2271,11 @@
       "buyer": "개인",
       "aptDong": "3005동",
       "jibun": "1022-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1932,7 +2296,11 @@
       "buyer": "개인",
       "aptDong": "2407동",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -1953,7 +2321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -1974,7 +2346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋1차",
@@ -1995,7 +2371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -2016,7 +2396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2037,7 +2421,11 @@
       "buyer": "개인",
       "aptDong": "3103동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2058,7 +2446,11 @@
       "buyer": "개인",
       "aptDong": "3101동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2079,7 +2471,11 @@
       "buyer": "개인",
       "aptDong": "3101동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역풍경채어바니티2차",
@@ -2100,7 +2496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2121,7 +2521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2142,7 +2546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "우미린더시그니처",
@@ -2163,28 +2571,11 @@
       "buyer": "개인",
       "aptDong": "3003동",
       "jibun": "1022-1",
-      "leasehold": "N"
-    },
-    {
-      "apt": "호반써밋1차",
-      "dong": "원당동",
-      "area": "84.8917",
-      "amount": "74100",
-      "floor": "9",
-      "year": "2026",
-      "month": "07",
-      "day": "26",
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "경기 시흥시, 인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.11.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3109동",
-      "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2205,7 +2596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2226,7 +2621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2247,7 +2646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2268,7 +2671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2289,7 +2696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2310,7 +2721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2331,7 +2746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2352,7 +2771,11 @@
       "buyer": "개인",
       "aptDong": "3212동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역풍경채어바니티2차",
@@ -2373,7 +2796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -2389,12 +2816,16 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "2413동",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2415,7 +2846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2436,7 +2871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2457,7 +2896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2478,7 +2921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2499,7 +2946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2520,7 +2971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2541,7 +2996,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -2562,7 +3021,11 @@
       "buyer": "개인",
       "aptDong": "1802동",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2583,7 +3046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2604,7 +3071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2625,7 +3096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2646,7 +3121,11 @@
       "buyer": "개인",
       "aptDong": "3103동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2667,7 +3146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2688,7 +3171,11 @@
       "buyer": "개인",
       "aptDong": "3106동",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2709,7 +3196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2730,7 +3221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2751,7 +3246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2772,7 +3271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2793,7 +3296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -2814,7 +3321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2835,7 +3346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -2856,7 +3371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2877,7 +3396,11 @@
       "buyer": "개인",
       "aptDong": "3210동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -2898,7 +3421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -2919,7 +3446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2940,7 +3471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2961,7 +3496,11 @@
       "buyer": "개인",
       "aptDong": "3213동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -2982,7 +3521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋1차",
@@ -3003,7 +3546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1022",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1022",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3024,7 +3571,11 @@
       "buyer": "개인",
       "aptDong": "3203동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3045,7 +3596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "아라역금강펜테리움더시글로1차",
@@ -3066,7 +3621,11 @@
       "buyer": "개인",
       "aptDong": "9301동",
       "jibun": "1235",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1235",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3087,7 +3646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3108,7 +3671,11 @@
       "buyer": "개인",
       "aptDong": "3209동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -3129,7 +3696,11 @@
       "buyer": "개인",
       "aptDong": "2407동",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "아라역금강펜테리움더시글로1차",
@@ -3150,7 +3721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1235",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1235",
+      "bubun": "0000"
     },
     {
       "apt": "아라역금강펜테리움더시글로1차",
@@ -3171,7 +3746,11 @@
       "buyer": "개인",
       "aptDong": "9303동",
       "jibun": "1235",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1235",
+      "bubun": "0000"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -3192,7 +3771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "e편한세상검단어반센트로",
@@ -3213,7 +3796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "223-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "0223",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -3234,7 +3821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3255,7 +3846,11 @@
       "buyer": "개인",
       "aptDong": "1105동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3276,7 +3871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -3297,7 +3896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3318,7 +3921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -3339,7 +3946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3360,7 +3971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3381,7 +3996,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -3402,7 +4021,11 @@
       "buyer": "개인",
       "aptDong": "2305동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3423,7 +4046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3444,7 +4071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3465,7 +4096,11 @@
       "buyer": "개인",
       "aptDong": "3216동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3486,7 +4121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3507,7 +4146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -3528,7 +4171,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -3549,7 +4196,11 @@
       "buyer": "개인",
       "aptDong": "204동",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -3570,7 +4221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3591,7 +4246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3612,7 +4271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3633,28 +4296,11 @@
       "buyer": "개인",
       "aptDong": "503동",
       "jibun": "1276-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "신검단중앙역디에트르더에듀",
-      "dong": "불로동",
-      "area": "59.8701",
-      "amount": "48800",
-      "floor": "16",
-      "year": "2026",
-      "month": "07",
-      "day": "26",
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.08.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "4310동",
-      "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -3675,7 +4321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -3696,7 +4346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3717,7 +4371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3738,7 +4396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -3759,7 +4421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -3780,7 +4446,11 @@
       "buyer": "개인",
       "aptDong": "103동",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "아라역금강펜테리움더시글로1차",
@@ -3801,7 +4471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1235",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1235",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3822,7 +4496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3843,7 +4521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -3864,7 +4546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시푸르지오더베뉴",
@@ -3885,7 +4571,11 @@
       "buyer": "개인",
       "aptDong": "3211동",
       "jibun": "1018",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1018",
+      "bubun": "0000"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -3906,7 +4596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -3927,7 +4621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -3948,7 +4646,11 @@
       "buyer": "개인",
       "aptDong": "4311동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -3969,7 +4671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -3990,7 +4696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4011,7 +4721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4032,7 +4746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4053,7 +4771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4074,7 +4796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -4095,7 +4821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -4116,7 +4846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4137,7 +4871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아엘가그랑데",
@@ -4158,7 +4896,11 @@
       "buyer": "개인",
       "aptDong": "2304동",
       "jibun": "1063",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1063",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4179,7 +4921,11 @@
       "buyer": "개인",
       "aptDong": "4310동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4200,7 +4946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4221,7 +4971,11 @@
       "buyer": "개인",
       "aptDong": "4308동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4242,7 +4996,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -4263,7 +5021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4284,7 +5046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4305,7 +5071,11 @@
       "buyer": "개인",
       "aptDong": "510동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4326,7 +5096,11 @@
       "buyer": "개인",
       "aptDong": "511동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4347,7 +5121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4368,7 +5146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4389,7 +5171,11 @@
       "buyer": "개인",
       "aptDong": "4308동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "우미린더헤리티지",
@@ -4410,7 +5196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4431,7 +5221,11 @@
       "buyer": "개인",
       "aptDong": "501동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -4452,7 +5246,11 @@
       "buyer": "개인",
       "aptDong": "2701동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4473,7 +5271,11 @@
       "buyer": "개인",
       "aptDong": "4310동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4494,7 +5296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -4515,7 +5321,11 @@
       "buyer": "개인",
       "aptDong": "101동",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -4536,7 +5346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4557,7 +5371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4578,7 +5396,11 @@
       "buyer": "개인",
       "aptDong": "510동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4599,7 +5421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4620,7 +5446,11 @@
       "buyer": "개인",
       "aptDong": "511동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4641,7 +5471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4662,7 +5496,11 @@
       "buyer": "개인",
       "aptDong": "1109동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4683,7 +5521,11 @@
       "buyer": "개인",
       "aptDong": "1101동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "우미린더헤리티지",
@@ -4704,7 +5546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1065-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1065",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4725,7 +5571,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4746,7 +5596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4767,7 +5621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4788,7 +5646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -4809,7 +5671,11 @@
       "buyer": "개인",
       "aptDong": "4303동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4830,7 +5696,11 @@
       "buyer": "개인",
       "aptDong": "1102동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -4851,7 +5721,11 @@
       "buyer": "개인",
       "aptDong": "2701동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4872,7 +5746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -4893,7 +5771,11 @@
       "buyer": "개인",
       "aptDong": "512동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -4914,7 +5796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -4935,7 +5821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4956,7 +5846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -4977,7 +5871,11 @@
       "buyer": "개인",
       "aptDong": "1101동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -4998,7 +5896,11 @@
       "buyer": "개인",
       "aptDong": "602동",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5019,7 +5921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5040,7 +5946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5061,7 +5971,11 @@
       "buyer": "개인",
       "aptDong": "4307동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -5082,7 +5996,11 @@
       "buyer": "개인",
       "aptDong": "1108동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5103,7 +6021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -5124,7 +6046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5145,7 +6071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -5166,7 +6096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -5187,7 +6121,11 @@
       "buyer": "개인",
       "aptDong": "1108동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "검단 금호어울림 센트럴",
@@ -5208,7 +6146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1024",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1024",
+      "bubun": "0000"
     },
     {
       "apt": "e편한세상검단웰카운티",
@@ -5229,7 +6171,11 @@
       "buyer": "개인",
       "aptDong": "2511동",
       "jibun": "1026-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1026",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -5250,7 +6196,11 @@
       "buyer": "개인",
       "aptDong": "503동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5271,7 +6221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5292,7 +6246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -5313,7 +6271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -5334,7 +6296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -5355,7 +6321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -5376,7 +6346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5397,7 +6371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5418,7 +6396,11 @@
       "buyer": "개인",
       "aptDong": "4309동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5439,7 +6421,11 @@
       "buyer": "개인",
       "aptDong": "2702동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5460,7 +6446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -5481,7 +6471,11 @@
       "buyer": "개인",
       "aptDong": "501동",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5502,7 +6496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5523,7 +6521,11 @@
       "buyer": "개인",
       "aptDong": "2912동",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5544,7 +6546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "파라곤센트럴파크",
@@ -5565,7 +6571,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1276-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1276",
+      "bubun": "0002"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5586,7 +6596,11 @@
       "buyer": "개인",
       "aptDong": "4308동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5607,7 +6621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시한신더휴캐널파크(THEHUECANALPARK)",
@@ -5628,7 +6646,11 @@
       "buyer": "개인",
       "aptDong": "1101동",
       "jibun": "1254-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1254",
+      "bubun": "0001"
     },
     {
       "apt": "롯데캐슬넥스티엘",
@@ -5649,7 +6671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1061-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1061",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5670,7 +6696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -5691,7 +6721,11 @@
       "buyer": "개인",
       "aptDong": "2915동",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5712,7 +6746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5733,7 +6771,11 @@
       "buyer": "개인",
       "aptDong": "4305동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5754,7 +6796,11 @@
       "buyer": "개인",
       "aptDong": "4308동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5775,7 +6821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5796,7 +6846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5817,7 +6871,11 @@
       "buyer": "개인",
       "aptDong": "2704동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -5838,7 +6896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -5859,7 +6921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5880,7 +6946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5901,7 +6971,11 @@
       "buyer": "개인",
       "aptDong": "4303동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5922,7 +6996,11 @@
       "buyer": "개인",
       "aptDong": "4305동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -5943,7 +7021,11 @@
       "buyer": "개인",
       "aptDong": "2702동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5964,7 +7046,11 @@
       "buyer": "개인",
       "aptDong": "4309동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -5985,7 +7071,11 @@
       "buyer": "개인",
       "aptDong": "4305동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6006,7 +7096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6027,7 +7121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6048,7 +7146,11 @@
       "buyer": "개인",
       "aptDong": "1201동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "롯데캐슬넥스티엘",
@@ -6069,7 +7171,11 @@
       "buyer": "개인",
       "aptDong": "9101동",
       "jibun": "1061-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1061",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6090,7 +7196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -6111,7 +7221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6132,7 +7246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6153,7 +7271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6174,7 +7296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6195,7 +7321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6216,7 +7346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -6237,7 +7371,11 @@
       "buyer": "개인",
       "aptDong": "2704동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -6258,7 +7396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6279,7 +7421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6300,7 +7446,11 @@
       "buyer": "개인",
       "aptDong": "609동",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6321,7 +7471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6342,7 +7496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -6363,7 +7521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -6379,12 +7541,16 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "2705동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -6405,7 +7571,11 @@
       "buyer": "개인",
       "aptDong": "2706동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -6426,7 +7596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6447,7 +7621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6468,7 +7646,11 @@
       "buyer": "개인",
       "aptDong": "615동",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6489,7 +7671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6510,7 +7696,11 @@
       "buyer": "개인",
       "aptDong": "612동",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -6531,7 +7721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -6552,7 +7746,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -6573,7 +7771,11 @@
       "buyer": "개인",
       "aptDong": "2801동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6594,7 +7796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6615,7 +7821,11 @@
       "buyer": "개인",
       "aptDong": "1209동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -6636,7 +7846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -6657,7 +7871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6678,7 +7896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6699,7 +7921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6720,7 +7946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -6741,7 +7971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -6762,7 +7996,11 @@
       "buyer": "개인",
       "aptDong": "4306동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -6783,7 +8021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -6804,7 +8046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -6825,7 +8071,11 @@
       "buyer": "개인",
       "aptDong": "2917동",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6846,7 +8096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -6867,7 +8121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -6888,7 +8146,11 @@
       "buyer": "개인",
       "aptDong": "1210동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6909,7 +8171,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6930,7 +8196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6951,7 +8221,11 @@
       "buyer": "개인",
       "aptDong": "402",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6972,7 +8246,11 @@
       "buyer": "개인",
       "aptDong": "408",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -6993,7 +8271,11 @@
       "buyer": "개인",
       "aptDong": "406",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7014,7 +8296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -7035,7 +8321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7056,7 +8346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7077,7 +8371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7098,7 +8396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대방디에트르리버파크",
@@ -7119,7 +8421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1084-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1084",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7140,7 +8446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7161,7 +8471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7182,7 +8496,11 @@
       "buyer": "개인",
       "aptDong": "1209동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -7203,7 +8521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7224,7 +8546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -7240,12 +8566,16 @@
       "agentSgg": "인천 검단구",
       "cancelType": "",
       "cancelDay": "",
-      "regDate": "",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
-      "aptDong": "",
+      "aptDong": "4301동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -7266,7 +8596,11 @@
       "buyer": "개인",
       "aptDong": "403",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7287,7 +8621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -7308,7 +8646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -7329,7 +8671,11 @@
       "buyer": "개인",
       "aptDong": "4302동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7350,7 +8696,11 @@
       "buyer": "개인",
       "aptDong": "2706동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -7371,7 +8721,11 @@
       "buyer": "개인",
       "aptDong": "4301동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7392,7 +8746,11 @@
       "buyer": "개인",
       "aptDong": "3304동",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7413,7 +8771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7434,7 +8796,11 @@
       "buyer": "개인",
       "aptDong": "2709동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7455,7 +8821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7476,7 +8846,11 @@
       "buyer": "개인",
       "aptDong": "2710동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7497,7 +8871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7518,7 +8896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -7539,7 +8921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7560,7 +8946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7581,7 +8971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7602,7 +8996,11 @@
       "buyer": "개인",
       "aptDong": "3301동",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -7623,7 +9021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰2단지",
@@ -7644,7 +9046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1311-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1311",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7665,7 +9071,11 @@
       "buyer": "개인",
       "aptDong": "2709동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역디에트르더에듀",
@@ -7686,7 +9096,11 @@
       "buyer": "개인",
       "aptDong": "4301동",
       "jibun": "965-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0965",
+      "bubun": "0002"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -7707,7 +9121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7728,7 +9146,11 @@
       "buyer": "개인",
       "aptDong": "3306동",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -7749,7 +9171,11 @@
       "buyer": "개인",
       "aptDong": "3305동",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7770,7 +9196,11 @@
       "buyer": "개인",
       "aptDong": "1205동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -7791,7 +9221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7812,7 +9246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7833,7 +9271,11 @@
       "buyer": "개인",
       "aptDong": "2705동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -7854,7 +9296,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -7875,7 +9321,11 @@
       "buyer": "개인",
       "aptDong": "2911동",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -7896,7 +9346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7917,7 +9371,11 @@
       "buyer": "개인",
       "aptDong": "1201동",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -7938,7 +9396,11 @@
       "buyer": "공공기관",
       "aptDong": "801동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "유승한내들 에듀파크",
@@ -7959,7 +9421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1272-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1272",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -7980,7 +9446,11 @@
       "buyer": "개인",
       "aptDong": "2710동",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8001,7 +9471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "예미지더시그너스",
@@ -8022,7 +9496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -8043,7 +9521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8064,7 +9546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "e편한세상검단에코비스타",
@@ -8085,7 +9571,11 @@
       "buyer": "개인",
       "aptDong": "7102동",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10300",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8106,7 +9596,11 @@
       "buyer": "공공기관",
       "aptDong": "803동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8127,7 +9621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8148,7 +9646,11 @@
       "buyer": "공공기관",
       "aptDong": "806동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -8169,7 +9671,11 @@
       "buyer": "개인",
       "aptDong": "3301동",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -8190,7 +9696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8211,7 +9721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "신검단중앙역금강펜테리움센트럴파크",
@@ -8232,7 +9746,11 @@
       "buyer": "개인",
       "aptDong": "4810동",
       "jibun": "971",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0971",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시예미지트리플에듀",
@@ -8253,7 +9771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1014",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1014",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -8274,7 +9796,11 @@
       "buyer": "개인",
       "aptDong": "401",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8295,7 +9821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8316,7 +9846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시파라곤보타닉파크",
@@ -8337,7 +9871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1020-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1020",
+      "bubun": "0001"
     },
     {
       "apt": "e편한세상검단에코비스타",
@@ -8358,7 +9896,11 @@
       "buyer": "개인",
       "aptDong": "7109동",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10300",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8379,7 +9921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8400,7 +9946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8421,7 +9971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8442,7 +9996,11 @@
       "buyer": "개인",
       "aptDong": "805동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "신검단중앙역금강펜테리움센트럴파크",
@@ -8463,7 +10021,11 @@
       "buyer": "개인",
       "aptDong": "4801동",
       "jibun": "971",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0971",
+      "bubun": "0000"
     },
     {
       "apt": "우미린파크뷰1단지",
@@ -8484,7 +10046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1305-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1305",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시디에트르더힐",
@@ -8505,7 +10071,11 @@
       "buyer": "개인",
       "aptDong": "2910동",
       "jibun": "987-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8526,7 +10096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -8547,7 +10121,11 @@
       "buyer": "개인",
       "aptDong": "309동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역칸타빌더스위트",
@@ -8568,7 +10146,11 @@
       "buyer": "개인",
       "aptDong": "101동",
       "jibun": "810-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0810",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8589,7 +10171,11 @@
       "buyer": "개인",
       "aptDong": "807동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "e편한세상검단에코비스타",
@@ -8610,7 +10196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10300",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -8631,7 +10221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -8652,7 +10246,11 @@
       "buyer": "개인",
       "aptDong": "2807동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8673,7 +10271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -8694,28 +10296,11 @@
       "buyer": "개인",
       "aptDong": "2806동",
       "jibun": "987",
-      "leasehold": "N"
-    },
-    {
-      "apt": "검단신도시로제비앙라포레",
-      "dong": "원당동",
-      "area": "79.0123",
-      "amount": "49700",
-      "floor": "16",
-      "year": "2026",
-      "month": "07",
-      "day": "26",
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구, 인천 부평구",
-      "cancelType": "",
-      "cancelDay": "",
-      "regDate": "26.11.05",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2806동",
-      "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "e편한세상검단에코비스타",
@@ -8736,7 +10321,11 @@
       "buyer": "개인",
       "aptDong": "7109동",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10300",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "예미지더시그너스",
@@ -8757,7 +10346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -8778,7 +10371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -8799,7 +10396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -8820,7 +10421,11 @@
       "buyer": "개인",
       "aptDong": "705동",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "예미지더시그너스",
@@ -8841,7 +10446,11 @@
       "buyer": "개인",
       "aptDong": "908동",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "예미지더시그너스",
@@ -8862,7 +10471,11 @@
       "buyer": "개인",
       "aptDong": "908동",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -8883,7 +10496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "e편한세상검단에코비스타",
@@ -8904,7 +10521,36 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10300",
+      "bonbun": "0000",
+      "bubun": "0000"
+    },
+    {
+      "apt": "검단신도시디에트르더힐",
+      "dong": "원당동",
+      "area": "84.6755",
+      "amount": "52500",
+      "floor": "1",
+      "year": "2026",
+      "month": "11",
+      "day": "18",
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "cancelType": "",
+      "cancelDay": "",
+      "regDate": "",
+      "seller": "개인",
+      "buyer": "개인",
+      "aptDong": "",
+      "jibun": "987-1",
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -8925,7 +10571,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "e편한세상검단웰카운티",
@@ -8946,7 +10596,11 @@
       "buyer": "개인",
       "aptDong": "2505동",
       "jibun": "1026-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "1026",
+      "bubun": "0001"
     },
     {
       "apt": "예미지더시그너스",
@@ -8967,7 +10621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -8988,7 +10646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9009,7 +10671,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9030,7 +10696,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "예미지더시그너스",
@@ -9051,7 +10721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단호수공원역호반써밋",
@@ -9072,7 +10746,11 @@
       "buyer": "개인",
       "aptDong": "5401동",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -9093,7 +10771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9114,7 +10796,11 @@
       "buyer": "개인",
       "aptDong": "804동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9135,7 +10821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시디에트르더펠리체",
@@ -9156,7 +10846,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-6",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0006"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9177,7 +10871,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9198,7 +10896,11 @@
       "buyer": "개인",
       "aptDong": "2808동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9219,7 +10921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9240,7 +10946,11 @@
       "buyer": "개인",
       "aptDong": "2802동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "신검단중앙역금강펜테리움센트럴파크",
@@ -9261,7 +10971,11 @@
       "buyer": "개인",
       "aptDong": "4801동",
       "jibun": "971",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0971",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9282,7 +10996,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9303,7 +11021,11 @@
       "buyer": "개인",
       "aptDong": "803동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9324,7 +11046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단호수공원역호반써밋",
@@ -9345,7 +11071,11 @@
       "buyer": "개인",
       "aptDong": "5406동",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9366,7 +11096,11 @@
       "buyer": "개인",
       "aptDong": "310동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "예미지더시그너스",
@@ -9387,7 +11121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "예미지더시그너스",
@@ -9408,7 +11146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9429,7 +11171,11 @@
       "buyer": "개인",
       "aptDong": "703동",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단호수공원역호반써밋",
@@ -9450,7 +11196,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "가-",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "11000",
+      "bonbun": "0000",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9471,7 +11221,11 @@
       "buyer": "개인",
       "aptDong": "2804동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9492,7 +11246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9513,7 +11271,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9534,7 +11296,11 @@
       "buyer": "개인",
       "aptDong": "2808동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9555,7 +11321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9576,7 +11346,11 @@
       "buyer": "개인",
       "aptDong": "302동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9597,7 +11371,11 @@
       "buyer": "개인",
       "aptDong": "305동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9618,7 +11396,11 @@
       "buyer": "개인",
       "aptDong": "301동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9639,7 +11421,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9660,7 +11446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9681,7 +11471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -9702,7 +11496,11 @@
       "buyer": "개인",
       "aptDong": "2802동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9723,7 +11521,11 @@
       "buyer": "개인",
       "aptDong": "305동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "예미지더시그너스",
@@ -9744,7 +11546,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9765,7 +11571,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9786,7 +11596,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9807,7 +11621,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9828,7 +11646,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9849,7 +11671,11 @@
       "buyer": "개인",
       "aptDong": "301동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9870,7 +11696,11 @@
       "buyer": "개인",
       "aptDong": "801동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9891,7 +11721,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "예미지더시그너스",
@@ -9912,7 +11746,11 @@
       "buyer": "개인",
       "aptDong": "903동",
       "jibun": "1316-1",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0001"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -9933,7 +11771,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9954,7 +11796,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -9975,7 +11821,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -9996,7 +11846,11 @@
       "buyer": "개인",
       "aptDong": "706동",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시모아미래도엘리트파크",
@@ -10017,7 +11871,11 @@
       "buyer": "개인",
       "aptDong": "801동",
       "jibun": "1318-8",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1318",
+      "bubun": "0008"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10038,7 +11896,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10059,7 +11921,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10080,7 +11946,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10101,7 +11971,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10122,7 +11996,11 @@
       "buyer": "개인",
       "aptDong": "306동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10143,7 +12021,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -10164,7 +12046,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10185,7 +12071,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10206,7 +12096,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10227,7 +12121,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10248,7 +12146,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10269,7 +12171,11 @@
       "buyer": "개인",
       "aptDong": "304동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -10290,7 +12196,11 @@
       "buyer": "개인",
       "aptDong": "2806동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10311,7 +12221,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10332,7 +12246,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10353,7 +12271,11 @@
       "buyer": "개인",
       "aptDong": "303동",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -10374,7 +12296,11 @@
       "buyer": "개인",
       "aptDong": "2809동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10395,7 +12321,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -10416,7 +12346,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10437,7 +12371,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10458,7 +12396,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시로제비앙라포레",
@@ -10479,7 +12421,11 @@
       "buyer": "개인",
       "aptDong": "2804동",
       "jibun": "987",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10500",
+      "bonbun": "0987",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10500,7 +12446,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10521,7 +12471,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -10542,7 +12496,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "검단신도시대성베르힐라프리미어",
@@ -10563,7 +12521,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1316-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1316",
+      "bubun": "0002"
     },
     {
       "apt": "호반써밋프라임뷰",
@@ -10584,7 +12546,11 @@
       "buyer": "개인",
       "aptDong": "406",
       "jibun": "1314-2",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0002"
     },
     {
       "apt": "검단신안인스빌어반퍼스트",
@@ -10605,7 +12571,11 @@
       "buyer": "개인",
       "aptDong": "",
       "jibun": "1314",
-      "leasehold": "N"
+      "leasehold": "N",
+      "sggCd": "28290",
+      "umdCd": "10400",
+      "bonbun": "1314",
+      "bubun": "0000"
     }
   ],
   "ranking": [
@@ -10710,16 +12680,6 @@
       "ppy": 2278
     },
     {
-      "apt": "e편한세상검단어반센트로",
-      "dong": "당하동",
-      "amountText": "5억 4,800만원",
-      "amount": 54800,
-      "area": 59.98,
-      "floor": "5",
-      "date": "2026.07.26",
-      "ppy": 2265
-    },
-    {
       "apt": "신검단중앙역풍경채어바니티2차",
       "dong": "불로동",
       "amountText": "6억 6,000만원",
@@ -10788,6 +12748,16 @@
       "floor": "8",
       "date": "2026.09.04",
       "ppy": 2068
+    },
+    {
+      "apt": "e편한세상검단어반센트로",
+      "dong": "당하동",
+      "amountText": "5억원",
+      "amount": 50000,
+      "area": 59.99,
+      "floor": "2",
+      "date": "2026.10.12",
+      "ppy": 2066
     },
     {
       "apt": "파라곤센트럴파크",
@@ -11922,6 +13892,22 @@
       "dong": "원당동",
       "area": 84.9732,
       "amount": 79200,
+      "floor": "29",
+      "date": "2026.11.19",
+      "ppy": 2366,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "1022-1",
+      "leasehold": "N"
+    },
+    {
+      "apt": "우미린더시그니처",
+      "dong": "원당동",
+      "area": 84.9732,
+      "amount": 79200,
       "floor": "26",
       "date": "2026.09.02",
       "ppy": 2366,
@@ -11962,8 +13948,10 @@
       "buildYear": "2021",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "2411동",
       "jibun": "1024",
       "leasehold": "N"
     },
@@ -12377,22 +14365,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "e편한세상검단어반센트로",
-      "dong": "당하동",
-      "area": 59.98,
-      "amount": 54800,
-      "floor": "5",
-      "date": "2026.07.26",
-      "ppy": 2265,
-      "buildYear": "2024",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "seller": "개인",
-      "buyer": "개인",
-      "jibun": "223-1",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시대방디에트르리버파크",
       "dong": "원당동",
       "area": 59.9971,
@@ -12647,24 +14619,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "호반써밋1차",
-      "dong": "원당동",
-      "area": 84.8917,
-      "amount": 74100,
-      "floor": "9",
-      "date": "2026.07.26",
-      "ppy": 2216,
-      "buildYear": "2021",
-      "dealType": "중개거래",
-      "agentSgg": "경기 시흥시, 인천 검단구",
-      "regDate": "26.11.20",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "3109동",
-      "jibun": "1022",
-      "leasehold": "N"
-    },
-    {
       "apt": "검단신도시푸르지오더베뉴",
       "dong": "원당동",
       "area": 84.93,
@@ -12821,8 +14775,10 @@
       "buildYear": "2021",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "2413동",
       "jibun": "1024",
       "leasehold": "N"
     },
@@ -13798,24 +15754,6 @@
       "buyer": "개인",
       "aptDong": "503동",
       "jibun": "1276-2",
-      "leasehold": "N"
-    },
-    {
-      "apt": "신검단중앙역디에트르더에듀",
-      "dong": "불로동",
-      "area": 59.8701,
-      "amount": 48800,
-      "floor": "16",
-      "date": "2026.07.26",
-      "ppy": 2021,
-      "buildYear": "2026",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구",
-      "regDate": "26.08.31",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "4310동",
-      "jibun": "965-2",
       "leasehold": "N"
     },
     {
@@ -15987,8 +17925,10 @@
       "buildYear": "2022",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "2705동",
       "jibun": "1014",
       "leasehold": "N"
     },
@@ -16666,8 +18606,10 @@
       "buildYear": "2026",
       "dealType": "중개거래",
       "agentSgg": "인천 검단구",
+      "regDate": "26.11.20",
       "seller": "개인",
       "buyer": "개인",
+      "aptDong": "4301동",
       "jibun": "965-2",
       "leasehold": "N"
     },
@@ -17839,24 +19781,6 @@
       "leasehold": "N"
     },
     {
-      "apt": "검단신도시로제비앙라포레",
-      "dong": "원당동",
-      "area": 79.0123,
-      "amount": 49700,
-      "floor": "16",
-      "date": "2026.07.26",
-      "ppy": 1591,
-      "buildYear": "2022",
-      "dealType": "중개거래",
-      "agentSgg": "인천 검단구, 인천 부평구",
-      "regDate": "26.11.05",
-      "seller": "개인",
-      "buyer": "개인",
-      "aptDong": "2806동",
-      "jibun": "987",
-      "leasehold": "N"
-    },
-    {
       "apt": "e편한세상검단에코비스타",
       "dong": "마전동",
       "area": 84.9654,
@@ -18006,6 +19930,22 @@
       "seller": "개인",
       "buyer": "개인",
       "jibun": "가-",
+      "leasehold": "N"
+    },
+    {
+      "apt": "검단신도시디에트르더힐",
+      "dong": "원당동",
+      "area": 84.6755,
+      "amount": 52500,
+      "floor": "1",
+      "date": "2026.11.18",
+      "ppy": 1574,
+      "buildYear": "2022",
+      "dealType": "중개거래",
+      "agentSgg": "인천 검단구",
+      "seller": "개인",
+      "buyer": "개인",
+      "jibun": "987-1",
       "leasehold": "N"
     },
     {
@@ -19421,6 +21361,7 @@
     "검단 금호어울림 센트럴|원당동|74.84|23|20260921|70500": "",
     "검단 금호어울림 센트럴|원당동|84.52|26|20260905|79000": "",
     "호반써밋1차|원당동|72.5409|17|20261114|68000": "2026-11-19",
+    "우미린더시그니처|원당동|84.9732|29|20261119|79200": "2026-11-26",
     "우미린더시그니처|원당동|84.9732|26|20260902|79200": "",
     "검단 금호어울림 센트럴|원당동|74.84|20|20261024|70000": "",
     "검단 금호어울림 센트럴|원당동|74.84|23|20260817|70000": "",
@@ -19449,7 +21390,6 @@
     "검단신도시대방디에트르리버파크|원당동|59.9834|17|20261017|55000": "",
     "검단신도시대방디에트르리버파크|원당동|59.9971|27|20260905|55000": "",
     "검단 금호어울림 센트럴|원당동|84.52|19|20261103|75500": "",
-    "e편한세상검단어반센트로|당하동|59.98|5|20260726|54800": "",
     "검단신도시대방디에트르리버파크|원당동|59.9971|17|20260830|54700": "",
     "호반써밋1차|원당동|84.8917|19|20261107|75300": "",
     "우미린더시그니처|원당동|84.9732|29|20260916|75200": "",
@@ -19465,7 +21405,6 @@
     "호반써밋1차|원당동|84.8917|12|20261009|74300": "",
     "검단신도시푸르지오더베뉴|원당동|84.93|20|20261017|74200": "",
     "우미린더시그니처|원당동|74.0973|15|20260828|65000": "",
-    "호반써밋1차|원당동|84.8917|9|20260726|74100": "",
     "검단신도시푸르지오더베뉴|원당동|84.93|10|20261121|74000": "2026-11-24",
     "검단신도시푸르지오더베뉴|원당동|84.93|25|20261031|74000": "",
     "검단신도시푸르지오더베뉴|원당동|84.93|26|20260901|74000": "",
@@ -19535,7 +21474,6 @@
     "파라곤센트럴파크|당하동|84.986|17|20261114|67800": "",
     "파라곤센트럴파크|당하동|84.986|20|20261108|67800": "",
     "파라곤센트럴파크|당하동|84.986|9|20260825|67800": "",
-    "신검단중앙역디에트르더에듀|불로동|59.8701|16|20260726|48800": "",
     "검단신도시모아엘가그랑데|원당동|84.5928|17|20261006|67300": "",
     "검단신도시디에트르더펠리체|당하동|75.7971|22|20261114|60500": "",
     "검단신도시푸르지오더베뉴|원당동|105.52|8|20260824|82000": "",
@@ -19776,7 +21714,6 @@
     "검단신도시로제비앙라포레|원당동|79.0123|8|20260912|50000": "",
     "검단신도시모아미래도엘리트파크|당하동|84.6561|2|20261005|53300": "",
     "검단신도시로제비앙라포레|원당동|79.0123|15|20260728|49700": "",
-    "검단신도시로제비앙라포레|원당동|79.0123|16|20260726|49700": "",
     "e편한세상검단에코비스타|마전동|84.9654|7|20261023|53100": "",
     "예미지더시그너스|당하동|84.9559|19|20261113|53000": "",
     "검단신도시대성베르힐라프리미어|당하동|84.9376|10|20261105|53000": "",
@@ -19786,6 +21723,7 @@
     "예미지더시그너스|당하동|84.9559|10|20260801|53000": "",
     "검단신도시모아미래도엘리트파크|당하동|84.6561|2|20260822|52800": "",
     "e편한세상검단에코비스타|마전동|84.9746|8|20261013|52700": "",
+    "검단신도시디에트르더힐|원당동|84.6755|1|20261118|52500": "2026-11-26",
     "검단신도시로제비앙라포레|원당동|84.4159|8|20260907|52300": "",
     "e편한세상검단웰카운티|원당동|59.9077|2|20260918|38000": "",
     "예미지더시그너스|당하동|84.9559|8|20261115|52500": "",
@@ -20330,6 +22268,50 @@
       "month": "07",
       "day": "25",
       "date": "2026-11-25"
+    },
+    {
+      "key": "e편한세상검단어반센트로|당하동|59.98|5|20260726|54800",
+      "apt": "e편한세상검단어반센트로",
+      "area": "59.98",
+      "floor": "5",
+      "amount": "54800",
+      "year": "2026",
+      "month": "07",
+      "day": "26",
+      "date": "2026-11-26"
+    },
+    {
+      "key": "호반써밋1차|원당동|84.8917|9|20260726|74100",
+      "apt": "호반써밋1차",
+      "area": "84.8917",
+      "floor": "9",
+      "amount": "74100",
+      "year": "2026",
+      "month": "07",
+      "day": "26",
+      "date": "2026-11-26"
+    },
+    {
+      "key": "신검단중앙역디에트르더에듀|불로동|59.8701|16|20260726|48800",
+      "apt": "신검단중앙역디에트르더에듀",
+      "area": "59.8701",
+      "floor": "16",
+      "amount": "48800",
+      "year": "2026",
+      "month": "07",
+      "day": "26",
+      "date": "2026-11-26"
+    },
+    {
+      "key": "검단신도시로제비앙라포레|원당동|79.0123|16|20260726|49700",
+      "apt": "검단신도시로제비앙라포레",
+      "area": "79.0123",
+      "floor": "16",
+      "amount": "49700",
+      "year": "2026",
+      "month": "07",
+      "day": "26",
+      "date": "2026-11-26"
     }
   ]
 }
