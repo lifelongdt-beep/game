@@ -98,6 +98,8 @@ footer{color:var(--sub);font-size:13px;text-align:center;margin-top:24px}
 button.link{all:unset;cursor:pointer;color:var(--ink);font-weight:600;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .apt .see{flex:none;margin-left:8px;padding:6px 10px;font-size:13px}
+.map{height:280px;border-radius:12px;overflow:hidden;background:var(--accent-soft);z-index:0}
+.map .leaflet-tooltip{font-weight:700}
 .fig{position:relative;height:240px;margin:8px 0 4px}
 .fig svg{position:absolute;inset:0;width:100%;height:100%}
 .fig .ax{fill:var(--sub);font-size:11px}
@@ -204,6 +206,9 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <p class="note" style="margin-bottom:10px">보고 싶은 주제를 고르면 그 주제 기사만 보여요. 아무것도 안 고르면 전부 보여요.</p>
       <div id="topicChips" class="chips wrap-chips"></div></section>
     <section class="card"><h2 id="localTitle"></h2><div id="localNews"></div></section>
+    <section class="card" id="mapCard" hidden><h2>🗺️ 지도</h2>
+      <div id="map" class="map"></div>
+      <p id="mapNote" class="note" style="margin-top:6px"></p></section>
     <section class="card" id="mineDash" hidden><h2>📊 시세 흐름과 분석</h2>
       <div id="mdStats"></div>
       <p id="mdLegend" class="legend"></p>
@@ -539,6 +544,88 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('mineDash').hidden = true;
     if (current.mine) renderMineDash();
     show('briefing');
+    renderMap();
+  }
+
+  // ── 지도 ── 오픈스트리트맵 지도(Leaflet, lib/에 함께 둠) 위에 시군구 또는 나만의 동네에 담은 동의 경계를 그린다.
+  // 경계·위치는 Nominatim(오픈스트리트맵 주소 검색)에 이름으로 물어 이 기기에 저장해 두고 다시 묻지 않는다(1초에 한 번 규칙을 지킨다).
+  var SIDO_FULL = { 서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시', 대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시',
+    경기: '경기도', 강원: '강원특별자치도', 충북: '충청북도', 충남: '충청남도', 전북: '전북특별자치도', 전남: '전라남도', 경북: '경상북도', 경남: '경상남도', 제주: '제주특별자치도' };
+  var GEO_KEY = 'briefing-geo-v1', geoCache = parse(GEO_KEY, {}), geoQueue = Promise.resolve(), lastGeoAt = 0;
+  var leafletReady = null, map = null, mapLayer = null, mapSeq = 0;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (!leafletReady) leafletReady = new Promise(function (ok, fail) {
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'lib/leaflet.css'; document.head.appendChild(css);
+      var js = document.createElement('script'); js.src = 'lib/leaflet.js';
+      js.onload = function () { ok(window.L); }; js.onerror = function () { leafletReady = null; fail(new Error('leaflet')); };
+      document.head.appendChild(js);
+    });
+    return leafletReady;
+  }
+  function geocode(q) {
+    if (geoCache[q] !== undefined) return Promise.resolve(geoCache[q]);
+    var job = geoQueue.then(function () {
+      if (geoCache[q] !== undefined) return geoCache[q];
+      var wait = Math.max(0, lastGeoAt + 1100 - Date.now());
+      return new Promise(function (r) { setTimeout(r, wait); }).then(function () {
+        lastGeoAt = Date.now();
+        return fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&polygon_threshold=0.0003&countrycodes=kr&accept-language=ko&limit=1&q=' + encodeURIComponent(q))
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); })
+          .then(function (list) {
+            var h = list && list[0];
+            var v = h ? { lat: Number(h.lat), lon: Number(h.lon), bb: (h.boundingbox || []).map(Number), g: /Polygon/.test((h.geojson || {}).type) ? h.geojson : null } : null;
+            geoCache[q] = v;
+            try { localStorage.setItem(GEO_KEY, JSON.stringify(geoCache)); } catch (e) { geoCache = {}; geoCache[q] = v; }
+            return v;
+          });
+      });
+    });
+    geoQueue = job.catch(function () {});
+    return job.catch(function () { return null; });
+  }
+  function mapTargets() {
+    if (current.mine) return mine.areas.map(function (a) { var r = regionOf(a.c); return r ? { q: (SIDO_FULL[r.sido] || r.sido) + ' ' + r.name + ' ' + a.d, label: a.d } : null; }).filter(Boolean);
+    var r = regionOf(current.code);
+    return r ? [{ q: (SIDO_FULL[r.sido] || r.sido) + ' ' + r.name, label: r.name }] : [];
+  }
+  function renderMap() {
+    var seq = ++mapSeq, targets = mapTargets();
+    $('mapCard').hidden = !targets.length;
+    if (!targets.length) return;
+    $('mapNote').textContent = '지도를 불러오는 중이에요…';
+    loadLeaflet().then(function (L) {
+      if (seq !== mapSeq) return;
+      if (!map) {
+        map = L.map('map', { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([36.4, 127.8], 7);
+        map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+        mapLayer = L.layerGroup().addTo(map);
+      }
+      map.invalidateSize();
+      mapLayer.clearLayers();
+      var bounds = L.latLngBounds([]), shown = 0, missing = [];
+      return targets.reduce(function (p, t, i) {
+        return p.then(function () {
+          return geocode(t.q).then(function (g) {
+            if (seq !== mapSeq) return;
+            if (!g) { missing.push(t.label); return; }
+            var color = targets.length > 1 ? DONG_COLORS[i % DONG_COLORS.length] : '#1f6feb';
+            var layer = g.g ? L.geoJSON(g.g, { style: { color: color, weight: 2, fillColor: color, fillOpacity: 0.15 } })
+              : L.circleMarker([g.lat, g.lon], { radius: 9, color: color, fillColor: color, fillOpacity: 0.5 });
+            layer.bindTooltip(t.label, { sticky: true });
+            layer.addTo(mapLayer); shown++;
+            bounds.extend(g.g ? layer.getBounds() : [g.lat, g.lon]);
+            map.invalidateSize();
+            map.fitBounds(bounds, { padding: [16, 16], maxZoom: 15 });
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        if (seq !== mapSeq) return;
+        $('mapNote').textContent = shown ? (current.mine ? '담은 동의 경계예요.' : '선택한 시군구의 경계예요.') + (missing.length ? ' 위치를 못 찾은 곳: ' + missing.join(', ') : '') + ' 단지 위치는 좌표 API가 준비되면 점으로 표시할게요.'
+          : '지도 위치를 찾지 못했어요. 잠시 뒤 다시 열어 주세요.';
+      });
+    }).catch(function () { if (seq === mapSeq) $('mapNote').textContent = '지도를 불러오지 못했어요.'; });
   }
 
   // ── 나만의 동네 시세 흐름과 분석 ──
