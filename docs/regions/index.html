@@ -83,6 +83,7 @@ button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .fig .grid{stroke:var(--line)}
 .fig .dot{fill:var(--accent);opacity:.28}
 .fig .line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.hist td.est{color:var(--sub);opacity:.7}
 .fig .gapfill{fill:rgba(247,144,9,.18);stroke:none}
 .fig .gaplabel{fill:#b54708;font-weight:700}
 @media (prefers-color-scheme:dark){.fig .gaplabel{fill:#fdb022}}
@@ -560,11 +561,14 @@ ul.rec .right{text-align:right;white-space:nowrap}
     if (!ms.length) return [];
     var lo = Math.min.apply(null, ms), hi = Math.max.apply(null, ms), out = [];
     var win = function (src, m) { return [].concat(src[m] || [], src[m - 1] || [], src[m - 2] || []); };
+    // 3개월 창에도 거래가 없는 달은 바로 전 값을 이어 써서 선이 끊기지 않게 한다(est로 표시).
+    var sale = null, jeon = null;
     for (var m = lo; m <= hi; m++) {
       var a = win(t, m), b = win(j, m);
-      if (!a.length || !b.length) continue;
-      var sale = median(a), jeon = median(b);
-      out.push({ m: m, sale: sale, jeon: jeon, gap: sale - jeon, ratio: jeon / sale * 100, n: a.length + b.length });
+      if (a.length) sale = median(a);
+      if (b.length) jeon = median(b);
+      if (sale == null || jeon == null) continue;
+      out.push({ m: m, sale: sale, jeon: jeon, gap: sale - jeon, ratio: jeon / sale * 100, estS: !a.length, estJ: !b.length });
     }
     return out;
   }
@@ -608,8 +612,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var g = apt.gap.slice().reverse();
     $('aptList').innerHTML = '<table class="hist"><thead><tr><th>달</th><th>매매</th><th>전세</th><th>갭</th><th>전세가율</th></tr></thead><tbody>' +
       g.slice(0, apt.limit).map(function (p) {
-        return '<tr><td>' + fmtMonth(p.m) + '</td><td>' + esc(won(p.sale)) + '</td><td>' + esc(won(p.jeon)) + '</td><td><b>' + esc(won(p.gap)) + '</b></td><td>' + p.ratio.toFixed(0) + '%</td></tr>';
-      }).join('') + '</tbody></table><p class="note">달마다 그달까지 최근 3개월 거래의 중앙값이에요.</p>' + (g.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (g.length - apt.limit) + '달 남음)</button></p>' : '');
+        return '<tr><td>' + fmtMonth(p.m) + '</td><td' + (p.estS ? ' class="est"' : '') + '>' + esc(won(p.sale)) + '</td><td' + (p.estJ ? ' class="est"' : '') + '>' + esc(won(p.jeon)) + '</td><td><b>' + esc(won(p.gap)) + '</b></td><td>' + p.ratio.toFixed(0) + '%</td></tr>';
+      }).join('') + '</tbody></table><p class="note">달마다 그달까지 최근 3개월 거래의 중앙값이에요.' + (g.some(function (p) { return p.estS || p.estJ; }) ? ' 흐린 값은 그 3개월에 거래가 없어 앞 달 값을 이어 쓴 거예요.' : '') + '</p>' + (g.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (g.length - apt.limit) + '달 남음)</button></p>' : '');
   }
   function drawGap() {
     var svg = $('aptSvg'), g = apt.gap || [];
@@ -633,10 +637,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       var mv = Math.round(m0 + (m1 - m0) * t / ticks);
       out += '<text class="ax" x="' + x(mv).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (t === 0 ? 'start' : t === ticks ? 'end' : 'middle') + '">' + String(Math.floor(mv / 12)).slice(2) + '.' + String(mv % 12 + 1).padStart(2, '0') + '</text>';
     }
-    // 이어진 달끼리 한 덩어리로 그려, 빈 달은 선을 끊는다.
-    var runs = [], cur = [];
-    g.forEach(function (p, i) { if (i && p.m !== g[i - 1].m + 1) { runs.push(cur); cur = []; } cur.push(p); });
-    runs.push(cur);
+    var runs = [g];
     var pt = function (p, key) { return x(p.m).toFixed(1) + ' ' + y(p[key]).toFixed(1); };
     runs.forEach(function (run) {
       out += '<path class="gapfill" d="M' + run.map(function (p) { return pt(p, 'sale'); }).join(' L') + ' L' + run.slice().reverse().map(function (p) { return pt(p, 'jeon'); }).join(' L') + ' Z"/>';
