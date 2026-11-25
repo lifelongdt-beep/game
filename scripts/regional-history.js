@@ -20,13 +20,22 @@ const RENT_MONTHS = Number(process.env.REGION_HIST_RENT_MONTHS || 24); // 전월
 const REFRESH_MONTHS = Number(process.env.REGION_REFRESH_MONTHS || 3); // 늦은 신고·해제를 반영하려고 매번 다시 받는 최근 달 수
 // 공공데이터포털 개발계정은 서비스마다 하루 10,000번이 한도라, 매매·전월세 각각 이만큼만 부른다(나머지는 다음 날 이어 받음).
 const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
+// 건축물대장(동별 지상 층수 → 탑층 표시). 따로 받은 키가 있으면 그 키를, 없으면 실거래 키를 쓴다.
+const BLD_KEY = process.env.BLD_SERVICE_KEY || SERVICE_KEY;
+const BLD_CALL_LIMIT = Number(process.env.BLD_CALL_LIMIT || 8000);
+const BLD_MAX_AGE_DAYS = Number(process.env.BLD_MAX_AGE_DAYS || 365); // 층수는 거의 안 바뀌어 1년에 한 번만 다시 받는다
+const BLD_ENDPOINTS = [
+  'https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo',
+  'https://apis.data.go.kr/1613000/BldRgstService_v2/getBrTitleInfo',
+];
+let bldEndpoint = 0;
 
 const RENT_ENDPOINTS = [
   'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent',
   'https://apis.data.go.kr/1613000/RTMSDataSvcAptRentDev/getRTMSDataSvcAptRentDev',
 ];
 let rentEndpoint = 0;
-const calls = { t: 0, r: 0 };
+const calls = { t: 0, r: 0, b: 0 };
 const num0 = (v) => Number(String(v || '0').replace(/[,\s]/g, '')) || 0;
 const ymd = (y, m, d) => Number(`${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`);
 
@@ -50,7 +59,7 @@ function writeRaw(code, ym, kind, rows) {
   fs.writeFileSync(rawPath(code, ym, kind), JSON.stringify({ at: new Date().toISOString(), rows }));
 }
 
-// 매매 한 줄 = [단지, 법정동, 전용㎡, 거래금액(만원), 층, 계약일 YYYYMMDD]
+// 매매 한 줄 = [단지, 법정동, 전용㎡, 거래금액(만원), 층, 계약일 YYYYMMDD, 동(아파트 동), 필지 "시군구+법정동코드-본번-부번"]
 async function fetchTradeMonth(code, ym, deadline) {
   const rows = [];
   for (let page = 1; page <= 10; page++) {
@@ -58,7 +67,8 @@ async function fetchTradeMonth(code, ym, deadline) {
     const items = await fetchTransactionsForMonth(ym, deadline, code, page);
     for (const t of items) {
       if (t.cancelType === 'O') continue;
-      rows.push([t.apt, t.dong, Number(t.area), Number(t.amount), t.floor, ymd(t.year, t.month, t.day)]);
+      const lot = t.sggCd && t.umdCd && t.bonbun ? `${t.sggCd}${t.umdCd}-${t.bonbun.padStart(4, '0')}-${(t.bubun || '0').padStart(4, '0')}` : '';
+      rows.push([t.apt, t.dong, Number(t.area), Number(t.amount), t.floor, ymd(t.year, t.month, t.day), t.aptDong || '', lot]);
     }
     if (items.length < 1000) break;
   }
@@ -128,6 +138,99 @@ async function updateRegion(code, now, deadline, phase) {
   return { ok: missing === 0, missing };
 }
 
+// 건축물대장 표제부: 필지 하나의 건물(동)별 지상 층수. .cache/regions-raw/bld/<필지>.json = { at, dongs: { 동 이름: 층수 } }
+const bldPath = (lot) => path.join(RAW_DIR, 'bld', `${lot}.json`);
+function readBld(lot) {
+  try {
+    return JSON.parse(fs.readFileSync(bldPath(lot), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+// "101동", "101", "제101동" → "101". 비교용.
+const normDong = (s) => String(s || '').replace(/\s/g, '').replace(/^제/, '').replace(/동$/, '');
+
+async function fetchBldLot(lot, deadline) {
+  const [cd, bun, ji] = lot.split('-');
+  const dongs = {};
+  for (let page = 1; page <= 5; page++) {
+    let xml;
+    for (;;) {
+      calls.b++;
+      const url = `${BLD_ENDPOINTS[bldEndpoint]}?serviceKey=${BLD_KEY}&sigunguCd=${cd.slice(0, 5)}&bjdongCd=${cd.slice(5)}&platGbCd=0&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=${page}`;
+      const res = await fetchWithRetry(url, 5, deadline);
+      const text = await res.text();
+      const rc = xmlTag(text, 'resultCode');
+      if (res.ok && !text.includes('<cmmMsgHeader>') && (!rc || ['00', '000'].includes(rc))) {
+        xml = text;
+        break;
+      }
+      const msg = xmlTag(text, 'returnAuthMsg') || xmlTag(text, 'errMsg') || xmlTag(text, 'resultMsg') || `HTTP ${res.status}`;
+      if (bldEndpoint + 1 < BLD_ENDPOINTS.length) {
+        bldEndpoint++;
+        continue;
+      }
+      throw new Error(`건축물대장 API 오류(${lot}): ${msg}`);
+    }
+    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+      const it = m[1];
+      const floors = num0(xmlTag(it, 'grndFlrCnt'));
+      const purpose = xmlTag(it, 'mainPurpsCdNm');
+      // 아파트 단지 필지에는 상가·관리동도 함께 있어 주거용 동만 담는다.
+      if (!floors || (purpose && !/공동주택|아파트|주거/.test(purpose))) continue;
+      const name = normDong(xmlTag(it, 'dongNm')) || '-';
+      dongs[name] = Math.max(dongs[name] || 0, floors);
+    }
+    if (page * 100 >= Number(xmlTag(xml, 'totalCount') || 0)) break;
+  }
+  return dongs;
+}
+
+// 시군구 하나의 매매 기록에 나온 필지 중 층수를 아직 모르는(또는 오래된) 곳을 건축물대장에서 받는다.
+// 돌려주는 값: 못 받은 필지 수
+async function updateBuildings(code, now, deadline) {
+  if (!BLD_KEY) return 0;
+  const lots = new Set();
+  for (const ym of monthList(now, TRADE_MONTHS)) {
+    for (const r of readRaw(code, ym, 't')?.rows || []) if (r[7]) lots.add(r[7]);
+  }
+  const old = Date.now() - BLD_MAX_AGE_DAYS * 86400000;
+  let missing = 0;
+  for (const lot of lots) {
+    const cur = readBld(lot);
+    if (cur && Date.parse(cur.at) > old) continue;
+    if (Date.now() >= deadline || calls.b >= BLD_CALL_LIMIT) {
+      missing++;
+      continue;
+    }
+    try {
+      const dongs = await fetchBldLot(lot, deadline);
+      fs.mkdirSync(path.dirname(bldPath(lot)), { recursive: true });
+      fs.writeFileSync(bldPath(lot), JSON.stringify({ at: new Date().toISOString(), dongs }));
+    } catch (err) {
+      console.error(`[${code}] ${err.message}`);
+      missing++;
+    }
+  }
+  return missing;
+}
+
+// 거래한 층이 그 동의 꼭대기 층인지. 1 = 탑층, 0 = 아님 또는 모름.
+// 동 이름이 맞으면 그 동 층수로, 거래에 동이 없으면 필지의 주거용 동이 모두 같은 높이일 때만 판단한다.
+function topFlag(row, cache) {
+  const lot = row[7];
+  if (!lot) return 0;
+  if (!cache.has(lot)) cache.set(lot, readBld(lot)?.dongs || null);
+  const dongs = cache.get(lot);
+  if (!dongs) return 0;
+  const floor = parseInt(row[4], 10);
+  if (!floor) return 0;
+  const d = normDong(row[6]);
+  if (d && dongs[d]) return dongs[d] === floor ? 1 : 0;
+  const hs = [...new Set(Object.values(dongs))];
+  return hs.length === 1 && hs[0] === floor ? 1 : 0;
+}
+
 // 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가, 신고가]
 // 신고가: 같은 단지·같은 넓이(전용㎡ 반올림)에서 계약일이 앞선 기록 속 거래(최대 TRADE_MONTHS개월)의 최고가를 넘으면
 // 그 이전 최고가(만원), 아니면 0. 앞선 거래가 하나도 없으면(첫 거래) 신고가로 보지 않는다.
@@ -174,7 +277,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
 }
 
 // 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
-// { d: 법정동, apts: { 단지: { t: [[YYYYMMDD, ㎡, 금액, 층]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+// { d: 법정동, apts: { 단지: { t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
 function writeAptFiles(region, now, outDir) {
   const byDong = new Map();
   const slot = (dong, apt) => {
@@ -182,8 +285,9 @@ function writeAptFiles(region, now, outDir) {
     const apts = byDong.get(dong);
     return (apts[apt] = apts[apt] || { t: [], r: [] });
   };
+  const bld = new Map();
   for (const ym of monthList(now, TRADE_MONTHS)) {
-    for (const r of readRaw(region.code, ym, 't')?.rows || []) slot(r[1], r[0]).t.push([r[5], r[2], r[3], r[4]]);
+    for (const r of readRaw(region.code, ym, 't')?.rows || []) slot(r[1], r[0]).t.push([r[5], r[2], r[3], r[4], r[6] || '', topFlag(r, bld)]);
   }
   for (const ym of monthList(now, RENT_MONTHS)) {
     for (const r of readRaw(region.code, ym, 'r')?.rows || []) slot(r[1], r[0]).r.push([r[6], r[2], r[3], r[4], r[5], r[7]]);
@@ -218,4 +322,4 @@ function writeAptFiles(region, now, outDir) {
   return written;
 }
 
-module.exports = { updateRegion, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS };
+module.exports = { updateRegion, updateBuildings, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS };

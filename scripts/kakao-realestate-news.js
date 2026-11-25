@@ -463,6 +463,11 @@ async function fetchTransactionsForMonth(dealYmd, deadline, lawdCd = LAWD_CD, pa
     aptDong: xmlTag(item, 'aptDong'),
     jibun: xmlTag(item, 'jibun'),
     leasehold: xmlTag(item, 'landLeaseholdGbn'),
+    // 건축물대장 조회용 필지 번호(지역 브리핑의 탑층 표시에서 쓴다)
+    sggCd: xmlTag(item, 'sggCd'),
+    umdCd: xmlTag(item, 'umdCd'),
+    bonbun: xmlTag(item, 'bonbun'),
+    bubun: xmlTag(item, 'bubun'),
   }));
 }
 

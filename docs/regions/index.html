@@ -81,12 +81,17 @@ button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .legend{color:var(--sub);font-size:13px;margin:0 0 6px}
 .key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--sub)}
 .key i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
-table.hist{width:100%;border-collapse:collapse;font-size:14px}
+table.hist{width:100%;border-collapse:collapse;font-size:13px}
+table.hist td:last-child{white-space:normal}
+table.hist td:last-child .tag{margin:0 0 2px 0}
+table.hist td:last-child b{white-space:nowrap}
 table.hist th,table.hist td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}
 table.hist th{color:var(--sub);font-weight:500;font-size:13px;border-top:0}
 table.hist td:first-child,table.hist th:first-child{text-align:left}
 .up{color:#d92d20}.down{color:#1570ef}
 .tag.hot{background:#fee4e2;color:#d92d20}
+.tag.top{background:#ebe9fe;color:#5925dc;font-size:11px}
+@media (prefers-color-scheme:dark){.tag.top{background:#2e1a6b;color:#bdb4fe}}
 @media (prefers-color-scheme:dark){.tag.hot{background:#55160c;color:#fda29b}}
 .fig .dot.hot{fill:#d92d20;opacity:.9}
 ul.rec{list-style:none;margin:0;padding:0}
@@ -470,7 +475,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   }
   // 한 줄 = { dt: 계약 YYYYMMDD, area, price(그래프 값), dep, rent, floor, ct }
   function aptRows(kind) {
-    if (kind === 'trade') return markRecords(apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3] }; }));
+    if (kind === 'trade') return markRecords(apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3], bd: x[4] || '', top: x[5] === 1 }; }));
     return apt.rec.r.filter(function (x) { return kind === 'jeonse' ? !x[3] : x[3] > 0; })
       .map(function (x) { return { dt: x[0], area: x[1], dep: x[2], rent: x[3], price: kind === 'jeonse' ? x[2] : x[3], floor: x[4], ct: x[5] }; });
   }
@@ -550,8 +555,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var rent = apt.kind !== 'trade';
     $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th><th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
       v.slice(0, apt.limit).map(function (r) {
-        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td><td>' + esc(r.floor) + '층</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
-      }).join('') + '</tbody></table>' + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
+        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.round(r.area) + '㎡</td><td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동 ' : '') + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
+      }).join('') + '</tbody></table>' + (v.some(function (r) { return r.top; }) ? '<p class="note">탑층은 건축물대장의 동별 층수로 확인한 꼭대기 층 거래예요.</p>' : '') + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
   }
   var AREA_COLORS = ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#ee46bc', '#0ba5ec', '#667085'];
   function drawApt() {

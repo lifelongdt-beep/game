@@ -17,6 +17,7 @@
 //   REGION_TOTAL_BUDGET_MS     실거래 전체 시간 예산(기본 4200000 = 70분). 넘으면 남은 곳은 쌓아 둔 기록을 쓴다.
 //   REGION_HIST_TRADE_MONTHS / REGION_HIST_RENT_MONTHS / REGION_REFRESH_MONTHS / REGION_CALL_LIMIT / REGION_RAW_DIR
 //                              과거 기록 설정(regional-history.js 참고)
+//   BLD_SERVICE_KEY            건축물대장 키(탑층 표시). 없으면 DATA_GO_KR_SERVICE_KEY를 쓴다. BLD_CALL_LIMIT(기본 8000)·BLD_MAX_AGE_DAYS(365)
 //   REGION_OUT_DIR             출력 폴더(기본 docs/regions). 데이터는 그 아래 data/.
 
 const fs = require('fs');
@@ -185,6 +186,12 @@ async function main() {
     await pool(targets, TX_CONCURRENCY, async (r) => {
       report.missing += (await history.updateRegion(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline), 'backfill')).missing;
     });
+    // 탑층 표시용 건축물대장 층수(필지마다 한 번 받아 두고 1년 동안 쓴다)
+    let bldMissing = 0;
+    await pool(targets, TX_CONCURRENCY, async (r) => {
+      bldMissing += await history.updateBuildings(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline));
+    });
+    console.log(`건축물대장: 호출 ${history.calls.b}번, 아직 못 받은 필지 ${bldMissing}곳`);
     console.log(`실거래 기록: 최근 달 갱신 ${report.ok}곳, 실패 ${report.failed}곳, 아직 못 채운 지난 달 ${report.missing}개 ` +
       `(호출 매매 ${history.calls.t}번, 전월세 ${history.calls.r}번)`);
   } else {

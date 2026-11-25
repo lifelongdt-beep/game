@@ -47,6 +47,7 @@ jobs:
       - name: Collect regional news and transactions
         env:
           DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+          BLD_SERVICE_KEY: ${{ secrets.BLD_SERVICE_KEY }}
           REGION_CODES: ${{ github.event.inputs.region_codes }}
         run: node scripts/regional-briefing.js
 
