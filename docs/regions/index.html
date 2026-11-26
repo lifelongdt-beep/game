@@ -864,25 +864,142 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var t = Math.max(-1, Math.min(1, pct / MAP_MAX)), to = t >= 0 ? [217, 45, 32] : [31, 94, 235], a = Math.abs(t);
     return 'rgb(' + [0, 1, 2].map(function (i) { return Math.round(255 + (to[i] - 255) * a); }).join(',') + ')';
   }
+  // 동 경계: docs/regions/geo/<시군구>.json(행정동 경계, scripts/build-dong-geo.py)을 칠한다. 실거래 기록은 법정동 단위라
+  // 이름으로 이어 두었고(b), 이름으로 못 이은 법정동은 위치(Nominatim 점)가 들어 있는 행정동에 잇는다.
+  // 기록이 이어지지 않은 행정동은 4km 안의 가장 가까운 법정동 값으로 칠하고(빗금 대신 옅게) 그렇다고 알려 준다.
+  var geoFiles = {};
+  function geoFile(code) {
+    if (!geoFiles[code]) geoFiles[code] = getJson('geo/' + code + '.json').catch(function () { delete geoFiles[code]; return null; });
+    return geoFiles[code];
+  }
+  function ringHas(ring, x, y) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function geomHas(g, x, y) {
+    var polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+    return polys.some(function (poly) { return ringHas(poly[0], x, y) && !poly.slice(1).some(function (h) { return ringHas(h, x, y); }); });
+  }
+  function geoCenter(g) {
+    var xs = 0, ys = 0, n = 0;
+    (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).forEach(function (p) { p[0].forEach(function (c) { xs += c[0]; ys += c[1]; n++; }); });
+    return n ? [xs / n, ys / n] : null;
+  }
+  function kmBetween(a, b) {
+    var dx = (a[0] - b[0]) * 111.32 * Math.cos(a[1] * Math.PI / 180), dy = (a[1] - b[1]) * 110.57;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
   function renderMap() {
     var seq = ++mapSeq, targets = mapTargets();
     $('mapCard').hidden = !targets.length;
     if (!targets.length) return;
     $('mapNote').textContent = '지도를 불러오는 중이에요…';
     $('mapLegend').innerHTML = '<span>하락 −' + MAP_MAX + '%</span><i class="grad"></i><span>+' + MAP_MAX + '% 상승</span><span class="nodata"><i></i>기록 부족</span>';
-    loadLeaflet().then(function (L) {
+    var codes = [];
+    targets.forEach(function (t) { if (codes.indexOf(t.code) < 0) codes.push(t.code); });
+    Promise.all([loadLeaflet(), Promise.all(codes.map(geoFile)), Promise.all(targets.map(dongYoy))]).then(function (res) {
       if (seq !== mapSeq) return;
+      var L = res[0], files = res[1], yoys = res[2];
       if (!map) {
         map = L.map('map', { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([36.4, 127.8], 7);
         map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · 경계 통계청 SGIS, <a href="https://github.com/vuski/admdongkor">vuski/admdongkor</a> (CC BY 4.0)' }).addTo(map);
         mapLayer = L.layerGroup().addTo(map);
       }
       map.invalidateSize();
       mapLayer.clearLayers();
+      // 그릴 행정동: 시군구 화면은 그 시군구 전부, 나만의 동네는 담은 법정동과 이어진 행정동.
+      var feats = [], byKey = {};
+      targets.forEach(function (t, i) { t.y = yoys[i]; byKey[t.code + '|' + t.dong] = t; });
+      codes.forEach(function (code, ci) {
+        var f = files[ci];
+        if (!f) return;
+        f.f.forEach(function (x) {
+          var linked = (x.b || []).map(function (d) { return byKey[code + '|' + d]; }).filter(Boolean);
+          var others = (x.b || []).filter(function (d) { return !byKey[code + '|' + d]; });
+          feats.push({ code: code, n: x.n, g: x.g, t: linked, o: others, c: geoCenter(x.g) });
+        });
+      });
+      if (!feats.length) return renderMapByName(L, seq, targets);
+      // 이름으로 못 이은 법정동(아라동처럼 이름이 다른 행정동에 속한 곳): 위치(점)가 들어 있는 행정동에 잇는다.
+      // 기록을 볼 동(targets)과, 나머지 법정동(이 행정동이 다른 동 몫인지 가리려고)을 함께 찾는다. 찾은 위치는 기기에 저장된다.
+      var named = {};
+      feats.forEach(function (x) { x.t.concat(x.o).forEach(function (d) { named[x.code + '|' + (d.dong || d)] = 1; }); });
+      var asks = targets.filter(function (t) { return !named[t.code + '|' + t.dong]; });
+      codes.forEach(function (code) {
+        var r = regionOf(code);
+        (r ? r.dongs : []).forEach(function (d) {
+          if (!named[code + '|' + d] && !byKey[code + '|' + d]) asks.push({ code: code, dong: d, other: true, q: (SIDO_FULL[r.sido] || r.sido) + ' ' + r.name + ' ' + d });
+        });
+      });
+      draw(false);
+      if (asks.length) $('mapNote').textContent = '이름이 다른 동 ' + asks.length + '곳의 위치를 찾는 중이에요… (처음 한 번만 걸려요)';
+      return asks.reduce(function (p, t) {
+        return p.then(function () {
+          if (seq !== mapSeq) return;
+          return geocode(t.q).then(function (g) {
+            if (!g || seq !== mapSeq) return;
+            var hit = feats.filter(function (x) { return x.code === t.code && geomHas(x.g, g.lon, g.lat); })[0];
+            if (hit) { if (t.other) hit.o.push(t.dong); else { hit.t.push(t); t.byPoint = true; } }
+            else if (!t.other) t.point = [g.lon, g.lat];
+          });
+        });
+      }, Promise.resolve()).then(function () { if (seq === mapSeq) draw(true); });
+
+      function valueOf(list) {
+        var v = list.filter(function (t) { return t.y; });
+        return v.length ? v.reduce(function (s, t) { return s + t.y.pct; }, 0) / v.length : null;
+      }
+      function draw(final) {
+        mapLayer.clearLayers();
+        // 기록이 이어지지 않은 행정동은 4km 안의 가장 가까운 (기록 있는) 법정동 값으로 옅게 칠한다.
+        var pts = [];
+        feats.forEach(function (x) { if (x.t.some(function (t) { return t.y; })) pts.push({ c: x.c, x: x }); });
+        targets.forEach(function (t) { if (t.point && t.y) pts.push({ c: t.point, t: t }); });
+        // 나만의 동네는 담은 법정동과 이어진 행정동만 그린다. 어느 법정동과도 이어지지 않은 행정동(예: 아라1동)은
+        // 가장 가까운 '이어진' 행정동이 담은 동이면 함께 그린다.
+        var visible = feats.filter(function (x) {
+          if (!current.mine || x.t.length) return true;
+          if (x.o.length || !x.c) return false;
+          var best = null, bd = 1e9;
+          feats.forEach(function (y) { if (y !== x && y.c && (y.t.length || y.o.length)) { var d = kmBetween(x.c, y.c); if (d < bd) { bd = d; best = y; } } });
+          return !!(best && best.t.length && bd < 4);
+        });
+        var bounds = L.latLngBounds([]), nearN = 0, colored = 0;
+        visible.forEach(function (x) {
+          var v = valueOf(x.t), approx = null;
+          if (v == null && x.c && pts.length) {
+            var best = null, bd = 4;
+            pts.forEach(function (p) { var d = kmBetween(x.c, p.c); if (d < bd) { bd = d; best = p; } });
+            if (best) { approx = best.x ? best.x.t.filter(function (t) { return t.y; }).map(function (t) { return t.dong; }).join('·') : best.t.dong; v = best.x ? valueOf(best.x.t) : best.t.y.pct; nearN++; }
+          }
+          if (v != null) colored++;
+          var tip = '<b>' + esc(x.n) + '</b>' + (x.t.length ? '<br>' + x.t.map(function (t) {
+            return esc(t.dong) + ' ' + (t.y ? (t.y.pct >= 0 ? '+' : '') + t.y.pct.toFixed(1) + '%' : '기록 부족');
+          }).join('<br>') : '') + (!current.mine && x.o.length ? '<br><span style="color:#667085">' + esc(x.o.join('·')) + ' 최근 거래 없음</span>' : '') + (approx ? '<br><span style="color:#667085">가까운 ' + esc(approx) + ' 기준 ' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : (!x.t.length ? '<br>거래 기록 없음' : '')) + '<br><span style="color:#667085">1년 변동</span>';
+          var layer = L.geoJSON(x.g, { style: { color: '#475467', weight: 1.2, fillColor: spectrum(v), fillOpacity: approx ? 0.45 : 0.72 } });
+          layer.bindTooltip(tip, { sticky: true });
+          layer.addTo(mapLayer);
+          bounds.extend(layer.getBounds());
+        });
+        if (bounds.isValid()) { map.invalidateSize(); map.fitBounds(bounds, { padding: [12, 12], maxZoom: 15 }); }
+        if (!final) return;
+        var lost = targets.filter(function (t) { return !t.byPoint && !feats.some(function (x) { return x.t.indexOf(t) >= 0; }); }).map(function (t) { return t.dong; });
+        $('mapNote').textContent = '행정동 경계마다 1년 전보다 얼마나 올랐는지(같은 단지·같은 넓이끼리)로 칠했어요. 동을 누르면 이어진 법정동과 변동률이 보여요.' +
+          (nearN ? ' 거래 기록이 이어지지 않은 동 ' + nearN + '곳은 가까운 동 값으로 옅게 칠했어요.' : '') + (lost.length ? ' 위치를 못 찾은 동: ' + lost.join(', ') : '');
+      }
+    }).catch(function () { if (seq === mapSeq) $('mapNote').textContent = '지도를 불러오지 못했어요.'; });
+  }
+  // 경계 파일이 없을 때(예전 방식): 동 이름으로 위치를 찾아 그린다.
+  function renderMapByName(L, seq, targets) {
+    var yoysP = Promise.all(targets.map(function (t) { return t.y; }));
       var bounds = L.latLngBounds([]), shown = 0, missing = [];
       // 변동률은 먼저 한꺼번에 구하고(파일만 읽음), 위치는 1초에 하나씩 찾아 찾는 대로 그린다.
-      return Promise.all(targets.map(dongYoy)).then(function (yoys) {
+      return yoysP.then(function (yoys) {
         return targets.reduce(function (p, t, i) {
           return p.then(function () {
             if (seq !== mapSeq) return;
@@ -905,7 +1022,6 @@ ul.rec .right{text-align:right;white-space:nowrap}
         $('mapNote').textContent = shown ? '동마다 1년 전보다 얼마나 올랐는지(같은 단지·같은 넓이끼리 비교)로 칠했어요. 동을 누르면 변동률이 보여요.' + (missing.length ? ' 위치를 못 찾은 동: ' + missing.join(', ') : '') + ' 처음 열 때는 동 위치를 하나씩 찾느라 조금 걸려요.'
           : '지도 위치를 찾지 못했어요. 잠시 뒤 다시 열어 주세요.';
       });
-    }).catch(function () { if (seq === mapSeq) $('mapNote').textContent = '지도를 불러오지 못했어요.'; });
   }
 
   // ── 나만의 동네 시세 흐름과 분석 ──
