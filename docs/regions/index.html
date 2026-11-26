@@ -199,7 +199,15 @@ ul.rec .right{text-align:right;white-space:nowrap}
 .cn-fresh .fm{font-size:12px;color:var(--ig-gray)}
 .cn-fresh .fa{font-family:var(--font-display);font-weight:900;font-size:14.5px;white-space:nowrap;text-align:right}
 .cn-fresh .up{color:#d92d20;font-size:12px;font-weight:700}
-.cn-dots{text-align:center;font-size:12px;color:var(--sub);margin-top:4px}
+.cn-wrap{position:relative}
+.cn-row{cursor:grab;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+.cn-row.drag{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.cn-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:#141414;color:#ffe600;font-size:20px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;padding:0}
+.cn-nav.prev{left:-6px}.cn-nav.next{right:-6px}
+.cn-nav[hidden]{display:none}
+.cn-dots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--sub)}
+.cn-dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#c9ccd1;cursor:pointer}
+.cn-dots button[aria-current="true"]{width:22px;border-radius:999px;background:#141414}
 </style>
 </head>
 <body>
@@ -265,7 +273,9 @@ ul.rec .right{text-align:right;white-space:nowrap}
     <header class="top"><div><h1 id="title"></h1><div id="subtitle" class="meta"></div></div>
       <div class="row" style="justify-content:flex-end"><button id="editMine" class="btn" hidden>설정</button><button id="changeRegion" class="btn">동네 바꾸기</button></div></header>
     <section class="card" id="cardNewsCard" hidden><h2>🗞️ 오늘의 카드뉴스</h2>
-      <div id="cardNews" class="cn-row"></div><div id="cardNewsDots" class="cn-dots"></div></section>
+      <div class="cn-wrap"><div id="cardNews" class="cn-row"></div>
+        <button class="cn-nav prev" id="cnPrev" aria-label="이전 카드" hidden>‹</button><button class="cn-nav next" id="cnNext" aria-label="다음 카드" hidden>›</button></div>
+      <div id="cardNewsDots" class="cn-dots"></div></section>
     <section class="card"><h2>🧭 뉴스 방향</h2>
       <p class="note" style="margin-bottom:10px">보고 싶은 주제를 고르면 그 주제 기사만 보여요. 아무것도 안 고르면 전부 보여요.</p>
       <div id="topicChips" class="chips wrap-chips"></div></section>
@@ -639,6 +649,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
           (Date.parse(b.d || 0) - Date.parse(a.d || 0)) || p.i - q.i;
       }).slice(0, n).map(function (p) { return p.a; });
   }
+  // 구글 뉴스 제목 끝에 매체 이름이 한 번 더 붙어 오는 경우("… - 머니투데이")를 뗀다.
+  function cnT(a) { var t = a.t || '', k = a.s ? ' - ' + a.s : ''; return k && t.slice(-k.length) === k ? t.slice(0, -k.length) : t; }
   function cnHref(a) { return /^https?:\/\//.test(a.l) ? a.l : '#'; }
   function cnImg(a) { return a.i && /^https:\/\//.test(a.i) ? a.i : ''; }
   function cnHead(right, dark) {
@@ -660,7 +672,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     return m ? m[1] + '.' + m[2] + ' 아침' : '오늘 아침';
   }
   function cnCover(a, name) {
-    var img = cnImg(a), s = cnSplit(a.t);
+    var img = cnImg(a), s = cnSplit(cnT(a));
     var tags = (a.tp || []).slice(0, 3).map(function (k) { return '<span>#' + esc(topicLabel(k).replace(/·/g, '')) + '</span>'; }).join('');
     return '<a class="cn cover' + (img ? '' : ' noimg') + '" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener"' + (img ? ' style="background-image:url(&quot;' + esc(img) + '&quot;)"' : '') + '><div class="cn-in">' +
       cnHead(cnDateText(), true) + '<span class="cn-kick">' + esc(name) + ' 소식</span>' +
@@ -672,7 +684,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var img = cnImg(a);
     return '<a class="cn" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener">' + cnHead('동네 이슈 ' + total + '건') +
       (i === 0 ? '<h3 class="cn-hand">오늘의 ' + esc(name) + ' 이슈</h3>' : '') +
-      '<span class="cn-tag">이슈 ' + (i + 1) + '</span><h3 class="cn-title">' + cnMarkTitle(a.t) + '</h3>' +
+      '<span class="cn-tag">이슈 ' + (i + 1) + '</span><h3 class="cn-title">' + cnMarkTitle(cnT(a)) + '</h3>' +
       (img ? '<img class="cn-photo" src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
       (a.x ? '<p class="cn-body">' + esc(a.x) + '</p>' : '') + '<div class="cn-src">' + cnSrc(a) + ' · 원문 보기 ›</div></a>';
   }
@@ -681,7 +693,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var why = a.g === 'P' ? '정부·금융당국 정책은 대출 한도, 세금, 공급 일정으로 우리 동네 거래에도 이어져요. 원문에서 시행 시점과 대상을 꼭 확인하세요.'
       : '전국 시장 흐름 기사예요. 아래 실거래 카드에서 우리 동네 거래·신고가와 함께 비교해 보세요.';
     return '<a class="cn yellow" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener">' + cnHead('전국 한 줄 정리') +
-      '<span class="cn-tag">' + (a.g === 'P' ? '전국 · 정책' : '전국 · 시장') + '</span><h3 class="cn-lead">' + esc(a.t) + '</h3>' +
+      '<span class="cn-tag">' + (a.g === 'P' ? '전국 · 정책' : '전국 · 시장') + '</span><h3 class="cn-lead">' + esc(cnT(a)) + '</h3>' +
       (img ? '<img class="cn-photo" src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
       (a.x ? '<p class="cn-body">' + esc(a.x) + '</p>' : '') +
       '<div class="cn-quote"><b>재부키 체크</b>' + esc(why) + '</div><div class="cn-src" style="color:var(--ig-ink)">' + cnSrc(a) + ' · 원문 보기 ›</div></a>';
@@ -723,8 +735,50 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('cardNewsCard').hidden = !cards.length;
     $('cardNews').innerHTML = cards.join('');
     $('cardNews').scrollLeft = 0;
-    $('cardNewsDots').textContent = cards.length > 1 ? '옆으로 넘겨 보세요 · ' + cards.length + '장' : '';
+    $('cardNewsDots').innerHTML = cards.length > 1 ? cards.map(function (c, i) { return '<button data-cn-go="' + i + '" aria-label="' + (i + 1) + '번째 카드"></button>'; }).join('') : '';
+    [].forEach.call($('cardNews').querySelectorAll('a,img'), function (el) { el.setAttribute('draggable', 'false'); });
+    cnSync();
   }
+  // 넘기기: 손가락 밀기(가로 스크롤) + 화살표 + 점 + 컴퓨터 마우스로 끌기. 링크가 끌려 가지 않게 draggable=false.
+  function cnIndex() {
+    var row = $('cardNews'), cards = row.children, best = 0, bd = 1e9, mid = row.scrollLeft + row.clientWidth / 2;
+    for (var i = 0; i < cards.length; i++) { var c = cards[i], d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } }
+    return best;
+  }
+  function cnGo(i) {
+    var row = $('cardNews'), c = row.children[Math.max(0, Math.min(row.children.length - 1, i))];
+    if (c) row.scrollTo({ left: c.offsetLeft - (row.clientWidth - c.offsetWidth) / 2, behavior: 'smooth' });
+  }
+  function cnSync() {
+    var row = $('cardNews'), n = row.children.length, i = cnIndex();
+    $('cnPrev').hidden = n < 2 || i === 0; $('cnNext').hidden = n < 2 || i >= n - 1;
+    [].forEach.call($('cardNewsDots').children, function (b, k) { b.setAttribute('aria-current', String(k === i)); });
+  }
+  (function () {
+    var row = $('cardNews'), drag = null, moved = false, t = 0;
+    row.addEventListener('scroll', function () { clearTimeout(t); t = setTimeout(cnSync, 60); }, { passive: true });
+    $('cnPrev').addEventListener('click', function () { cnGo(cnIndex() - 1); });
+    $('cnNext').addEventListener('click', function () { cnGo(cnIndex() + 1); });
+    $('cardNewsDots').addEventListener('click', function (e) { var b = e.target.closest('[data-cn-go]'); if (b) cnGo(+b.getAttribute('data-cn-go')); });
+    row.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      drag = { x: e.clientX, left: row.scrollLeft, start: cnIndex() }; moved = false;
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.x;
+      if (!moved && Math.abs(dx) > 6) { moved = true; row.classList.add('drag'); }
+      if (moved) row.scrollLeft = drag.left - dx;
+    });
+    window.addEventListener('pointerup', function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.x, start = drag.start; drag = null;
+      if (moved) { row.classList.remove('drag'); cnGo(start + (dx < -40 ? 1 : dx > 40 ? -1 : 0)); }
+    });
+    // 끌기로 끝난 경우에는 카드 링크가 열리지 않게 한다.
+    row.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    window.addEventListener('resize', cnSync);
+  })();
   function renderTopicChips() {
     $('topicChips').innerHTML = '<button class="chip" data-topic="" aria-pressed="' + !selectedTopics.length + '">전체</button>' +
       index.topics.map(function (t) { return '<button class="chip" data-topic="' + esc(t.key) + '" aria-pressed="' + (selectedTopics.indexOf(t.key) >= 0) + '">' + esc(t.label) + '</button>'; }).join('');
