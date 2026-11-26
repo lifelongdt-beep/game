@@ -56,9 +56,16 @@ const OPENCHAT_URL = process.env.OPENCHAT_URL || 'https://open.kakao.com/o/gSHro
 // fetchGeomdanArticles가 두 결과를 합쳐 유사 헤드라인은 하나로 묶고, 발행 시각
 // 최신순으로 정리한다.
 const GEOMDAN_ARTICLE_COUNT = Number(process.env.GEOMDAN_ARTICLE_COUNT || 10);
+// 2026-11-26 보강: 제목에 "검단신도시"가 안 들어가는 기사(예: "검단 AA17블록", "검단 푸르지오 입주", "검단호수공원역")와
+// 검단신도시 동 이름만 쓴 기사(당하동·마전동)를 놓치지 않도록 "검단" 단독어와 단지·동 이름도 직접 언급으로 찾는다.
+// 하남 검단산 기사는 -검단산으로 뺀다. 제목 재검증은 matchesGeomdanDirectTitle이 맡는다.
 const GEOMDAN_QUERY =
-  process.env.GEOMDAN_QUERY || '(검단신도시 OR "인천 검단" OR "서구 검단" OR 검단구) when:1d';
+  process.env.GEOMDAN_QUERY ||
+  '(검단신도시 OR 검단 OR "인천 검단" OR "서구 검단" OR 검단구 OR 중흥S클래스 OR 검단호수공원 OR 당하동 OR 마전동) -검단산 when:1d';
 const GEOMDAN_KEYWORD = process.env.GEOMDAN_KEYWORD || '검단';
+const GEOMDAN_DIRECT_EXTRA_RE = /중흥S클래스|당하동|마전동/;
+const matchesGeomdanDirectTitle = (title) =>
+  !/검단산/.test(title) && (title.includes(GEOMDAN_KEYWORD) || GEOMDAN_DIRECT_EXTRA_RE.test(title));
 // 2026-11-16 사용자 요청: 마곡·부천·일산·청라·서해구·계양구·김포 소식도 담는다. 지역 이름만으로는 범죄·행사 기사까지
 // 몰려오므로 구글에는 "지역 AND 부동산·교통 주제"로 묻고, 검색 뒤 제목도 같은 조건으로 다시 거른다(아래 matchesNearbyTitle).
 // 서해구는 2026-07-01 개편으로 서구에서 갈라진 구 이름이라 그대로 쓴다("서구"는 다른 도시와 겹쳐 쓰지 않는다).
@@ -430,7 +437,7 @@ async function appendTransportPolicyArticles(articles) {
 
 async function fetchGeomdanArticles(limit) {
   const [directCandidates, nearbyCandidates] = await Promise.all([
-    fetchNewsCandidates(GEOMDAN_QUERY, GEOMDAN_KEYWORD).catch((err) => {
+    fetchNewsCandidates(GEOMDAN_QUERY, matchesGeomdanDirectTitle).catch((err) => {
       console.error(`검단신도시 뉴스(직접) 조회 실패: ${err.message}`);
       return [];
     }),
