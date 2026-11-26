@@ -105,6 +105,9 @@ button.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .apt .see{flex:none;margin-left:8px;padding:6px 10px;font-size:13px}
 .map{height:280px;border-radius:12px;overflow:hidden;background:var(--accent-soft);z-index:0}
 .map .leaflet-tooltip{font-weight:700}
+.mapper{margin:0 0 8px}
+.mapper{gap:6px}
+.mapper .chip{padding:5px 10px;font-size:13px}
 .maplegend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:8px}
 .maplegend i.grad{flex:1 1 120px;height:10px;border-radius:999px;background:linear-gradient(90deg,rgb(31,94,235),#fff 50%,rgb(217,45,32));border:1px solid var(--line)}
 .maplegend .nodata i{display:inline-block;width:12px;height:12px;border-radius:3px;background:#d0d5dd;margin-right:4px;vertical-align:-2px}
@@ -281,6 +284,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       <div id="topicChips" class="chips wrap-chips"></div></section>
     <section class="card"><h2 id="localTitle"></h2><div id="localNews"></div></section>
     <section class="card" id="mapCard" hidden><h2>🗺️ 지도</h2>
+      <div id="mapPeriods" class="chips wrap-chips mapper" role="group" aria-label="변동 기간"></div>
       <div id="map" class="map"></div>
       <div id="mapLegend" class="maplegend"></div>
       <p id="mapNote" class="note" style="margin-top:6px"></p></section>
@@ -837,7 +841,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     geoQueue = job.catch(function () {});
     return job.catch(function () { return null; });
   }
-  // 동마다 1년 변동률(같은 단지·넓이끼리 최근 3개월 ÷ 1년 전, yoyOf)로 색을 칠한다.
+  // 동마다 고른 기간(MAP_PERIODS, 기본 1년)의 변동률(같은 단지·넓이끼리, changeOf)로 색을 칠한다.
   // 시군구 화면은 최근 거래가 있는 동, 나만의 동네는 담은 동(뺀 아파트 제외).
   function mapTargets() {
     var list = [];
@@ -850,15 +854,73 @@ ul.rec .right{text-align:right;white-space:nowrap}
     }
     return list.map(function (t) { t.q = (SIDO_FULL[t.r.sido] || t.r.sido) + ' ' + t.r.name + ' ' + t.dong; return t; });
   }
-  function dongYoy(t) {
+  function dongApts(t) {
     return aptFile(t.code, t.dong).then(function (f) {
-      if (!f || !f.apts) return null;
-      var apts = Object.keys(f.apts).filter(function (n) { return t.ex.indexOf(aptKey(t.code, t.dong, n)) < 0; }).map(function (n) { return { rec: f.apts[n] }; });
-      return yoyOf(apts);
+      if (!f || !f.apts) return [];
+      return Object.keys(f.apts).filter(function (n) { return t.ex.indexOf(aptKey(t.code, t.dong, n)) < 0; }).map(function (n) { return { name: n, rec: f.apts[n] }; });
     });
   }
-  // 하락은 파랑, 보합은 흰색, 상승은 빨강. ±10%에서 가장 진하다.
-  var MAP_MAX = 10;
+  // 지도 변동 기간. 짧은 기간(주·개월)은 날짜로, 긴 기간은 달로 같은 단지·같은 넓이끼리 비교한다.
+  //  d: [최근 며칠, 비교할 때(며칠 전부터 같은 길이)] — 기준일은 불러온 기록 중 가장 최근 계약일(신고가 늦어 오늘보다 앞선다).
+  //  y: 1년은 기록 파일 안에서(최근 3개월 ÷ 12~15개월 전), 3·5·10년은 long.json의 그만큼 전 3개월 중앙값과 비교한다.
+  //  max: 색이 가장 진해지는 변동률(%).
+  var MAP_PERIODS = [
+    { k: '1w', label: '1주', d: [7, 7], max: 2 },
+    { k: '1m', label: '1개월', d: [30, 30], max: 3 },
+    { k: '3m', label: '3개월', d: [30, 90], max: 5 },
+    { k: '1y', label: '1년', y: 1, max: 10 },
+    { k: '3y', label: '3년', y: 3, max: 20 },
+    { k: '5y', label: '5년', y: 5, max: 30 },
+    { k: '10y', label: '10년', y: 10, max: 60 }
+  ];
+  var STORE_MAP_PERIOD = 'briefing-map-period';
+  var mapPeriod = MAP_PERIODS.filter(function (p) { return p.k === store.get(STORE_MAP_PERIOD); })[0] || MAP_PERIODS[3];
+  var MAP_MAX = mapPeriod.max;
+  var longFiles = {};
+  function longFile(code) {
+    if (!(code in longFiles)) longFiles[code] = getJson('apt/' + code + '/long.json').catch(function () { return null; });
+    return longFiles[code];
+  }
+  function dayNum(dt) { return Math.floor(Date.UTC(Math.floor(dt / 10000), Math.floor(dt / 100) % 100 - 1, dt % 100) / 864e5); }
+  // 같은 단지·넓이끼리 (최근 값 ÷ 비교 때 값 − 1)을 거래 수로 가중 평균한다. 둘 다 있는 단지·넓이가 없으면 null(기록 부족).
+  function changeOf(apts, per, ctx) {
+    if (per.y === 1) return yoyOf(apts);
+    var w = 0, c = 0;
+    if (per.d) {
+      var len = per.d[0], back = per.d[1], top = ctx.anchor;
+      apts.forEach(function (a) {
+        var g = {};
+        a.rec.t.forEach(function (x) {
+          var age = top - dayNum(x[0]), k = areaKey(x[1]);
+          if (age < 0) return;
+          var o = g[k] = g[k] || { a: [], b: [] };
+          if (age < len) o.a.push(x[2]); else if (age >= back && age < back + len) o.b.push(x[2]);
+        });
+        Object.keys(g).forEach(function (k) { var o = g[k]; if (!o.a.length || !o.b.length) return; var n = o.a.length + o.b.length; c += (median(o.a) / median(o.b) - 1) * 100 * n; w += n; });
+      });
+    } else {
+      var lf = ctx.long, yi = lf ? lf.y.indexOf(per.y) : -1, base = yi >= 0 ? lf.d[ctx.dong] || {} : null, nm = nowMonth();
+      if (!base) return null;
+      apts.forEach(function (a) {
+        var g = {}, b = base[a.name] || {};
+        a.rec.t.forEach(function (x) { if (nm - mIdx(x[0]) < 3 && nm - mIdx(x[0]) >= 0) (g[areaKey(x[1])] = g[areaKey(x[1])] || []).push(x[2]); });
+        Object.keys(g).forEach(function (k) { var old = (b[k] || [])[yi]; if (!old) return; var n = g[k].length + old[1]; c += (median(g[k]) / old[0] - 1) * 100 * n; w += n; });
+      });
+    }
+    return w ? { pct: c / w, n: w } : null;
+  }
+  function renderMapPeriods() {
+    $('mapPeriods').innerHTML = MAP_PERIODS.map(function (p) { return '<button type="button" class="chip" data-period="' + p.k + '" aria-pressed="' + (p === mapPeriod) + '">' + p.label + '</button>'; }).join('');
+  }
+  $('mapPeriods').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-period]');
+    if (!b) return;
+    var p = MAP_PERIODS.filter(function (x) { return x.k === b.getAttribute('data-period'); })[0];
+    if (!p || p === mapPeriod) return;
+    mapPeriod = p; MAP_MAX = p.max; store.set(STORE_MAP_PERIOD, p.k);
+    renderMap();
+  });
+  // 하락은 파랑, 보합은 흰색, 상승은 빨강. ±MAP_MAX%(기간마다 다르다)에서 가장 진하다.
   function spectrum(pct) {
     if (pct == null) return '#d0d5dd';
     var t = Math.max(-1, Math.min(1, pct / MAP_MAX)), to = t >= 0 ? [217, 45, 32] : [31, 94, 235], a = Math.abs(t);
@@ -898,12 +960,18 @@ ul.rec .right{text-align:right;white-space:nowrap}
     $('mapCard').hidden = !targets.length;
     if (!targets.length) return;
     $('mapNote').textContent = '지도를 불러오는 중이에요…';
+    renderMapPeriods();
+    var per = mapPeriod;
     $('mapLegend').innerHTML = '<span>하락 −' + MAP_MAX + '%</span><i class="grad"></i><span>+' + MAP_MAX + '% 상승</span><span class="nodata"><i></i>기록 부족</span>';
     var codes = [];
     targets.forEach(function (t) { if (codes.indexOf(t.code) < 0) codes.push(t.code); });
-    Promise.all([loadLeaflet(), Promise.all(codes.map(geoFile)), Promise.all(targets.map(dongYoy))]).then(function (res) {
+    Promise.all([loadLeaflet(), Promise.all(codes.map(geoFile)), Promise.all(targets.map(dongApts)), per.y > 1 ? Promise.all(codes.map(longFile)) : []]).then(function (res) {
       if (seq !== mapSeq) return;
-      var L = res[0], files = res[1], yoys = res[2];
+      var L = res[0], files = res[1], aptsList = res[2], longs = res[3];
+      var anchor = 0;
+      aptsList.forEach(function (apts) { apts.forEach(function (a) { a.rec.t.forEach(function (x) { if (x[0] > anchor) anchor = x[0]; }); }); });
+      var anchorDay = anchor ? dayNum(anchor) : 0;
+      var yoys = targets.map(function (t, i) { return changeOf(aptsList[i], per, { anchor: anchorDay, long: longs[codes.indexOf(t.code)], dong: t.dong }); });
       if (!map) {
         map = L.map('map', { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([36.4, 127.8], 7);
         map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
@@ -980,7 +1048,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
           if (v != null) colored++;
           var tip = '<b>' + esc(x.n) + '</b>' + (x.t.length ? '<br>' + x.t.map(function (t) {
             return esc(t.dong) + ' ' + (t.y ? (t.y.pct >= 0 ? '+' : '') + t.y.pct.toFixed(1) + '%' : '기록 부족');
-          }).join('<br>') : '') + (!current.mine && x.o.length ? '<br><span style="color:#667085">' + esc(x.o.join('·')) + ' 최근 거래 없음</span>' : '') + (approx ? '<br><span style="color:#667085">가까운 ' + esc(approx) + ' 기준 ' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : (!x.t.length ? '<br>거래 기록 없음' : '')) + '<br><span style="color:#667085">1년 변동</span>';
+          }).join('<br>') : '') + (!current.mine && x.o.length ? '<br><span style="color:#667085">' + esc(x.o.join('·')) + ' 최근 거래 없음</span>' : '') + (approx ? '<br><span style="color:#667085">가까운 ' + esc(approx) + ' 기준 ' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : (!x.t.length ? '<br>거래 기록 없음' : '')) + '<br><span style="color:#667085">' + per.label + ' 변동</span>';
           var layer = L.geoJSON(x.g, { style: { color: '#475467', weight: 1.2, fillColor: spectrum(v), fillOpacity: approx ? 0.45 : 0.72 } });
           layer.bindTooltip(tip, { sticky: true });
           layer.addTo(mapLayer);
@@ -989,10 +1057,15 @@ ul.rec .right{text-align:right;white-space:nowrap}
         if (bounds.isValid()) { map.invalidateSize(); map.fitBounds(bounds, { padding: [12, 12], maxZoom: 15 }); }
         if (!final) return;
         var lost = targets.filter(function (t) { return !t.byPoint && !feats.some(function (x) { return x.t.indexOf(t) >= 0; }); }).map(function (t) { return t.dong; });
-        $('mapNote').textContent = '행정동 경계마다 1년 전보다 얼마나 올랐는지(같은 단지·같은 넓이끼리)로 칠했어요. 동을 누르면 이어진 법정동과 변동률이 보여요.' +
+        $('mapNote').textContent = '행정동 경계마다 ' + periodText(per, anchor) + ' 동을 누르면 이어진 법정동과 변동률이 보여요.' +
+          (colored ? '' : ' ' + per.label + ' 비교에 쓸 거래가 아직 없어 모두 기록 부족으로 보여요.' + (per.y > 1 ? ' ' + per.label + ' 전 거래는 매일 새벽에 조금씩 받아 오는 중이라 며칠 뒤부터 보여요.' : '')) +
           (nearN ? ' 거래 기록이 이어지지 않은 동 ' + nearN + '곳은 가까운 동 값으로 옅게 칠했어요.' : '') + (lost.length ? ' 위치를 못 찾은 동: ' + lost.join(', ') : '');
       }
     }).catch(function () { if (seq === mapSeq) $('mapNote').textContent = '지도를 불러오지 못했어요.'; });
+  }
+  function periodText(per, anchor) {
+    if (per.d) return '최근 ' + (per.d[0] === 7 ? '1주' : '30일') + '(' + fmtDate(anchor) + '까지) 거래가 ' + (per.d[1] === per.d[0] ? '그 앞 ' + (per.d[0] === 7 ? '1주' : '30일') : '3개월 전 30일') + '보다 얼마나 올랐는지(같은 단지·같은 넓이끼리)로 칠했어요. 실거래 신고는 계약 뒤 30일 안에 하면 돼서 최근 거래가 덜 잡히고, 거래가 적은 동은 기록 부족으로 보여요.';
+    return (per.y === 1 ? '1년' : per.label) + ' 전보다 얼마나 올랐는지(최근 3개월과 그때 3개월, 같은 단지·같은 넓이끼리)로 칠했어요.';
   }
   // 경계 파일이 없을 때(예전 방식): 동 이름으로 위치를 찾아 그린다.
   function renderMapByName(L, seq, targets) {
@@ -1007,6 +1080,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
               if (seq !== mapSeq) return;
               if (!g) { missing.push(t.dong); return; }
               var y = yoys[i], fill = spectrum(y && y.pct), tip = t.dong + ' ' + (y ? (y.pct >= 0 ? '+' : '') + y.pct.toFixed(1) + '% (1년)' : '기록 부족');
+              tip = tip.replace('(1년)', '(' + mapPeriod.label + ')');
               var layer = g.g ? L.geoJSON(g.g, { style: { color: '#475467', weight: 1.5, fillColor: fill, fillOpacity: 0.7 } })
                 : L.circleMarker([g.lat, g.lon], { radius: 10, color: '#475467', weight: 1.5, fillColor: fill, fillOpacity: 0.85 });
               layer.bindTooltip(tip, { sticky: true });
@@ -1019,7 +1093,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
         }, Promise.resolve());
       }).then(function () {
         if (seq !== mapSeq) return;
-        $('mapNote').textContent = shown ? '동마다 1년 전보다 얼마나 올랐는지(같은 단지·같은 넓이끼리 비교)로 칠했어요. 동을 누르면 변동률이 보여요.' + (missing.length ? ' 위치를 못 찾은 동: ' + missing.join(', ') : '') + ' 처음 열 때는 동 위치를 하나씩 찾느라 조금 걸려요.'
+        $('mapNote').textContent = shown ? '동마다 ' + mapPeriod.label + ' 변동률(같은 단지·같은 넓이끼리 비교)로 칠했어요. 동을 누르면 변동률이 보여요.' + (missing.length ? ' 위치를 못 찾은 동: ' + missing.join(', ') : '') + ' 처음 열 때는 동 위치를 하나씩 찾느라 조금 걸려요.'
           : '지도 위치를 찾지 못했어요. 잠시 뒤 다시 열어 주세요.';
       });
   }
