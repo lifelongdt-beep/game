@@ -649,6 +649,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
           (Date.parse(b.d || 0) - Date.parse(a.d || 0)) || p.i - q.i;
       }).slice(0, n).map(function (p) { return p.a; });
   }
+  // 구글 뉴스 제목 끝에 매체 이름이 한 번 더 붙어 오는 경우("… - 머니투데이")를 뗀다.
+  function cnT(a) { var t = a.t || '', k = a.s ? ' - ' + a.s : ''; return k && t.slice(-k.length) === k ? t.slice(0, -k.length) : t; }
   function cnHref(a) { return /^https?:\/\//.test(a.l) ? a.l : '#'; }
   function cnImg(a) { return a.i && /^https:\/\//.test(a.i) ? a.i : ''; }
   function cnHead(right, dark) {
@@ -670,7 +672,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     return m ? m[1] + '.' + m[2] + ' 아침' : '오늘 아침';
   }
   function cnCover(a, name) {
-    var img = cnImg(a), s = cnSplit(a.t);
+    var img = cnImg(a), s = cnSplit(cnT(a));
     var tags = (a.tp || []).slice(0, 3).map(function (k) { return '<span>#' + esc(topicLabel(k).replace(/·/g, '')) + '</span>'; }).join('');
     return '<a class="cn cover' + (img ? '' : ' noimg') + '" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener"' + (img ? ' style="background-image:url(&quot;' + esc(img) + '&quot;)"' : '') + '><div class="cn-in">' +
       cnHead(cnDateText(), true) + '<span class="cn-kick">' + esc(name) + ' 소식</span>' +
@@ -682,7 +684,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var img = cnImg(a);
     return '<a class="cn" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener">' + cnHead('동네 이슈 ' + total + '건') +
       (i === 0 ? '<h3 class="cn-hand">오늘의 ' + esc(name) + ' 이슈</h3>' : '') +
-      '<span class="cn-tag">이슈 ' + (i + 1) + '</span><h3 class="cn-title">' + cnMarkTitle(a.t) + '</h3>' +
+      '<span class="cn-tag">이슈 ' + (i + 1) + '</span><h3 class="cn-title">' + cnMarkTitle(cnT(a)) + '</h3>' +
       (img ? '<img class="cn-photo" src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
       (a.x ? '<p class="cn-body">' + esc(a.x) + '</p>' : '') + '<div class="cn-src">' + cnSrc(a) + ' · 원문 보기 ›</div></a>';
   }
@@ -691,7 +693,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var why = a.g === 'P' ? '정부·금융당국 정책은 대출 한도, 세금, 공급 일정으로 우리 동네 거래에도 이어져요. 원문에서 시행 시점과 대상을 꼭 확인하세요.'
       : '전국 시장 흐름 기사예요. 아래 실거래 카드에서 우리 동네 거래·신고가와 함께 비교해 보세요.';
     return '<a class="cn yellow" href="' + esc(cnHref(a)) + '" target="_blank" rel="noopener">' + cnHead('전국 한 줄 정리') +
-      '<span class="cn-tag">' + (a.g === 'P' ? '전국 · 정책' : '전국 · 시장') + '</span><h3 class="cn-lead">' + esc(a.t) + '</h3>' +
+      '<span class="cn-tag">' + (a.g === 'P' ? '전국 · 정책' : '전국 · 시장') + '</span><h3 class="cn-lead">' + esc(cnT(a)) + '</h3>' +
       (img ? '<img class="cn-photo" src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
       (a.x ? '<p class="cn-body">' + esc(a.x) + '</p>' : '') +
       '<div class="cn-quote"><b>재부키 체크</b>' + esc(why) + '</div><div class="cn-src" style="color:var(--ig-ink)">' + cnSrc(a) + ' · 원문 보기 ›</div></a>';
