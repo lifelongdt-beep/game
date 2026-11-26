@@ -18,6 +18,9 @@ const SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY || '';
 const TRADE_MONTHS = Number(process.env.REGION_HIST_TRADE_MONTHS || 36); // 매매 기록 기간
 const RENT_MONTHS = Number(process.env.REGION_HIST_RENT_MONTHS || 24); // 전월세 기록 기간
 const PRESALE_MONTHS = Number(process.env.REGION_HIST_PRESALE_MONTHS || 36); // 분양권·입주권 전매 기록 기간(0이면 받지 않음)
+// 지도 3년·5년·10년 변동용: 그만큼 전의 3개월(LONG_YEARS년 전 달부터 3달) 매매만 따로 받아 둔다(기록 파일에는 넣지 않고 long.json에 중앙값만).
+const LONG_YEARS = [3, 5, 10];
+const longMonths = (now) => LONG_YEARS.flatMap((y) => monthList(now, y * 12 + 3).slice(y * 12));
 const REFRESH_MONTHS = Number(process.env.REGION_REFRESH_MONTHS || 3); // 늦은 신고·해제를 반영하려고 매번 다시 받는 최근 달 수
 // 공공데이터포털 개발계정은 서비스마다 하루 10,000번이 한도라, 매매·전월세 각각 이만큼만 부른다(나머지는 다음 날 이어 받음).
 const CALL_LIMIT = Number(process.env.REGION_CALL_LIMIT || 8000);
@@ -153,6 +156,7 @@ async function updateRegion(code, now, deadline, phase) {
       if (phase === 'recent' ? recent : !recent && !fs.existsSync(rawPath(code, ym, kind))) jobs.push({ kind, ym });
     });
   }
+  if (phase === 'backfill') for (const ym of longMonths(now)) if (!fs.existsSync(rawPath(code, ym, 't'))) jobs.push({ kind: 't', ym });
   for (const job of jobs) {
     if (Date.now() >= deadline || calls[job.kind] >= CALL_LIMIT || (job.kind === 's' && presaleFails >= 3)) {
       missing++;
@@ -392,6 +396,7 @@ function writeAptFiles(region, now, outDir) {
   if (!byDong.size) return 0;
   const dir = path.join(outDir, region.code);
   fs.mkdirSync(dir, { recursive: true });
+  let written = writeLongFile(region, now, dir);
   const groups = new Map();
   for (const [dong, apts] of byDong) {
     const i = region.dongs.indexOf(dong);
@@ -399,7 +404,6 @@ function writeAptFiles(region, now, outDir) {
     if (!groups.has(key)) groups.set(key, { d: i >= 0 ? dong : '기타', apts: {} });
     Object.assign(groups.get(key).apts, apts);
   }
-  let written = 0;
   for (const [key, data] of groups) {
     for (const a of Object.values(data.apts)) {
       a.t.sort((x, y) => y[0] - x[0] || y[2] - x[2]);
@@ -419,6 +423,42 @@ function writeAptFiles(region, now, outDir) {
     }
   }
   return written;
+}
+
+// 지도 3년·5년·10년 변동용 기준값: LONG_YEARS년 전 3개월 매매를 단지·넓이(전용㎡ 소수점 버림)마다 중앙값과 건수로.
+// { y: [3, 5, 10], d: { 법정동: { 단지: { 넓이: [[중앙값, 건수] 또는 0, ...] } } } } — y 순서대로. 받은 달이 하나도 없으면 파일을 쓰지 않는다.
+function writeLongFile(region, now, dir) {
+  const d = {};
+  let any = false;
+  LONG_YEARS.forEach((y, yi) => {
+    const groups = new Map();
+    for (const ym of monthList(now, y * 12 + 3).slice(y * 12)) {
+      const raw = readRaw(region.code, ym, 't');
+      if (!raw) continue;
+      any = true;
+      for (const r of raw.rows || []) {
+        const k = `${r[1]}|${r[0]}|${Math.floor(Number(r[2]))}`;
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(r[3]);
+      }
+    }
+    for (const [k, prices] of groups) {
+      const [dong, apt, area] = k.split('|');
+      const s = prices.slice().sort((a, b) => a - b);
+      const slotArr = (((d[dong] = d[dong] || {})[apt] = d[dong][apt] || {})[area] = d[dong][apt][area] || LONG_YEARS.map(() => 0));
+      slotArr[yi] = [s[Math.floor(s.length / 2)], s.length];
+    }
+  });
+  if (!any) return 0;
+  const file = path.join(dir, 'long.json');
+  const text = JSON.stringify({ y: LONG_YEARS, d }) + '\n';
+  let old = '';
+  try {
+    old = fs.readFileSync(file, 'utf8');
+  } catch {}
+  if (old === text) return 0;
+  fs.writeFileSync(file, text);
+  return 1;
 }
 
 module.exports = { updateRegion, updateBuildings, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS, PRESALE_MONTHS };
