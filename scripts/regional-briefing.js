@@ -199,6 +199,14 @@ async function main() {
       bldMissing += await history.updateBuildings(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline));
     });
     console.log(`건축물대장: 호출 ${history.calls.b}번, 아직 못 받은 필지 ${bldMissing}곳`);
+    // 지도 단지 점: 건축물대장 도로명 코드로 좌표제공 API(JUSO_KEY)에서 좌표를 받는다(필지마다 한 번).
+    if (history.JUSO_KEY) {
+      let coordMissing = 0;
+      await pool(targets, TX_CONCURRENCY, async (r) => {
+        coordMissing += await history.updateCoords(r.code, now, Math.min(Date.now() + TX_BUDGET_MS, globalDeadline));
+      });
+      console.log(`단지 좌표: 호출 ${history.calls.j}번, 아직 못 받은 필지 ${coordMissing}곳`);
+    } else console.log('JUSO_KEY가 없어 단지 좌표는 받지 않습니다.');
     console.log(`실거래 기록: 최근 달 갱신 ${report.ok}곳, 실패 ${report.failed}곳, 아직 못 채운 지난 달 ${report.missing}개 ` +
       `(호출 매매 ${history.calls.t}번, 전월세 ${history.calls.r}번, 분양권 ${history.calls.s}번)`);
   } else {
