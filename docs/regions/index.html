@@ -142,6 +142,8 @@ table.hist td:first-child,table.hist th:first-child{text-align:left}
 .tag.hot{background:#fee4e2;color:#d92d20}
 .tag.pre{background:#fef0c7;color:#b54708;font-size:11px}
 .tag.top{background:#ebe9fe;color:#5925dc;font-size:11px}
+.tag.pil{background:#e0f2fe;color:#026aa2;font-size:11px}
+@media (prefers-color-scheme:dark){.tag.pil{background:#0b4a6f;color:#b9e6fe}}
 @media (prefers-color-scheme:dark){.tag.top{background:#2e1a6b;color:#bdb4fe}}
 @media (prefers-color-scheme:dark){.tag.hot{background:#55160c;color:#fda29b}}
 .fig .dot.hot{fill:#d92d20;opacity:.9}
@@ -525,7 +527,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
         (tx.items || []).forEach(function (row) {
           if (!hasArea(codes[i], row[1])) return;
           if (mine.ex.indexOf(aptKey(codes[i], row[1], row[0])) >= 0) return;
-          rows.push(row.slice(0, 7).concat(row[7] || 0, codes[i]));
+          rows.push(row.slice(0, 7).concat(row[7] || 0, codes[i], row[9] || 0));
         });
       });
       news.sort(function (a, b) { return (b.n || 1) - (a.n || 1); });
@@ -569,7 +571,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var tx = current.tx || { items: [] };
     var months = tx.months || 3;
     var multi = !!current.mine && uniqCodes().length > 1;
-    var rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], rec: r[7] || 0, code: r[8] || current.code || '' }; });
+    var rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], rec: r[7] || 0, code: r[8] || current.code || '', fl: r[9] || 0 }; });
     var dkey = function (r) { return r.code + '|' + r.dong; };
     var dlabel = function (r) { var g = multi && regionOf(r.code); return (g ? g.name + ' ' : '') + r.dong; };
     var dongs = [], labels = {};
@@ -594,7 +596,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     if (recs.length) {
       html += '<h3>🔥 신고가 ' + recs.length + '건</h3><p class="note" style="margin-bottom:4px">같은 단지·같은 넓이에서 그전 최고가를 넘긴 거래예요.</p><ul class="rec">' + recs.slice(0, 15).map(function (r) {
         var up = (r.amount / r.rec - 1) * 100;
-        return '<li><div><div>' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + '</div></div>' +
+        return '<li><div><div>' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + floorText(r) + ' · ' + esc(r.date) + '</div></div>' +
           '<div class="right"><b class="up">' + esc(won(r.amount)) + '</b><div class="sub">이전 ' + esc(won(r.rec)) + ' · +' + up.toFixed(1) + '%</div></div></li>';
       }).join('') + '</ul>' + (recs.length > 15 ? '<p class="note">' + (recs.length - 15) + '건 더 있어요. 동 버튼으로 좁혀 보세요.</p>' : '');
     }
@@ -606,11 +608,11 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var top = order.slice(0, 10);
     if (top.length) {
       html += '<h3>단지별 최고 평당가 TOP ' + top.length + '</h3><ol class="rank">' + top.map(function (r, i) {
-        return '<li><span class="no">' + (i + 1) + '</span><div><div class="name">' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + ' · ' + esc(won(r.amount)) + '</div></div><span class="val">' + manwon(r.ppy) + '</span></li>';
+        return '<li><span class="no">' + (i + 1) + '</span><div><div class="name">' + aptButton(r) + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + floorText(r) + ' · ' + esc(r.date) + ' · ' + esc(won(r.amount)) + '</div></div><span class="val">' + manwon(r.ppy) + '</span></li>';
       }).join('') + '</ol>';
     }
     html += '<h3>최근 거래</h3><ul class="tx">' + view.slice(0, 15).map(function (r) {
-      return '<li><div><div>' + aptButton(r) + (r.rec ? ' <span class="tag hot">신고가</span>' : '') + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(r.date) + '</div></div><b>' + esc(won(r.amount)) + '</b></li>';
+      return '<li><div><div>' + aptButton(r) + (r.rec ? ' <span class="tag hot">신고가</span>' : '') + '</div><div class="sub">' + esc(dlabel(r)) + ' · ' + Math.floor(r.area) + '㎡ · ' + floorText(r) + ' · ' + esc(r.date) + '</div></div><b>' + esc(won(r.amount)) + '</b></li>';
     }).join('') + '</ul>';
     html += '<p class="note" style="margin-top:10px">국토교통부 아파트 매매 실거래가, 해제된 계약 제외. 평당가는 전용면적으로 추정한 공급면적 기준이에요.</p>';
     $('tx').innerHTML = html;
@@ -703,7 +705,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
       '<div class="cn-quote"><b>재부키 체크</b>' + esc(why) + '</div><div class="cn-src" style="color:var(--ig-ink)">' + cnSrc(a) + ' · 원문 보기 ›</div></a>';
   }
   function cnStat(name) {
-    var tx = current.tx || {}, rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], rec: r[7] || 0 }; });
+    var tx = current.tx || {}, rows = (tx.items || []).map(function (r) { return { apt: r[0], dong: r[1], area: r[2], amount: r[3], floor: r[4], date: r[5], ppy: r[6], rec: r[7] || 0, fl: r[9] || 0 }; });
     if (!rows.length) return '';
     var recs = rows.filter(function (r) { return r.rec; }).sort(function (a, b) { return b.date.localeCompare(a.date) || b.amount - a.amount; });
     var ppys = rows.map(function (r) { return r.ppy; }).filter(Boolean).sort(function (a, b) { return a - b; });
@@ -712,7 +714,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var list = (recs.length ? recs : rows.slice().sort(function (a, b) { return b.amount - a.amount; })).slice(0, 3);
     var rowsHtml = list.map(function (r) {
       var diff = r.rec ? r.amount - r.rec : 0;
-      return '<div class="fr"><div class="frt"><div class="fn">' + esc(r.apt) + '</div><div class="fa">' + esc(won(r.amount)) + '</div></div><div class="fm">' + esc(r.dong) + ' · 전용 ' + Math.floor(r.area) + '㎡ · ' + esc(r.floor) + '층 · ' + esc(md(r.date)) + ' 계약</div>' +
+      return '<div class="fr"><div class="frt"><div class="fn">' + esc(r.apt) + '</div><div class="fa">' + esc(won(r.amount)) + '</div></div><div class="fm">' + esc(r.dong) + ' · 전용 ' + Math.floor(r.area) + '㎡ · ' + floorText(r, true) + ' · ' + esc(md(r.date)) + ' 계약</div>' +
         (r.rec ? '<div class="up">직전 ' + esc(won(r.rec)) + ' 대비 +' + esc(won(diff)) + '</div>' : '') + '</div>';
     }).join('');
     return '<div class="cn">' + cnHead(name + ' 실거래') + '<div class="cn-eyebrow">MARKET · 최근 ' + (tx.months || 3) + '개월</div>' +
@@ -1259,6 +1261,10 @@ ul.rec .right{text-align:right;white-space:nowrap}
   // ── 아파트 상세: 시세 그래프 + 과거 거래(매매·전세·월세, 넓이별) ──
   var apt = null, aptReturn = 'briefing';
   // 목록에서 누른 거래의 넓이로 상세를 연다(신고가를 누르면 그 넓이 그래프가 바로 보이게).
+  // 층 표시: 탑층(건축물대장 동별 층수의 꼭대기 층), 필로티 위(1층이 필로티라 그 동의 가장 낮은 세대 층).
+  var FLOOR_TAGS = { 1: ['top', '탑층', '건축물대장 기준 이 동의 꼭대기 층이에요'], 2: ['pil', '필로티', '건축물대장 기준 1층이 필로티라 이 동에서 가장 낮은 세대 층이에요'] };
+  function floorTag(fl) { var t = FLOOR_TAGS[fl]; return t ? '<span class="tag ' + t[0] + '" title="' + t[2] + '">' + t[1] + '</span>' : ''; }
+  function floorText(r, plain) { var t = FLOOR_TAGS[r.fl]; return esc(r.floor) + '층' + (t ? (plain ? '(' + t[1] + ')' : ' ' + floorTag(r.fl)) : ''); }
   function aptButton(r) { return '<button class="link" data-apt-open="' + esc(r.code + '|' + r.dong + '|' + r.apt) + '" data-pick-area="' + Math.floor(r.area) + '">' + esc(r.apt) + '</button>'; }
   function openApt(code, dong, name, area) {
     var reg = regionOf(code);
@@ -1298,7 +1304,7 @@ ul.rec .right{text-align:right;white-space:nowrap}
   }
   // 한 줄 = { dt: 계약 YYYYMMDD, area, price(그래프 값), dep, rent, floor, ct }
   function aptRows(kind) {
-    if (kind === 'trade') return markRecords(apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3], bd: x[4] || '', top: x[5] === 1 }; }));
+    if (kind === 'trade') return markRecords(apt.rec.t.map(function (x) { return { dt: x[0], area: x[1], price: x[2], floor: x[3], bd: x[4] || '', top: x[5] === 1, pil: x[6] === 1 }; }));
     return apt.rec.r.filter(function (x) { return kind === 'jeonse' ? !x[3] : x[3] > 0; })
       .map(function (x) { return { dt: x[0], area: x[1], dep: x[2], rent: x[3], price: kind === 'jeonse' ? x[2] : x[3], floor: x[4], ct: x[5] }; });
   }
@@ -1665,8 +1671,8 @@ ul.rec .right{text-align:right;white-space:nowrap}
     var rent = apt.kind !== 'trade';
     $('aptList').innerHTML = '<table class="hist"><thead><tr><th>계약일</th><th>넓이</th>' + (rent ? '' : '<th>동</th>') + '<th>층</th>' + (rent ? '<th>구분</th>' : '') + '<th>' + (apt.kind === 'wolse' ? '보증금 / 월세' : apt.kind === 'jeonse' ? '보증금' : '거래가') + '</th></tr></thead><tbody>' +
       v.slice(0, apt.limit).map(function (r) {
-        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.floor(r.area) + '㎡</td>' + (rent ? '' : '<td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동' : '-') + '</td>') + '<td>' + esc(r.floor) + '층' + (r.top ? '<br><span class="tag top" title="건축물대장 기준 이 동의 꼭대기 층이에요">탑층</span>' : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + (r.pre ? '<span class="tag pre">' + r.pre + '</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
-      }).join('') + '</tbody></table>' + (v.some(function (r) { return r.top; }) ? '<p class="note">탑층은 건축물대장의 동별 층수로 확인한 꼭대기 층 거래예요.</p>' : '') + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
+        return '<tr><td>' + fmtDate(r.dt) + '</td><td>' + Math.floor(r.area) + '㎡</td>' + (rent ? '' : '<td>' + (r.bd ? esc(String(r.bd).replace(/동$/, '')) + '동' : '-') + '</td>') + '<td>' + esc(r.floor) + '층' + (r.top ? '<br>' + floorTag(1) : r.pil ? '<br>' + floorTag(2) : '') + '</td>' + (rent ? '<td>' + esc(r.ct || '-') + '</td>' : '') + '<td>' + (r.rec ? '<span class="tag hot">신고가</span>' : '') + (r.pre ? '<span class="tag pre">' + r.pre + '</span>' : '') + '<b>' + esc(priceText(r)) + '</b></td></tr>';
+      }).join('') + '</tbody></table>' + (v.some(function (r) { return r.top || r.pil; }) ? '<p class="note">탑층은 건축물대장의 동별 층수로 확인한 꼭대기 층, 필로티는 1층이 필로티라 그 동에서 가장 낮은 세대 층(보통 2층) 거래예요.</p>' : '') + (v.length > apt.limit ? '<p class="more"><button class="btn" data-more="1">더 보기 (' + (v.length - apt.limit) + '건 남음)</button></p>' : '');
   }
   var AREA_COLORS = ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#ee46bc', '#0ba5ec', '#667085'];
   function drawApt() {
