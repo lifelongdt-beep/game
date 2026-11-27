@@ -30,6 +30,10 @@ const BLD_KEY = process.env.BLD_SERVICE_KEY || SERVICE_KEY;
 const PRESALE_KEY = process.env.BUNYANGGUAN || SERVICE_KEY;
 const BLD_CALL_LIMIT = Number(process.env.BLD_CALL_LIMIT || 8000);
 const BLD_MAX_AGE_DAYS = Number(process.env.BLD_MAX_AGE_DAYS || 365); // 층수는 거의 안 바뀌어 1년에 한 번만 다시 받는다
+// 주소기반서비스(juso.go.kr) 좌표제공 API 승인키(비밀값 JUSO_KEY). 건축물대장의 도로명 코드로 단지 좌표를 받아 지도에 점을 찍는다.
+const JUSO_KEY = process.env.JUSO_KEY || '';
+const JUSO_COORD_URL = 'https://business.juso.go.kr/addrlink/addrCoordApi.do';
+const JUSO_CALL_LIMIT = Number(process.env.JUSO_CALL_LIMIT || 5000);
 const BLD_ENDPOINTS = ['https://apis.data.go.kr/1613000/BldRgstHubService', 'https://apis.data.go.kr/1613000/BldRgstService_v2'];
 let bldEndpoint = 0;
 
@@ -42,7 +46,7 @@ let rentEndpoint = 0;
 const PRESALE_ENDPOINT = 'https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade';
 let presaleFails = 0; // 연달아 실패하면(활용 신청 전 등) 이번 실행에서는 더 부르지 않는다
 
-const calls = { t: 0, r: 0, b: 0, s: 0 };
+const calls = { t: 0, r: 0, b: 0, s: 0, j: 0 };
 const num0 = (v) => Number(String(v || '0').replace(/[,\s]/g, '')) || 0;
 const ymd = (y, m, d) => Number(`${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`);
 
@@ -231,7 +235,12 @@ const ratio = (v) => Math.round(Number(v || 0) * 10) / 10 || 0;
 async function fetchBldLot(lot, deadline) {
   const dongs = {};
   const sum = { apr: 0, hh: 0, bld: 0, park: 0, far: 0, bcr: 0, top: 0, ug: 0, elv: 0 };
+  let road = null; // 좌표제공 API용 도로명 코드: { adm: 법정동코드 10자리, rn: 도로명코드 12자리, ug: 지하 0/1, mn: 건물 본번, sn: 부번 }
   for (const it of await bldItems('getBrTitleInfo', lot, deadline)) {
+    const rn = xmlTag(it, 'naRoadCd');
+    if (!road && /^\d{12}$/.test(rn) && num0(xmlTag(it, 'naMainBun'))) {
+      road = { adm: lot.slice(0, 5) + (xmlTag(it, 'naBjdongCd') || lot.slice(5, 10)), rn, ug: xmlTag(it, 'naUgrndCd') === '1' ? 1 : 0, mn: num0(xmlTag(it, 'naMainBun')), sn: num0(xmlTag(it, 'naSubBun')) };
+    }
     const floors = num0(xmlTag(it, 'grndFlrCnt'));
     sum.park += parking(it);
     if (!sum.far) sum.far = ratio(xmlTag(it, 'vlRat'));
@@ -248,7 +257,7 @@ async function fetchBldLot(lot, deadline) {
     const apr = num0(xmlTag(it, 'useAprDay'));
     if (apr && (!sum.apr || apr < sum.apr)) sum.apr = apr;
   }
-  if (!sum.bld) return { dongs, info: null };
+  if (!sum.bld) return { dongs, info: null, road };
   let recap = [];
   try {
     recap = await bldItems('getBrRecapTitleInfo', lot, deadline);
@@ -264,7 +273,7 @@ async function fetchBldLot(lot, deadline) {
     sum.bcr = ratio(xmlTag(r, 'bcRat')) || sum.bcr;
     sum.apr = num0(xmlTag(r, 'useAprDay')) || sum.apr;
   }
-  return { dongs, info: sum };
+  return { dongs, info: sum, road };
 }
 
 // 시군구 하나의 매매 기록에 나온 필지 중 층수를 아직 모르는(또는 오래된) 곳을 건축물대장에서 받는다.
@@ -279,7 +288,8 @@ async function updateBuildings(code, now, deadline) {
   let missing = 0;
   for (const lot of lots) {
     const cur = readBld(lot);
-    if (cur && 'info' in cur && Date.parse(cur.at) > old) continue;
+    // 도로명 코드(road)가 없는 예전 기록은 좌표를 받으려고 한 번 다시 받는다(JUSO_KEY가 있을 때만).
+    if (cur && 'info' in cur && (!JUSO_KEY || 'road' in cur) && Date.parse(cur.at) > old) continue;
     if (Date.now() >= deadline || calls.b >= BLD_CALL_LIMIT) {
       missing++;
       continue;
@@ -290,6 +300,72 @@ async function updateBuildings(code, now, deadline) {
       fs.writeFileSync(bldPath(lot), JSON.stringify({ at: new Date().toISOString(), ...got }));
     } catch (err) {
       console.error(`[${code}] ${err.message}`);
+      missing++;
+    }
+  }
+  return missing;
+}
+
+// 단지 좌표: .cache/regions-raw/coord/<필지>.json = { at, lat, lon } 또는 { at, none: 1 }(찾지 못함, 30일 뒤 다시).
+const coordPath = (lot) => path.join(RAW_DIR, 'coord', `${lot}.json`);
+function readCoord(lot) {
+  try {
+    return JSON.parse(fs.readFileSync(coordPath(lot), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+// UTM-K(EPSG:5179, GRS80 횡메르카토르: 원점 38°N 127.5°E, 축척 0.9996, 가산 1,000,000 / 2,000,000) → 위경도.
+function utmkToWgs84(x, y) {
+  const a = 6378137, f = 1 / 298.257222101, k0 = 0.9996, lat0 = (38 * Math.PI) / 180, lon0 = (127.5 * Math.PI) / 180;
+  const e2 = f * (2 - f), ep2 = e2 / (1 - e2);
+  const M = (p) => a * ((1 - e2 / 4 - (3 * e2 ** 2) / 64 - (5 * e2 ** 3) / 256) * p - ((3 * e2) / 8 + (3 * e2 ** 2) / 32 + (45 * e2 ** 3) / 1024) * Math.sin(2 * p) + ((15 * e2 ** 2) / 256 + (45 * e2 ** 3) / 1024) * Math.sin(4 * p) - ((35 * e2 ** 3) / 3072) * Math.sin(6 * p));
+  const m = M(lat0) + (y - 2000000) / k0;
+  const mu = m / (a * (1 - e2 / 4 - (3 * e2 ** 2) / 64 - (5 * e2 ** 3) / 256));
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const p1 = mu + ((3 * e1) / 2 - (27 * e1 ** 3) / 32) * Math.sin(2 * mu) + ((21 * e1 ** 2) / 16 - (55 * e1 ** 4) / 32) * Math.sin(4 * mu) + ((151 * e1 ** 3) / 96) * Math.sin(6 * mu) + ((1097 * e1 ** 4) / 512) * Math.sin(8 * mu);
+  const s1 = Math.sin(p1), c1 = Math.cos(p1), t1 = Math.tan(p1);
+  const C1 = ep2 * c1 * c1, T1 = t1 * t1, N1 = a / Math.sqrt(1 - e2 * s1 * s1), R1 = (a * (1 - e2)) / (1 - e2 * s1 * s1) ** 1.5;
+  const D = (x - 1000000) / (N1 * k0);
+  const lat = p1 - ((N1 * t1) / R1) * ((D * D) / 2 - ((5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * D ** 4) / 24 + ((61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * D ** 6) / 720);
+  const lon = lon0 + (D - ((1 + 2 * T1 + C1) * D ** 3) / 6 + ((5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D ** 5) / 120) / c1;
+  return [(lat * 180) / Math.PI, (lon * 180) / Math.PI];
+}
+let jusoFails = 0;
+async function fetchCoord(road, deadline) {
+  calls.j++;
+  const q = new URLSearchParams({ confmKey: JUSO_KEY, admCd: road.adm, rnMgtSn: road.rn, udrtYn: String(road.ug), buldMnnm: String(road.mn), buldSlno: String(road.sn), resultType: 'json' });
+  const res = await fetchWithRetry(`${JUSO_COORD_URL}?${q}`, 3, deadline);
+  const data = await res.json();
+  const common = data?.results?.common || {};
+  if (String(common.errorCode) !== '0') throw new Error(`좌표제공 API 오류: ${common.errorCode} ${common.errorMessage || ''}`);
+  const j = (data.results.juso || [])[0];
+  if (!j || !j.entX || !j.entY) return null;
+  return utmkToWgs84(Number(j.entX), Number(j.entY));
+}
+// 시군구 하나의 매매 필지 중 좌표를 아직 모르는 곳을 받는다(건축물대장 도로명 코드가 있는 필지만). 돌려주는 값: 못 받은 필지 수
+async function updateCoords(code, now, deadline) {
+  if (!JUSO_KEY || jusoFails >= 5) return 0;
+  const lots = new Set();
+  for (const ym of monthList(now, TRADE_MONTHS)) for (const r of readRaw(code, ym, 't')?.rows || []) if (r[7]) lots.add(r[7]);
+  let missing = 0;
+  for (const lot of lots) {
+    const cur = readCoord(lot);
+    if (cur && (cur.lat || Date.now() - Date.parse(cur.at) < 30 * 864e5)) continue;
+    const road = readBld(lot)?.road;
+    if (!road) continue;
+    if (Date.now() >= deadline || calls.j >= JUSO_CALL_LIMIT || jusoFails >= 5) {
+      missing++;
+      continue;
+    }
+    try {
+      const p = await fetchCoord(road, deadline);
+      fs.mkdirSync(path.dirname(coordPath(lot)), { recursive: true });
+      fs.writeFileSync(coordPath(lot), JSON.stringify(p ? { at: new Date().toISOString(), lat: +p[0].toFixed(6), lon: +p[1].toFixed(6) } : { at: new Date().toISOString(), none: 1 }));
+      jusoFails = 0;
+    } catch (err) {
+      jusoFails++;
+      if (jusoFails === 5) console.error(`[${code}] ${err.message} — 좌표제공 API가 연달아 실패해 이번 실행에서는 건너뜁니다(비밀값 JUSO_KEY 확인).`);
       missing++;
     }
   }
@@ -358,7 +434,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
 }
 
 // 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
-// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), s: 분양권·입주권 [[YYYYMMDD, ㎡, 금액, 층, 분/입]](없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), p: [위도, 경도](좌표제공 API, 없으면 생략), s: 분양권·입주권 [[YYYYMMDD, ㎡, 금액, 층, 분/입]](없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
 function writeAptFiles(region, now, outDir) {
   const byDong = new Map();
   const slot = (dong, apt) => {
@@ -392,6 +468,8 @@ function writeAptFiles(region, now, outDir) {
     const lot = [...m].sort((a, b) => b[1] - a[1])[0][0];
     const info = readBld(lot)?.info;
     if (info) slot(dong, apt).b = info;
+    const c = readCoord(lot);
+    if (c && c.lat) slot(dong, apt).p = [c.lat, c.lon];
   }
   if (!byDong.size) return 0;
   const dir = path.join(outDir, region.code);
@@ -461,4 +539,4 @@ function writeLongFile(region, now, dir) {
   return 1;
 }
 
-module.exports = { updateRegion, updateBuildings, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS, PRESALE_MONTHS };
+module.exports = { updateRegion, updateBuildings, updateCoords, utmkToWgs84, JUSO_KEY, recentTrades, writeAptFiles, calls, SERVICE_KEY, TRADE_MONTHS, RENT_MONTHS, PRESALE_MONTHS };

@@ -972,6 +972,12 @@ ul.rec .right{text-align:right;white-space:nowrap}
       aptsList.forEach(function (apts) { apts.forEach(function (a) { a.rec.t.forEach(function (x) { if (x[0] > anchor) anchor = x[0]; }); }); });
       var anchorDay = anchor ? dayNum(anchor) : 0;
       var yoys = targets.map(function (t, i) { return changeOf(aptsList[i], per, { anchor: anchorDay, long: longs[codes.indexOf(t.code)], dong: t.dong }); });
+      // 단지 점: 좌표(p, 주소기반서비스 좌표제공 API)가 있는 단지를 같은 기간 변동률 색으로 찍는다. 누르면 그 단지 시세로 간다.
+      var dots = [];
+      targets.forEach(function (t, i) {
+        var ctx = { anchor: anchorDay, long: longs[codes.indexOf(t.code)], dong: t.dong };
+        aptsList[i].forEach(function (a) { if (a.rec.p) dots.push({ t: t, a: a, y: changeOf([a], per, ctx) }); });
+      });
       if (!map) {
         map = L.map('map', { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([36.4, 127.8], 7);
         map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
@@ -1054,11 +1060,19 @@ ul.rec .right{text-align:right;white-space:nowrap}
           layer.addTo(mapLayer);
           bounds.extend(layer.getBounds());
         });
+        dots.forEach(function (d) {
+          var y = d.y, m = L.circleMarker(d.a.rec.p, { radius: 5, color: '#1d2939', weight: 1, fillColor: spectrum(y && y.pct), fillOpacity: 0.95 });
+          m.bindTooltip('<b>' + esc(d.a.name) + '</b><br>' + esc(d.t.dong) + ' · ' + per.label + ' ' + (y ? (y.pct >= 0 ? '+' : '') + y.pct.toFixed(1) + '%' : '기록 부족') + '<br><span style="color:#667085">눌러서 시세 보기</span>');
+          m.on('click', function () { openApt(d.t.code, d.t.dong, d.a.name); });
+          m.addTo(mapLayer);
+          bounds.extend(d.a.rec.p);
+        });
         if (bounds.isValid()) { map.invalidateSize(); map.fitBounds(bounds, { padding: [12, 12], maxZoom: 15 }); }
         if (!final) return;
         var lost = targets.filter(function (t) { return !t.byPoint && !feats.some(function (x) { return x.t.indexOf(t) >= 0; }); }).map(function (t) { return t.dong; });
         $('mapNote').textContent = '행정동 경계마다 ' + periodText(per, anchor) + ' 동을 누르면 이어진 법정동과 변동률이 보여요.' +
           (colored ? '' : ' ' + per.label + ' 비교에 쓸 거래가 아직 없어 모두 기록 부족으로 보여요.' + (per.y > 1 ? ' ' + per.label + ' 전 거래는 매일 새벽에 조금씩 받아 오는 중이라 며칠 뒤부터 보여요.' : '')) +
+          (dots.length ? ' 점은 단지 ' + dots.length + '곳(같은 기간 변동률 색, 누르면 시세)이에요.' : '') +
           (nearN ? ' 거래 기록이 이어지지 않은 동 ' + nearN + '곳은 가까운 동 값으로 옅게 칠했어요.' : '') + (lost.length ? ' 위치를 못 찾은 동: ' + lost.join(', ') : '');
       }
     }).catch(function () { if (seq === mapSeq) $('mapNote').textContent = '지도를 불러오지 못했어요.'; });
