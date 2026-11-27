@@ -197,14 +197,15 @@ function readBld(lot) {
 const normDong = (s) => String(s || '').replace(/\s/g, '').replace(/^제/, '').replace(/동$/, '');
 
 // 건축물대장 조회 한 가지(op)의 item 목록. 첫 주소가 안 되면 예전 서비스 주소로 바꿔 계속 쓴다.
-async function bldItems(op, lot, deadline) {
+async function bldItems(op, lot, deadline, rows = 100, maxPages = 5) {
   const [cd, bun, ji] = lot.split('-');
   const out = [];
-  for (let page = 1; page <= 5; page++) {
+  out.complete = false;
+  for (let page = 1; page <= maxPages; page++) {
     let xml;
     for (;;) {
       calls.b++;
-      const url = `${BLD_ENDPOINTS[bldEndpoint]}/${op}?serviceKey=${BLD_KEY}&sigunguCd=${cd.slice(0, 5)}&bjdongCd=${cd.slice(5)}&platGbCd=0&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=${page}`;
+      const url = `${BLD_ENDPOINTS[bldEndpoint]}/${op}?serviceKey=${BLD_KEY}&sigunguCd=${cd.slice(0, 5)}&bjdongCd=${cd.slice(5)}&platGbCd=0&bun=${bun}&ji=${ji}&numOfRows=${rows}&pageNo=${page}`;
       const res = await fetchWithRetry(url, 5, deadline);
       const text = await res.text();
       const rc = xmlTag(text, 'resultCode');
@@ -219,8 +220,13 @@ async function bldItems(op, lot, deadline) {
       }
       throw new Error(`건축물대장 API 오류(${op} ${lot}): ${msg}`);
     }
-    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) out.push(m[1]);
-    if (page * 100 >= Number(xmlTag(xml, 'totalCount') || 0)) break;
+    const got = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
+    out.push(...got);
+    const total = Number(xmlTag(xml, 'totalCount') || 0);
+    if (out.length >= total || !got.length) {
+      out.complete = out.length >= total;
+      break;
+    }
   }
   return out;
 }
@@ -257,12 +263,34 @@ async function fetchBldLot(lot, deadline) {
     const apr = num0(xmlTag(it, 'useAprDay'));
     if (apr && (!sum.apr || apr < sum.apr)) sum.apr = apr;
   }
-  if (!sum.bld) return { dongs, info: null, road };
+  if (!sum.bld) return { dongs, info: null, road, pil: {} };
   let recap = [];
   try {
     recap = await bldItems('getBrRecapTitleInfo', lot, deadline);
   } catch (err) {
     console.error(err.message); // 총괄표제부가 안 돼도 동별 합계로 보여준다
+  }
+  // 필로티: 층별개요에서 1층이 필로티뿐이고(1층에 세대 없음) 그 위가 첫 세대 층인 동 → { 동: 첫 세대 층 }.
+  // 층별개요를 끝까지 받지 못하면 잘못 표시하지 않으려고 비워 둔다.
+  const pil = {};
+  try {
+    const flr = await bldItems('getBrFlrOulnInfo', lot, deadline, 1000, 10);
+    if (flr.complete) {
+      const by = {};
+      for (const it of flr) {
+        if (!/지상/.test(xmlTag(it, 'flrGbCdNm'))) continue;
+        const no = num0(xmlTag(it, 'flrNo'));
+        const name = normDong(xmlTag(it, 'dongNm')) || '-';
+        const purpose = `${xmlTag(it, 'mainPurpsCdNm')} ${xmlTag(it, 'etcPurps')}`;
+        const d = (by[name] = by[name] || { pil1: false, home: Infinity });
+        const isPil = /필로티/.test(purpose);
+        if (no === 1 && isPil) d.pil1 = true;
+        if (!isPil && /공동주택|아파트/.test(purpose)) d.home = Math.min(d.home, no);
+      }
+      for (const [name, d] of Object.entries(by)) if (d.pil1 && d.home > 1 && d.home < Infinity) pil[name] = d.home;
+    }
+  } catch (err) {
+    console.error(err.message);
   }
   const r = recap[0];
   if (r) {
@@ -273,7 +301,7 @@ async function fetchBldLot(lot, deadline) {
     sum.bcr = ratio(xmlTag(r, 'bcRat')) || sum.bcr;
     sum.apr = num0(xmlTag(r, 'useAprDay')) || sum.apr;
   }
-  return { dongs, info: sum, road };
+  return { dongs, info: sum, road, pil };
 }
 
 // 시군구 하나의 매매 기록에 나온 필지 중 층수를 아직 모르는(또는 오래된) 곳을 건축물대장에서 받는다.
@@ -289,7 +317,8 @@ async function updateBuildings(code, now, deadline) {
   for (const lot of lots) {
     const cur = readBld(lot);
     // 도로명 코드(road)가 없는 예전 기록은 좌표를 받으려고 한 번 다시 받는다(JUSO_KEY가 있을 때만).
-    if (cur && 'info' in cur && (!JUSO_KEY || 'road' in cur) && Date.parse(cur.at) > old) continue;
+    // 필로티 정보(pil)가 없는 예전 기록도 한 번 다시 받는다.
+    if (cur && 'info' in cur && 'pil' in cur && (!JUSO_KEY || 'road' in cur) && Date.parse(cur.at) > old) continue;
     if (Date.now() >= deadline || calls.b >= BLD_CALL_LIMIT) {
       missing++;
       continue;
@@ -374,6 +403,25 @@ async function updateCoords(code, now, deadline) {
 
 // 거래한 층이 그 동의 꼭대기 층인지. 1 = 탑층, 0 = 아님 또는 모름.
 // 동 이름이 맞으면 그 동 층수로, 거래에 동이 없으면 필지의 주거용 동이 모두 같은 높이일 때만 판단한다.
+// 필로티 위 첫 세대 층 거래인지(1층이 필로티라 실제로는 그 동의 가장 낮은 세대 층). 1 = 그렇다, 0 = 아님 또는 모름.
+function pilFlag(row, cache) {
+  const lot = row[7];
+  if (!lot) return 0;
+  const k = `pil:${lot}`;
+  if (!cache.has(k)) cache.set(k, readBld(lot)?.pil || null);
+  const pil = cache.get(k);
+  if (!pil) return 0;
+  const floor = parseInt(row[4], 10);
+  if (!floor) return 0;
+  const d = normDong(row[6]);
+  if (d && d in pil) return pil[d] === floor ? 1 : 0;
+  if (d) return 0;
+  // 거래에 동이 없으면 필지의 모든 주거동이 같은 층부터 세대가 있을 때만
+  const dongs = readBld(lot)?.dongs || {};
+  const names = Object.keys(dongs);
+  return names.length && names.every((n) => pil[n] === floor) ? 1 : 0;
+}
+
 function topFlag(row, cache) {
   const lot = row[7];
   if (!lot) return 0;
@@ -388,7 +436,7 @@ function topFlag(row, cache) {
   return hs.length === 1 && hs[0] === floor ? 1 : 0;
 }
 
-// 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가, 신고가]
+// 최근 months개월 매매(브리핑 화면용). 한 줄 = [단지, 법정동, 전용㎡, 금액, 층, "YYYY.MM.DD", 평당가, 신고가, 0(자리), 층 표시(1 탑층, 2 필로티 위, 0 없음)]
 // 신고가: 같은 단지·같은 넓이(전용㎡ 소수점 버림)에서 계약일이 앞선 기록 속 거래(최대 TRADE_MONTHS개월)의 최고가를 넘으면
 // 그 이전 최고가(만원), 아니면 0. 앞선 거래가 하나도 없으면(첫 거래) 신고가로 보지 않는다.
 // 기록이 아직 덜 찼으면(처음 며칠) 그 기간 안의 최고가 기준이다.
@@ -396,6 +444,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
   const cut = ymd(cutoff.getFullYear(), cutoff.getMonth() + 1, cutoff.getDate());
   const out = [];
   const groups = new Map();
+  const bld = new Map();
   let lastAt = '';
   let any = false;
   monthList(now, TRADE_MONTHS).forEach((ym, i) => {
@@ -424,7 +473,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
       }
       if (r[5] >= cut) {
         const s = String(r[5]);
-        out.push([r[0], r[1], r[2], r[3], r[4], `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}`, pricePerPyeong(r[3], r[2]), best && r[3] > best ? best : 0]);
+        out.push([r[0], r[1], r[2], r[3], r[4], `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6)}`, pricePerPyeong(r[3], r[2]), best && r[3] > best ? best : 0, 0, topFlag(r, bld) ? 1 : pilFlag(r, bld) ? 2 : 0]);
       }
       dayBest = Math.max(dayBest, r[3]);
     }
@@ -434,7 +483,7 @@ function recentTrades(code, now, months, cutoff, pricePerPyeong) {
 }
 
 // 법정동별 아파트 기록 파일. 동 번호는 regions-kr.json의 dongs 순서(목록에 없는 동은 "x").
-// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), p: [위도, 경도](좌표제공 API, 없으면 생략), s: 분양권·입주권 [[YYYYMMDD, ㎡, 금액, 층, 분/입]](없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
+// { d: 법정동, apts: { 단지: { b: 단지 정보(fetchBldLot의 info, 없으면 생략), p: [위도, 경도](좌표제공 API, 없으면 생략), s: 분양권·입주권 [[YYYYMMDD, ㎡, 금액, 층, 분/입]](없으면 생략), t: [[YYYYMMDD, ㎡, 금액, 층, 동, 탑층 1/0, 필로티 위 1/0]], r: [[YYYYMMDD, ㎡, 보증금, 월세, 층, 신규/갱신]] } } }
 function writeAptFiles(region, now, outDir) {
   const byDong = new Map();
   const slot = (dong, apt) => {
@@ -444,7 +493,7 @@ function writeAptFiles(region, now, outDir) {
   };
   const bld = new Map();
   for (const ym of monthList(now, TRADE_MONTHS)) {
-    for (const r of readRaw(region.code, ym, 't')?.rows || []) slot(r[1], r[0]).t.push([r[5], r[2], r[3], r[4], r[6] || '', topFlag(r, bld)]);
+    for (const r of readRaw(region.code, ym, 't')?.rows || []) slot(r[1], r[0]).t.push([r[5], r[2], r[3], r[4], r[6] || '', topFlag(r, bld), pilFlag(r, bld)]);
   }
   for (const ym of monthList(now, RENT_MONTHS)) {
     for (const r of readRaw(region.code, ym, 'r')?.rows || []) slot(r[1], r[0]).r.push([r[6], r[2], r[3], r[4], r[5], r[7]]);
